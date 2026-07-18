@@ -56,6 +56,12 @@ repositories {
     maven { url = 'https://maven.tterrag.com' }
     maven { url = 'https://maven.ithundxr.dev/snapshots' }
     maven { url = 'https://api.modrinth.com/maven' }
+    exclusiveContent {
+        forRepository {
+            maven { url = 'https://cursemaven.com' }
+        }
+        filter { includeGroup 'curse.maven' }
+    }
 }
 
 base {
@@ -152,6 +158,7 @@ configurations {
 
 dependencies {
     implementation "com.simibubi.create:create-${minecraft_version}:${create_version}"
+    implementation "curse.maven:fungal-infection-spore-678295:${spore_file_id}"
 
     if (project.hasProperty('enableOptionalCompatRuntime')) {
         localRuntime "maven.modrinth:create-tfmg:${tfmg_version}"
@@ -203,6 +210,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
              mod_version            : mod_version,
             create_version         : create_version,
             create_mod_version     : create_mod_version,
+            spore_version          : spore_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties
@@ -231,6 +239,10 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+tasks.withType(Jar).configureEach {
+    includeEmptyDirs = false
 }
 
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.

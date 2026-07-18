@@ -46,7 +46,8 @@ displayName="${mod_name}" #mandatory
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-Sector exploration and progression systems for Create-centered modpacks.
+Create-powered containment infrastructure for suppressing Spore infection.
+Containment affects infection growth, not hostile mob movement or combat.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
@@ -92,6 +93,13 @@ Sector exploration and progression systems for Create-centered modpacks.
     modId="create"
     type="required"
     versionRange="[${create_mod_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="spore"
+    type="required"
+    versionRange="[${spore_version}]"
     ordering="AFTER"
     side="BOTH"
 

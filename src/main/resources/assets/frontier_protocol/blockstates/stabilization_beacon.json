@@ -1,6 +1,0 @@
-{
-  "variants": {
-    "enabled=true": { "model": "frontier_protocol:block/stabilization_beacon" },
-    "enabled=false": { "model": "frontier_protocol:block/stabilization_beacon" }
-  }
-}
