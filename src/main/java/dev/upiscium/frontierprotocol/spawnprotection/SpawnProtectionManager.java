@@ -11,6 +11,7 @@ import java.util.Set;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 
 public final class SpawnProtectionManager {
     public static final SuppressionSourceId SOURCE_ID = new SuppressionSourceId(
@@ -20,17 +21,16 @@ public final class SpawnProtectionManager {
 
     private SpawnProtectionManager() {}
 
-    public static void rebuild(ServerLevel overworld) {
-        SpawnProtectionSavedData data = SpawnProtectionSavedData.get(overworld);
-        data.initialize(
-                new ChunkPos(overworld.getSharedSpawnPos()),
-                FrontierProtocolServerConfig.SPAWN_PROTECTION_ENABLED.get(),
-                FrontierProtocolServerConfig.SPAWN_PROTECTION_RADIUS_CHUNKS.getAsInt());
+    public static void rebuild(ServerLevel level) {
+        requireOverworld(level);
+        SpawnProtectionSavedData data = SpawnProtectionSavedData.get(level);
+        data.initialize(new ChunkPos(level.getSharedSpawnPos()));
         ServerInfectionSuppressionService service = ServerInfectionSuppressionService.INSTANCE;
-        if (data.enabled()) {
-            service.registerOrUpdateSource(overworld, SOURCE, coveredChunks(data.centerChunk(), data.radiusChunks()));
+        if (FrontierProtocolServerConfig.SPAWN_PROTECTION_ENABLED.get()) {
+            int radius = FrontierProtocolServerConfig.SPAWN_PROTECTION_RADIUS_CHUNKS.getAsInt();
+            service.registerOrUpdateSource(level, SOURCE, coveredChunks(data.centerChunk(), radius));
         } else {
-            service.unregisterSource(overworld, SOURCE_ID);
+            service.unregisterSource(level, SOURCE_ID);
         }
     }
 
@@ -48,5 +48,11 @@ public final class SpawnProtectionManager {
             }
         }
         return Set.copyOf(chunks);
+    }
+
+    private static void requireOverworld(ServerLevel level) {
+        if (level.dimension() != Level.OVERWORLD) {
+            throw new IllegalArgumentException("Initial spawn protection is Overworld-only");
+        }
     }
 }

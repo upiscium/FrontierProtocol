@@ -17,6 +17,7 @@ public final class FrontierProtocolMod {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public FrontierProtocolMod(IEventBus modBus, ModContainer container) {
+        modBus.addListener(SuppressionConfigEvents::configReloading);
         ModBlocks.register(modBus);
         ModBlockEntities.register(modBus);
         ModItems.register(modBus);
