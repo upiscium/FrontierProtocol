@@ -1,0 +1,11 @@
+{
+  "required_trait": "frontier_protocol:oil_field",
+  "required_mod": "tfmg",
+  "requires_protection": false,
+  "work_interval": 200,
+  "capacity": 8000,
+  "output": {
+    "fluid": "tfmg:crude_oil",
+    "amount": 250
+  }
+}

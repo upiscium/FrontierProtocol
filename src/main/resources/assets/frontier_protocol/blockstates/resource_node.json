@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "frontier_protocol:block/resource_node" }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "required_trait": "frontier_protocol:fertile_basin",
+  "requires_protection": false,
+  "work_interval": 200,
+  "output": { "item": "minecraft:wheat", "count": 1 }
+}

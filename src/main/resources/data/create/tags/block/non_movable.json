@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "frontier_protocol:stabilization_beacon",
+    "frontier_protocol:infection_core",
+    "frontier_protocol:infection_nest",
+    "frontier_protocol:resource_node",
+    "frontier_protocol:oil_well"
+  ]
+}

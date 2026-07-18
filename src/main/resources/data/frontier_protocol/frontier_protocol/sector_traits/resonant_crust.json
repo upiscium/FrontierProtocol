@@ -1,0 +1,19 @@
+{
+  "priority": 110,
+  "placement": {
+    "spacing": 10,
+    "separation": 4,
+    "anchor_chance": 0.35,
+    "min_distance": 6,
+    "cluster_min": 1,
+    "cluster_max": 2,
+    "salt": 918273
+  },
+  "guarantee": {
+    "enabled": true,
+    "count": 1,
+    "ring_min": 6,
+    "ring_max": 8
+  },
+  "resource_nodes": ["frontier_protocol:resonant_crystal_node"]
+}

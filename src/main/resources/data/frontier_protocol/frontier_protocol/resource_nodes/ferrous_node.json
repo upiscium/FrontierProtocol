@@ -1,0 +1,6 @@
+{
+  "required_trait": "frontier_protocol:ferrous_strata",
+  "requires_protection": true,
+  "work_interval": 200,
+  "output": { "item": "minecraft:raw_iron", "count": 1 }
+}

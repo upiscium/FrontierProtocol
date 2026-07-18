@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:planks",
+    "#minecraft:wooden_doors",
+    "#minecraft:wooden_trapdoors",
+    "#minecraft:wooden_fences",
+    "#minecraft:wool",
+    "minecraft:glass",
+    "minecraft:glass_pane",
+    "minecraft:dirt",
+    "minecraft:coarse_dirt",
+    "minecraft:cobblestone"
+  ]
+}

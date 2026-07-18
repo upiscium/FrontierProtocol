@@ -1,0 +1,19 @@
+{
+  "priority": 90,
+  "placement": {
+    "spacing": 7,
+    "separation": 3,
+    "anchor_chance": 0.5,
+    "min_distance": 1,
+    "cluster_min": 1,
+    "cluster_max": 3,
+    "salt": 651902
+  },
+  "guarantee": {
+    "enabled": true,
+    "count": 1,
+    "ring_min": 1,
+    "ring_max": 4
+  },
+  "resource_nodes": ["frontier_protocol:biomass_node"]
+}

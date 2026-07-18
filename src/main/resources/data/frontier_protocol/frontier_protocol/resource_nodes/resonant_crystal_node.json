@@ -1,0 +1,6 @@
+{
+  "required_trait": "frontier_protocol:resonant_crust",
+  "requires_protection": true,
+  "work_interval": 400,
+  "output": { "item": "minecraft:amethyst_shard", "count": 1 }
+}

@@ -1,0 +1,22 @@
+{
+  "values": {
+    "kubejs:stabilization_cell": {
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:item_exists",
+          "item": "kubejs:stabilization_cell"
+        }
+      ],
+      "ticks": 36000
+    },
+    "kubejs:industrial_stabilization_cell": {
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:item_exists",
+          "item": "kubejs:industrial_stabilization_cell"
+        }
+      ],
+      "ticks": 144000
+    }
+  }
+}
