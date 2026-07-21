@@ -10,6 +10,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 @Mod(FrontierProtocolMod.MOD_ID)
 public final class FrontierProtocolMod {
@@ -18,9 +19,15 @@ public final class FrontierProtocolMod {
 
     public FrontierProtocolMod(IEventBus modBus, ModContainer container) {
         modBus.addListener(SuppressionConfigEvents::configReloading);
+        modBus.addListener(FrontierProtocolMod::commonSetup);
+        modBus.addListener(ModBlockEntities::registerCapabilities);
         ModBlocks.register(modBus);
         ModBlockEntities.register(modBus);
         ModItems.register(modBus);
         container.registerConfig(ModConfig.Type.SERVER, FrontierProtocolServerConfig.SPEC);
+    }
+
+    private static void commonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(ModBlocks::registerStressImpact);
     }
 }
