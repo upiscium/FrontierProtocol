@@ -1,6 +1,8 @@
 package dev.upiscium.frontierprotocol.tier1;
 
 import com.simibubi.create.AllBlocks;
+import com.simibubi.create.api.stress.BlockStressValues;
+import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import com.simibubi.create.content.kinetics.motor.CreativeMotorBlock;
 import dev.upiscium.frontierprotocol.FrontierProtocolMod;
 import dev.upiscium.frontierprotocol.api.suppression.SuppressionSourceType;
@@ -9,14 +11,15 @@ import dev.upiscium.frontierprotocol.registry.ModBlockEntities;
 import dev.upiscium.frontierprotocol.registry.ModBlocks;
 import dev.upiscium.frontierprotocol.registry.ModItems;
 import dev.upiscium.frontierprotocol.suppression.ServerInfectionSuppressionService;
-import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -43,7 +46,7 @@ public final class Tier1StabilizerGameTests {
         int y = origin.getY() + 1;
         BlockPos first = new BlockPos(chunk.getMinBlockX() + 5, y, chunk.getMinBlockZ() + 5);
         BlockPos second = new BlockPos(chunk.getMinBlockX() + 10, y, chunk.getMinBlockZ() + 5);
-        BlockPos netherDevice = new BlockPos(-1600, 64, -1600);
+        BlockPos netherDevice = new BlockPos(-1595, 64, -1595);
         TestContext context = new TestContext(
                 helper,
                 overworld,
@@ -60,6 +63,9 @@ public final class Tier1StabilizerGameTests {
             helper.assertTrue(ModItems.TIER_1_STABILIZER.isBound(), "Tier 1 block item is not registered");
             helper.assertTrue(ModItems.STABILIZATION_COMPOUND.isBound(), "stabilization compound is not registered");
             helper.assertTrue(ModBlockEntities.TIER_1_STABILIZER.isBound(), "Tier 1 block entity is not registered");
+            helper.assertTrue(BlockStressValues.getImpact(ModBlocks.TIER_1_STABILIZER.get())
+                            == FrontierProtocolServerConfig.TIER1_STRESS_IMPACT.getAsDouble(),
+                    "Tier 1 stress impact does not match the current server config");
 
             FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.set(8);
             FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(10);
@@ -77,6 +83,7 @@ public final class Tier1StabilizerGameTests {
             context.helper().assertTrue(!service().isSuppressed(context.overworld(), new ChunkPos(context.first())),
                     "unpowered Tier 1 registered suppression");
 
+            rejectInvalidItem(context.overworld(), context.first(), context.helper());
             insertCompound(context.overworld(), context.first(), 2, context.helper());
             context.helper().runAfterDelay(2, () -> verifyOfflineWithoutPower(context));
         });
@@ -144,7 +151,7 @@ public final class Tier1StabilizerGameTests {
 
             placeMotor(context.overworld(), context.first().west());
             placeDevice(context.overworld(), context.second());
-            insertCompound(context.overworld(), context.second(), 1, context.helper());
+            insertCompound(context.overworld(), context.second(), 2, context.helper());
             placeMotor(context.overworld(), context.second().west());
             context.helper().runAfterDelay(8, () -> verifyOverlap(context));
         });
@@ -155,6 +162,23 @@ public final class Tier1StabilizerGameTests {
             ChunkPos chunk = new ChunkPos(context.first());
             context.helper().assertTrue(tierOneSourceCount(context.overworld(), chunk) == 2,
                     "two Tier 1 devices did not register independent sources");
+            blockEntity(context.overworld(), context.first()).markVirtual();
+            context.helper().runAfterDelay(1, () -> verifyVirtualSourceRemoved(context));
+        });
+    }
+
+    private static void verifyVirtualSourceRemoved(TestContext context) {
+        runStage(context, () -> {
+            ChunkPos chunk = new ChunkPos(context.first());
+            context.helper().assertTrue(blockEntity(context.overworld(), context.first()).isVirtual(),
+                    "Tier 1 test block entity was not marked virtual");
+            context.helper().assertTrue(tierOneSourceCount(context.overworld(), chunk) == 1,
+                    "virtual Tier 1 did not unregister exactly one source on its next tick");
+            context.helper().assertTrue(service().getSources(context.overworld(), chunk).stream()
+                            .anyMatch(source -> source.id().equals(Tier1SuppressionSource.at(context.second()).id())),
+                    "virtual Tier 1 removed the neighboring device source");
+            context.helper().assertTrue(service().isSuppressed(context.overworld(), chunk),
+                    "virtual Tier 1 removed overlapping suppression");
             context.overworld().destroyBlock(context.first(), true);
             context.helper().runAfterDelay(2, () -> verifyOneOverlapRemains(context));
         });
@@ -189,6 +213,10 @@ public final class Tier1StabilizerGameTests {
             context.helper().assertTrue(blockEntity(context.overworld(), context.second()).status()
                             == Tier1StabilizerStatus.ACTIVE,
                     "reloaded Tier 1 did not reevaluate to active");
+            context.helper().assertTrue(
+                    blockEntity(context.overworld(), context.second()).externalInventory().getStackInSlot(0).getCount()
+                            == 1,
+                    "reloaded Tier 1 did not preserve its remaining inventory");
             context.helper().assertTrue(service().isSuppressed(context.overworld(), chunk),
                     "reloaded Tier 1 did not rebuild suppression");
             context.overworld().destroyBlock(context.second(), true);
@@ -202,27 +230,78 @@ public final class Tier1StabilizerGameTests {
                     "destroyed Tier 1 retained suppression");
 
             ChunkPos negativeChunk = new ChunkPos(context.netherDevice());
-            service().registerOrUpdateSource(
-                    context.nether(), Tier1SuppressionSource.at(context.netherDevice()), Set.of(negativeChunk));
-            context.helper().runAfterDelay(1, () -> verifyNegativeNetherIsolation(context));
+            context.nether().getChunkSource().addRegionTicket(
+                    TicketType.FORCED, negativeChunk, 2, negativeChunk, true);
+            for (int x = negativeChunk.x - 1; x <= negativeChunk.x + 1; x++) {
+                for (int z = negativeChunk.z - 1; z <= negativeChunk.z + 1; z++) {
+                    context.nether().getChunk(x, z);
+                }
+            }
+            context.helper().runAfterDelay(20, () -> placeNegativeNetherDevice(context));
         });
     }
 
-    private static void verifyNegativeNetherIsolation(TestContext context) {
+    private static void placeNegativeNetherDevice(TestContext context) {
         runStage(context, () -> {
             ChunkPos negativeChunk = new ChunkPos(context.netherDevice());
+            context.helper().assertTrue(context.nether().getChunkSource().isPositionTicking(negativeChunk.toLong()),
+                    "negative Nether chunk did not become ticking before Tier 1 placement");
+            placeDevice(context.nether(), context.netherDevice());
+            insertCompound(context.nether(), context.netherDevice(), 2, context.helper());
+            placeMotor(context.nether(), context.netherDevice().west());
+            Object motorBlockEntity = context.nether().getBlockEntity(context.netherDevice().west());
+            context.helper().assertTrue(motorBlockEntity instanceof KineticBlockEntity,
+                    "negative-coordinate Nether Creative Motor block entity is missing");
+            context.helper().runAfterDelay(1, () -> verifyNegativeNetherDevice(context));
+        });
+    }
+
+    private static void verifyNegativeNetherDevice(TestContext context) {
+        runStage(context, () -> {
+            ChunkPos negativeChunk = new ChunkPos(context.netherDevice());
+            Tier1StabilizerBlockEntity netherBlockEntity = blockEntity(context.nether(), context.netherDevice());
+            Object motorBlockEntity = context.nether().getBlockEntity(context.netherDevice().west());
+            // GameTestServer does not advance newly placed block entity tickers in its remote Nether level.
+            ((KineticBlockEntity) motorBlockEntity).tick();
+            netherBlockEntity.tick();
+            context.helper().assertTrue(netherBlockEntity.hasNetwork(),
+                    "negative-coordinate Nether Tier 1 did not join a Create kinetic network: shouldTick="
+                            + context.nether().shouldTickBlocksAt(negativeChunk.toLong())
+                            + ", positionTicking="
+                            + context.nether().getChunkSource().isPositionTicking(negativeChunk.toLong())
+                            + ", deviceSpeed=" + netherBlockEntity.getSpeed()
+                            + ", deviceStatus=" + netherBlockEntity.status()
+                            + ", motor=" + (motorBlockEntity == null ? "null" : motorBlockEntity.getClass().getName())
+                            + ", motorSpeed=" + (motorBlockEntity instanceof KineticBlockEntity kinetic
+                                    ? kinetic.getSpeed()
+                                    : "n/a"));
+            context.helper().assertTrue(netherBlockEntity.status() == Tier1StabilizerStatus.ACTIVE,
+                    "negative-coordinate Nether Tier 1 did not become active");
+            context.helper().assertTrue(netherBlockEntity.externalInventory().getStackInSlot(0).getCount() == 1,
+                    "negative-coordinate Nether Tier 1 did not consume exactly one compound");
             context.helper().assertTrue(service().isSuppressed(context.nether(), negativeChunk),
-                    "negative-coordinate Nether Tier 1 did not register suppression");
+                    "negative-coordinate Nether Tier 1 did not suppress its placement chunk");
             context.helper().assertTrue(!service().isSuppressed(context.overworld(), negativeChunk),
                     "Nether Tier 1 suppression leaked into the Overworld");
             context.helper().assertTrue(!service().isSuppressed(
                             context.nether(), new ChunkPos(negativeChunk.x + 1, negativeChunk.z)),
                     "negative-coordinate Tier 1 suppressed an adjacent chunk");
 
-            Tier1StabilizerBlockEntity virtual = new Tier1StabilizerBlockEntity(BlockPos.ZERO,
-                    ModBlocks.TIER_1_STABILIZER.get().defaultBlockState());
-            virtual.markVirtual();
-            virtual.tick();
+            netherBlockEntity.onChunkUnloaded();
+            context.helper().assertTrue(!service().isSuppressed(context.nether(), negativeChunk),
+                    "unloaded negative-coordinate Nether Tier 1 retained suppression");
+            context.nether().destroyBlock(context.netherDevice(), true);
+            context.nether().setBlock(
+                    context.netherDevice().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            context.helper().runAfterDelay(2, () -> verifyNegativeNetherSourceRemoved(context));
+        });
+    }
+
+    private static void verifyNegativeNetherSourceRemoved(TestContext context) {
+        runStage(context, () -> {
+            context.helper().assertTrue(!service().isSuppressed(
+                            context.nether(), new ChunkPos(context.netherDevice())),
+                    "cleaned-up negative-coordinate Nether Tier 1 retained suppression");
             cleanup(context);
             context.helper().succeed();
         });
@@ -245,6 +324,17 @@ public final class Tier1StabilizerGameTests {
         helper.assertTrue(remainder.isEmpty(), "Tier 1 capability rejected stabilization compound");
         helper.assertTrue(capability.extractItem(0, 1, false).isEmpty(),
                 "Tier 1 capability allowed external extraction");
+    }
+
+    private static void rejectInvalidItem(ServerLevel level, BlockPos pos, GameTestHelper helper) {
+        IItemHandler capability = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, Direction.UP);
+        helper.assertTrue(capability != null, "Tier 1 item capability is unavailable");
+        ItemStack invalid = new ItemStack(Items.DIRT);
+        ItemStack remainder = capability.insertItem(0, invalid, false);
+        helper.assertTrue(ItemStack.isSameItemSameComponents(invalid, remainder) && remainder.getCount() == 1,
+                "Tier 1 capability accepted an invalid item");
+        helper.assertTrue(capability.getStackInSlot(0).isEmpty(),
+                "invalid item changed the Tier 1 inventory");
     }
 
     private static Tier1StabilizerBlockEntity blockEntity(ServerLevel level, BlockPos pos) {
@@ -274,7 +364,10 @@ public final class Tier1StabilizerGameTests {
     private static void cleanup(TestContext context) {
         removeDevice(context.overworld(), context.first());
         removeDevice(context.overworld(), context.second());
-        service().unregisterSource(context.nether(), Tier1SuppressionSource.at(context.netherDevice()).id());
+        removeDevice(context.nether(), context.netherDevice());
+        ChunkPos netherChunk = new ChunkPos(context.netherDevice());
+        context.nether().getChunkSource().removeRegionTicket(
+                TicketType.FORCED, netherChunk, 2, netherChunk, true);
         FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.set(context.originalMinimumRpm());
         FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(context.originalGraceTicks());
         FrontierProtocolServerConfig.TIER1_CONSUMABLE_DURATION_TICKS.set(context.originalConsumableTicks());

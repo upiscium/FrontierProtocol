@@ -59,7 +59,11 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
     public void tick() {
         if (!hasLevel()) return;
         super.tick();
-        if (!(level instanceof ServerLevel serverLevel) || isRemoved() || isVirtual()) return;
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        if (isRemoved() || isVirtual()) {
+            unregisterSource(serverLevel);
+            return;
+        }
         if (serverLevel.getBlockEntity(worldPosition) != this || !getBlockState().is(ModBlocks.TIER_1_STABILIZER)) {
             unregisterSource(serverLevel);
             return;

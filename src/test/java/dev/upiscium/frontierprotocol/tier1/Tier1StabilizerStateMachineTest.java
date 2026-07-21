@@ -56,4 +56,18 @@ class Tier1StabilizerStateMachineTest {
         assertEquals(Tier1StabilizerStatus.OFFLINE, machine.status());
         assertEquals(0, machine.consumableRemainingTicks());
     }
+
+    @Test
+    void consumesExactlyOneNewItemOnTickAfterRuntimeExpires() {
+        Tier1StabilizerStateMachine machine =
+                new Tier1StabilizerStateMachine(Tier1StabilizerStatus.ACTIVE, 4, 1);
+
+        Tier1StabilizerStateMachine.TickResult finalRuntimeTick = machine.tick(true, true, 4, 10);
+        Tier1StabilizerStateMachine.TickResult refillTick = machine.tick(true, true, 4, 10);
+
+        assertFalse(finalRuntimeTick.consumeItem());
+        assertTrue(refillTick.consumeItem());
+        assertEquals(Tier1StabilizerStatus.ACTIVE, machine.status());
+        assertEquals(9, machine.consumableRemainingTicks());
+    }
 }
