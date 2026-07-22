@@ -34,8 +34,10 @@ public final class SporeIntegrationGameTests {
     private static final ChunkPos PROTECTED_CHUNK = new ChunkPos(-120, -120);
     private static final ChunkPos OUTSIDE_CHUNK = new ChunkPos(-119, -120);
     private static final ChunkPos BOUNDARY_BASE_CHUNK = new ChunkPos(-110, -110);
+    private static final ChunkPos REVERSE_BOUNDARY_BASE_CHUNK = new ChunkPos(-100, -100);
     private static final Set<ChunkPos> PROTECTED_CHUNKS = Set.of(
             PROTECTED_CHUNK,
+            REVERSE_BOUNDARY_BASE_CHUNK,
             new ChunkPos(BOUNDARY_BASE_CHUNK.x, BOUNDARY_BASE_CHUNK.z - 1),
             new ChunkPos(BOUNDARY_BASE_CHUNK.x, BOUNDARY_BASE_CHUNK.z + 1),
             new ChunkPos(BOUNDARY_BASE_CHUNK.x - 1, BOUNDARY_BASE_CHUNK.z),
@@ -62,7 +64,9 @@ public final class SporeIntegrationGameTests {
             assertSourceTargetSemantics(helper, overworld, protectedPos, outsidePos);
             assertOverrideTargets(helper, overworld, protectedPos, outsidePos);
             assertMoundTargets(helper, overworld, protectedPos, outsidePos);
+            assertBaseMutationGuards(helper, overworld, protectedPos);
             assertBranchBoundary(helper, overworld);
+            assertReverseBranchBoundary(helper, overworld);
             assertExistingInfectionRemains(helper, overworld, protectedPos);
         } finally {
             service.unregisterSource(overworld, SOURCE.id());
@@ -137,6 +141,28 @@ public final class SporeIntegrationGameTests {
                 "Mound did not place a structure at an unprotected target");
     }
 
+    private static void assertBaseMutationGuards(
+            GameTestHelper helper, ServerLevel level, BlockPos protectedPos) {
+        FoliageSpread spread = new PlainSpread();
+        BlockState wheat = Blocks.WHEAT.defaultBlockState();
+        level.setBlock(protectedPos, wheat, Block.UPDATE_NONE);
+        spread.placeCropsFoliage(level, protectedPos, wheat);
+        helper.assertTrue(level.getBlockState(protectedPos).equals(wheat),
+                "crop helper mutated its protected base target");
+
+        BlockState stone = Blocks.STONE.defaultBlockState();
+        level.setBlock(protectedPos, stone, Block.UPDATE_NONE);
+        spread.convertBlocks(stone, level, protectedPos);
+        helper.assertTrue(level.getBlockState(protectedPos).equals(stone),
+                "configured conversion mutated its protected base target");
+
+        BlockState door = Blocks.OAK_DOOR.defaultBlockState();
+        level.setBlock(protectedPos, door, Block.UPDATE_NONE);
+        spread.convertWood(level, door, protectedPos);
+        helper.assertTrue(level.getBlockState(protectedPos).equals(door),
+                "falling wood conversion mutated its protected base target");
+    }
+
     private static void assertBranchBoundary(GameTestHelper helper, ServerLevel level) {
         for (Direction protectedDirection : Direction.Plane.HORIZONTAL) {
             assertBranchBoundary(helper, level, protectedDirection);
@@ -174,6 +200,39 @@ public final class SporeIntegrationGameTests {
         level.setBlock(outsideNeighbor, Blocks.AIR.defaultBlockState(), Block.UPDATE_NONE);
     }
 
+    private static void assertReverseBranchBoundary(GameTestHelper helper, ServerLevel level) {
+        for (Direction outwardDirection : Direction.Plane.HORIZONTAL) {
+            assertReverseBranchBoundary(helper, level, outwardDirection);
+        }
+    }
+
+    private static void assertReverseBranchBoundary(
+            GameTestHelper helper, ServerLevel level, Direction outwardDirection) {
+        BlockPos base = reverseBoundaryBase(outwardDirection);
+        BlockPos outsideNeighbor = base.relative(outwardDirection);
+        BlockPos protectedNeighbor = base.relative(outwardDirection.getOpposite());
+        BlockState leaves = Blocks.OAK_LEAVES.defaultBlockState();
+        BlockState log = Blocks.OAK_LOG.defaultBlockState();
+        FoliageSpread spread = new PlainSpread();
+
+        level.setBlock(base, log, Block.UPDATE_NONE);
+        level.setBlock(outsideNeighbor, leaves, Block.UPDATE_NONE);
+        level.setBlock(protectedNeighbor, leaves, Block.UPDATE_NONE);
+        for (int i = 0; i < 256 && level.getBlockState(outsideNeighbor).equals(leaves); i++) {
+            spread.convertWood(level, log, base);
+        }
+
+        helper.assertTrue(level.getBlockState(base).equals(log),
+                "wood conversion mutated the protected base toward " + outwardDirection);
+        helper.assertTrue(level.getBlockState(protectedNeighbor).equals(leaves),
+                "wood conversion mutated a protected inward neighbor opposite " + outwardDirection);
+        helper.assertTrue(level.getBlockState(outsideNeighbor).is(Sblocks.ROTTEN_BRANCH.get()),
+                "protected base blocked its unprotected outward neighbor toward " + outwardDirection);
+        level.setBlock(base, Blocks.AIR.defaultBlockState(), Block.UPDATE_NONE);
+        level.setBlock(protectedNeighbor, Blocks.AIR.defaultBlockState(), Block.UPDATE_NONE);
+        level.setBlock(outsideNeighbor, Blocks.AIR.defaultBlockState(), Block.UPDATE_NONE);
+    }
+
     private static void assertExistingInfectionRemains(
             GameTestHelper helper, ServerLevel level, BlockPos protectedPos) {
         BlockState existingInfection = Sblocks.ROTTEN_CROPS.get().defaultBlockState();
@@ -199,6 +258,18 @@ public final class SporeIntegrationGameTests {
             case SOUTH -> new BlockPos(x, 64, BOUNDARY_BASE_CHUNK.getMaxBlockZ());
             case WEST -> new BlockPos(BOUNDARY_BASE_CHUNK.getMinBlockX(), 64, z);
             case EAST -> new BlockPos(BOUNDARY_BASE_CHUNK.getMaxBlockX(), 64, z);
+            default -> throw new IllegalArgumentException("horizontal direction required");
+        };
+    }
+
+    private static BlockPos reverseBoundaryBase(Direction outwardDirection) {
+        int x = REVERSE_BOUNDARY_BASE_CHUNK.getMinBlockX() + 8;
+        int z = REVERSE_BOUNDARY_BASE_CHUNK.getMinBlockZ() + 8;
+        return switch (outwardDirection) {
+            case NORTH -> new BlockPos(x, 64, REVERSE_BOUNDARY_BASE_CHUNK.getMinBlockZ());
+            case SOUTH -> new BlockPos(x, 64, REVERSE_BOUNDARY_BASE_CHUNK.getMaxBlockZ());
+            case WEST -> new BlockPos(REVERSE_BOUNDARY_BASE_CHUNK.getMinBlockX(), 64, z);
+            case EAST -> new BlockPos(REVERSE_BOUNDARY_BASE_CHUNK.getMaxBlockX(), 64, z);
             default -> throw new IllegalArgumentException("horizontal direction required");
         };
     }
