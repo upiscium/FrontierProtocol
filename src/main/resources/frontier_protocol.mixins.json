@@ -6,7 +6,10 @@
   "mixins": [
     "InitialSpawnOreSnapshotMixin",
     "OreFeatureSuppressionMixin",
-    "ScatteredOreFeatureSuppressionMixin"
+    "ScatteredOreFeatureSuppressionMixin",
+    "SporeFoliageOverrideSuppressionMixin",
+    "SporeFoliageSpreadSuppressionMixin",
+    "SporeMoundStructureSuppressionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
