@@ -1,6 +1,7 @@
 package dev.upiscium.frontierprotocol;
 
 import dev.upiscium.frontierprotocol.config.FrontierProtocolServerConfig;
+import dev.upiscium.frontierprotocol.ore.InitialSpawnOreSuppressionManager;
 import dev.upiscium.frontierprotocol.spawnprotection.SpawnProtectionManager;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.fml.config.ModConfig;
@@ -23,6 +24,9 @@ final class SuppressionConfigEvents {
     }
 
     static void queueRebuild(MinecraftServer server) {
-        server.execute(() -> SpawnProtectionManager.rebuild(server.overworld()));
+        server.execute(() -> {
+            SpawnProtectionManager.rebuild(server.overworld());
+            InitialSpawnOreSuppressionManager.rebuildSnapshot(server.overworld());
+        });
     }
 }

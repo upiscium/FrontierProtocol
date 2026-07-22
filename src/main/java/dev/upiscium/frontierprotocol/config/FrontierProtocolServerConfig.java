@@ -11,6 +11,12 @@ public final class FrontierProtocolServerConfig {
     public static final ModConfigSpec.IntValue SPAWN_PROTECTION_RADIUS_CHUNKS = BUILDER
             .comment("Initial spawn suppression radius in chunks. A radius of 2 covers 5x5 chunks.")
             .defineInRange("spawnProtectionRadiusChunks", 2, 0, 16);
+    public static final ModConfigSpec.BooleanValue INITIAL_SPAWN_ORE_SUPPRESSION_ENABLED = BUILDER
+            .comment("Suppress new standard ore feature placement around the initial world spawn.")
+            .define("initialSpawnOreSuppressionEnabled", true);
+    public static final ModConfigSpec.IntValue INITIAL_SPAWN_ORE_SUPPRESSION_RADIUS_CHUNKS = BUILDER
+            .comment("Initial spawn ore suppression radius in chunks. A radius of 2 covers 5x5 chunks.")
+            .defineInRange("initialSpawnOreSuppressionRadiusChunks", 2, 0, 16);
     public static final ModConfigSpec.IntValue TIER1_MINIMUM_RPM = BUILDER
             .comment("Minimum absolute rotational speed required by the Tier 1 Stabilizer.")
             .defineInRange("tier1MinimumRpm", 32, 1, 256);

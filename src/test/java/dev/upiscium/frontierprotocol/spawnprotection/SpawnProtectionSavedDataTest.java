@@ -12,6 +12,14 @@ import org.junit.jupiter.api.Test;
 
 class SpawnProtectionSavedDataTest {
     @Test
+    void repeatedInitializationKeepsOriginalCenter() {
+        SpawnProtectionSavedData data = new SpawnProtectionSavedData();
+        data.initialize(new ChunkPos(-8, 3));
+        data.initialize(new ChunkPos(42, 42));
+        assertEquals(new ChunkPos(-8, 3), data.centerChunk());
+    }
+
+    @Test
     void schemaTwoRoundTripPreservesOnlyInitialCenter() {
         SpawnProtectionSavedData original = new SpawnProtectionSavedData();
         original.initialize(new ChunkPos(-12, 9));
