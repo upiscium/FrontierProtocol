@@ -25,6 +25,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class InitialSpawnOreSuppressionGameTests {
     private static final int TEST_Y = 32;
     private static final int FILL_RADIUS = 8;
+    private static final ChunkPos PROTECTED_CHUNK = new ChunkPos(-100, -100);
 
     private InitialSpawnOreSuppressionGameTests() {}
 
@@ -54,11 +55,10 @@ public final class InitialSpawnOreSuppressionGameTests {
     }
 
     private static void assertFeaturePlacementPolicy(TestContext context) {
-        ChunkPos protectedChunk = new ChunkPos(-100, -100);
-        BlockPos oreOrigin = origin(protectedChunk, TEST_Y);
-        BlockPos scatteredOrigin = origin(protectedChunk, TEST_Y + 24);
-        BlockPos outsideOrigin = origin(new ChunkPos(protectedChunk.x + 2, protectedChunk.z), TEST_Y);
-        InitialSpawnOreSuppressionManager.publishProvisional(context.overworld(), protectedChunk, 0);
+        BlockPos oreOrigin = origin(PROTECTED_CHUNK, TEST_Y);
+        BlockPos scatteredOrigin = origin(PROTECTED_CHUNK, TEST_Y + 24);
+        BlockPos outsideOrigin = origin(outsideChunk(), TEST_Y);
+        InitialSpawnOreSuppressionManager.publishProvisional(context.overworld(), PROTECTED_CHUNK, 0);
 
         prepare(context.overworld(), oreOrigin, Blocks.STONE);
         prepare(context.overworld(), scatteredOrigin, Blocks.STONE);
@@ -122,9 +122,8 @@ public final class InitialSpawnOreSuppressionGameTests {
 
     private static void verifyDisabled(TestContext context) {
         try {
-            ChunkPos testChunk = new ChunkPos(-100, -100);
-            BlockPos origin = origin(testChunk, TEST_Y);
-            context.helper().assertFalse(isSuppressed(context.overworld(), testChunk),
+            BlockPos origin = origin(PROTECTED_CHUNK, TEST_Y);
+            context.helper().assertFalse(isSuppressed(context.overworld(), PROTECTED_CHUNK),
                     "disabled config did not fail open");
             prepare(context.overworld(), origin, Blocks.STONE);
             boolean placed = place(
@@ -173,10 +172,24 @@ public final class InitialSpawnOreSuppressionGameTests {
         return new BlockPos(chunk.getMinBlockX() + 8, y, chunk.getMinBlockZ() + 8);
     }
 
+    private static ChunkPos outsideChunk() {
+        return new ChunkPos(PROTECTED_CHUNK.x + 2, PROTECTED_CHUNK.z);
+    }
+
     private static void restore(TestContext context) {
         FrontierProtocolServerConfig.INITIAL_SPAWN_ORE_SUPPRESSION_ENABLED.set(context.originalEnabled());
         FrontierProtocolServerConfig.INITIAL_SPAWN_ORE_SUPPRESSION_RADIUS_CHUNKS.set(context.originalRadius());
         InitialSpawnOreSuppressionManager.rebuildSnapshot(context.overworld());
+        cleanup(context.overworld(), origin(PROTECTED_CHUNK, TEST_Y));
+        cleanup(context.overworld(), origin(PROTECTED_CHUNK, TEST_Y + 24));
+        cleanup(context.overworld(), origin(outsideChunk(), TEST_Y));
+        cleanup(context.nether(), origin(PROTECTED_CHUNK, TEST_Y));
+    }
+
+    private static void cleanup(ServerLevel level, BlockPos center) {
+        BlockPos.betweenClosedStream(center.offset(-FILL_RADIUS, -FILL_RADIUS, -FILL_RADIUS),
+                        center.offset(FILL_RADIUS, FILL_RADIUS, FILL_RADIUS))
+                .forEach(pos -> level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_NONE));
     }
 
     private record TestContext(

@@ -14,12 +14,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MinecraftServer.class)
 abstract class InitialSpawnOreSnapshotMixin {
+    // setSpawn ordinals: 0 is the debug spawn, 1 is the normal initial candidate, and 2 is the safe final spawn.
     @Redirect(
             method = "setInitialSpawn",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/level/storage/ServerLevelData;setSpawn(Lnet/minecraft/core/BlockPos;F)V",
-                    ordinal = 0),
+                    ordinal = 1),
             require = 1)
     private static void frontierProtocol$publishProvisionalSnapshot(
             ServerLevelData data,
@@ -29,7 +30,7 @@ abstract class InitialSpawnOreSnapshotMixin {
             ServerLevelData methodData,
             boolean generateBonusChest,
             boolean debug) {
-        InitialSpawnOreSuppressionManager.publishProvisional(level, new ChunkPos(spawn), debug ? 0 : 5);
+        InitialSpawnOreSuppressionManager.publishProvisional(level, new ChunkPos(spawn), 5);
         data.setSpawn(spawn, angle);
     }
 

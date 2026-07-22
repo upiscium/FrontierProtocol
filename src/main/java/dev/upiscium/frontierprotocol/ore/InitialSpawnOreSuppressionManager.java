@@ -1,5 +1,6 @@
 package dev.upiscium.frontierprotocol.ore;
 
+import dev.upiscium.frontierprotocol.FrontierProtocolMod;
 import dev.upiscium.frontierprotocol.config.FrontierProtocolServerConfig;
 import dev.upiscium.frontierprotocol.spawnprotection.SpawnProtectionSavedData;
 import net.minecraft.core.BlockPos;
@@ -18,7 +19,15 @@ public final class InitialSpawnOreSuppressionManager {
     public static void publishProvisional(ServerLevel level, ChunkPos center, int searchRadiusChunks) {
         requireServerThread(level);
         int configuredRadius = FrontierProtocolServerConfig.INITIAL_SPAWN_ORE_SUPPRESSION_RADIUS_CHUNKS.getAsInt();
-        publish(level.getServer(), center, Math.addExact(configuredRadius, searchRadiusChunks));
+        int provisionalRadius = Math.addExact(configuredRadius, searchRadiusChunks);
+        publish(level.getServer(), center, provisionalRadius);
+        if (FrontierProtocolServerConfig.DEBUG_LOGGING.get()) {
+            FrontierProtocolMod.LOGGER.info(
+                    "Published provisional initial-spawn ore snapshot at chunk [{}, {}] with radius {}",
+                    center.x,
+                    center.z,
+                    provisionalRadius);
+        }
     }
 
     public static void initializeFinalSnapshot(ServerLevel level, ChunkPos initialSpawn) {
@@ -26,6 +35,14 @@ public final class InitialSpawnOreSuppressionManager {
         SpawnProtectionSavedData data = SpawnProtectionSavedData.get(level);
         data.initialize(initialSpawn);
         rebuildSnapshot(level);
+        if (FrontierProtocolServerConfig.DEBUG_LOGGING.get()) {
+            ChunkPos center = data.centerChunk();
+            FrontierProtocolMod.LOGGER.info(
+                    "Published final initial-spawn ore snapshot at chunk [{}, {}] with radius {}",
+                    center.x,
+                    center.z,
+                    FrontierProtocolServerConfig.INITIAL_SPAWN_ORE_SUPPRESSION_RADIUS_CHUNKS.getAsInt());
+        }
     }
 
     public static void rebuildSnapshot(ServerLevel level) {
