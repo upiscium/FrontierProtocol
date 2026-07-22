@@ -178,6 +178,11 @@ public final class SuppressionGameTests {
                 "chunk outside the 5x5 area is suppressed");
         helper.assertTrue(service.getSources(overworld, center).contains(SpawnProtectionManager.SOURCE),
                 "spawn suppression source is missing");
+        SporeGameTestAssertions.assertProtoMutationBlocked(
+                helper,
+                overworld,
+                new BlockPos(center.getMinBlockX() + 8, 64, center.getMinBlockZ() + 8),
+                "initial spawn source did not block Proto CDU mutation");
     }
 
     private static void assertOverlapAndDimensions(

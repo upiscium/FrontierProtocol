@@ -5,6 +5,7 @@ import com.simibubi.create.api.stress.BlockStressValues;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import com.simibubi.create.content.kinetics.motor.CreativeMotorBlock;
 import dev.upiscium.frontierprotocol.FrontierProtocolMod;
+import dev.upiscium.frontierprotocol.SporeGameTestAssertions;
 import dev.upiscium.frontierprotocol.api.suppression.SuppressionSourceType;
 import dev.upiscium.frontierprotocol.config.FrontierProtocolServerConfig;
 import dev.upiscium.frontierprotocol.registry.ModBlockEntities;
@@ -113,6 +114,9 @@ public final class Tier1StabilizerGameTests {
                     "active Tier 1 did not suppress its chunk");
             context.helper().assertTrue(!service().isSuppressed(context.overworld(), new ChunkPos(chunk.x + 1, chunk.z)),
                     "Tier 1 suppressed an adjacent chunk");
+            SporeGameTestAssertions.assertProtoMutationBlocked(
+                    context.helper(), context.overworld(), sporeTarget(context.first()),
+                    "ACTIVE Tier 1 did not block Proto CDU mutation");
 
             context.overworld().setBlock(context.first().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             context.helper().runAfterDelay(3, () -> verifyGrace(context));
@@ -126,6 +130,9 @@ public final class Tier1StabilizerGameTests {
                     "power loss did not enter grace period");
             context.helper().assertTrue(service().isSuppressed(context.overworld(), new ChunkPos(context.first())),
                     "grace period did not retain suppression");
+            SporeGameTestAssertions.assertProtoMutationBlocked(
+                    context.helper(), context.overworld(), sporeTarget(context.first()),
+                    "GRACE_PERIOD Tier 1 did not block Proto CDU mutation");
             placeMotor(context.overworld(), context.first().west());
             context.helper().runAfterDelay(5, () -> verifyRecovered(context));
         });
@@ -148,6 +155,9 @@ public final class Tier1StabilizerGameTests {
                     "expired grace period did not become offline");
             context.helper().assertTrue(!service().isSuppressed(context.overworld(), new ChunkPos(context.first())),
                     "expired grace period retained suppression");
+            SporeGameTestAssertions.assertProtoMutationAllowed(
+                    context.helper(), context.overworld(), sporeTarget(context.first()),
+                    "OFFLINE Tier 1 still blocked Proto CDU mutation");
 
             placeMotor(context.overworld(), context.first().west());
             placeDevice(context.overworld(), context.second());
@@ -162,6 +172,9 @@ public final class Tier1StabilizerGameTests {
             ChunkPos chunk = new ChunkPos(context.first());
             context.helper().assertTrue(tierOneSourceCount(context.overworld(), chunk) == 2,
                     "two Tier 1 devices did not register independent sources");
+            SporeGameTestAssertions.assertProtoMutationBlocked(
+                    context.helper(), context.overworld(), sporeTarget(context.first()),
+                    "overlapping Tier 1 sources did not block Proto CDU mutation");
             blockEntity(context.overworld(), context.first()).markVirtual();
             context.helper().runAfterDelay(1, () -> verifyVirtualSourceRemoved(context));
         });
@@ -179,6 +192,9 @@ public final class Tier1StabilizerGameTests {
                     "virtual Tier 1 removed the neighboring device source");
             context.helper().assertTrue(service().isSuppressed(context.overworld(), chunk),
                     "virtual Tier 1 removed overlapping suppression");
+            SporeGameTestAssertions.assertProtoMutationBlocked(
+                    context.helper(), context.overworld(), sporeTarget(context.second()),
+                    "removing one overlapping source allowed Proto CDU mutation");
             context.overworld().destroyBlock(context.first(), true);
             context.helper().runAfterDelay(2, () -> verifyOneOverlapRemains(context));
         });
@@ -197,6 +213,9 @@ public final class Tier1StabilizerGameTests {
             oldBlockEntity.onChunkUnloaded();
             context.helper().assertTrue(!service().isSuppressed(context.overworld(), chunk),
                     "chunk unload did not unregister Tier 1 suppression");
+            SporeGameTestAssertions.assertProtoMutationAllowed(
+                    context.helper(), context.overworld(), sporeTarget(context.second()),
+                    "removing both overlapping sources still blocked Proto CDU mutation");
 
             BlockState state = context.overworld().getBlockState(context.second());
             context.overworld().removeBlockEntity(context.second());
@@ -286,6 +305,12 @@ public final class Tier1StabilizerGameTests {
             context.helper().assertTrue(!service().isSuppressed(
                             context.nether(), new ChunkPos(negativeChunk.x + 1, negativeChunk.z)),
                     "negative-coordinate Tier 1 suppressed an adjacent chunk");
+            SporeGameTestAssertions.assertProtoMutationBlocked(
+                    context.helper(), context.nether(), sporeTarget(context.netherDevice()),
+                    "negative-coordinate Nether Tier 1 did not block Proto CDU mutation");
+            SporeGameTestAssertions.assertProtoMutationAllowed(
+                    context.helper(), context.overworld(), sporeTarget(context.netherDevice()),
+                    "Nether Tier 1 blocked Proto CDU mutation in the Overworld");
 
             netherBlockEntity.onChunkUnloaded();
             context.helper().assertTrue(!service().isSuppressed(context.nether(), negativeChunk),
@@ -340,6 +365,10 @@ public final class Tier1StabilizerGameTests {
     private static Tier1StabilizerBlockEntity blockEntity(ServerLevel level, BlockPos pos) {
         if (level.getBlockEntity(pos) instanceof Tier1StabilizerBlockEntity blockEntity) return blockEntity;
         throw new IllegalStateException("Tier 1 block entity is missing at " + pos);
+    }
+
+    private static BlockPos sporeTarget(BlockPos device) {
+        return device.above(4);
     }
 
     private static long tierOneSourceCount(ServerLevel level, ChunkPos chunk) {
