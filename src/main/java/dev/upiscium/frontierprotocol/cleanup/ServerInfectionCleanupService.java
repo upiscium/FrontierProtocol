@@ -4,15 +4,19 @@ import dev.upiscium.frontierprotocol.FrontierProtocolMod;
 import dev.upiscium.frontierprotocol.api.suppression.SuppressionSourceId;
 import dev.upiscium.frontierprotocol.compat.spore.SporeCleanupPolicy;
 import dev.upiscium.frontierprotocol.config.FrontierProtocolServerConfig;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -41,14 +45,24 @@ public final class ServerInfectionCleanupService {
                 index.registerActive(sourceId, coveredChunks, activationMode);
         InfectionCleanupSavedData data = InfectionCleanupSavedData.get(level);
 
-        for (long chunkKey : changes.newlyInactive()) {
-            if (!index.hasRegistrationCovering(chunkKey)) {
-                data.markRestartRequired(chunkKey, level.getMinSection(), level.getSectionsCount());
-            }
+        for (long chunkKey : changes.noLongerRegistered()) {
+            data.markRestartRequired(chunkKey, level.getMinSection(), level.getSectionsCount());
         }
-        for (long chunkKey : changes.newlyActive()) {
-            CleanupProgress progress =
-                    data.activate(chunkKey, level.getMinSection(), level.getSectionsCount(), activationMode);
+        for (long chunkKey : changes.newPassChunks()) {
+            data.activate(
+                    chunkKey,
+                    level.getMinSection(),
+                    level.getSectionsCount(),
+                    CleanupActivationMode.NEW_PASS);
+            index.resumeIncomplete(chunkKey);
+        }
+        for (long chunkKey : changes.globallyNewlyActive()) {
+            if (changes.newPassChunks().contains(chunkKey)) continue;
+            CleanupProgress progress = data.activate(
+                    chunkKey,
+                    level.getMinSection(),
+                    level.getSectionsCount(),
+                    CleanupActivationMode.RESUME);
             if (progress.cursor().completed()) {
                 index.suspendCompleted(chunkKey);
             } else {
@@ -78,31 +92,45 @@ public final class ServerInfectionCleanupService {
     }
 
     public void tick(MinecraftServer server) {
+        runTick(server, CleanupSettings.fromConfig(), ServerLevel::setBlock, false);
+    }
+
+    CleanupTickResult tick(
+            MinecraftServer server, CleanupSettings settings, BlockMutator blockMutator) {
+        return runTick(server, settings, blockMutator, true);
+    }
+
+    private CleanupTickResult runTick(
+            MinecraftServer server,
+            CleanupSettings settings,
+            BlockMutator blockMutator,
+            boolean collectInspectedDimensions) {
         requireServerThread(server);
         long started = System.nanoTime();
         DebugCounters counters = debugCounters.computeIfAbsent(server, ignored -> new DebugCounters());
-        if (!FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.get()) {
+        if (!settings.enabled()) {
             logIfDue(server, counters, null, System.nanoTime() - started);
-            return;
+            return CleanupTickResult.empty();
         }
 
-        int interval = FrontierProtocolServerConfig.TIER1_CLEANUP_INTERVAL_TICKS.get();
-        int sourceInspections = FrontierProtocolServerConfig.TIER1_CLEANUP_INSPECTION_BUDGET_PER_CYCLE.get();
-        int sourceMutations = FrontierProtocolServerConfig.TIER1_CLEANUP_MUTATION_BUDGET_PER_CYCLE.get();
         for (Map.Entry<ServerLevel, DimensionCleanupIndex> entry : indexes.entrySet()) {
             if (entry.getKey().getServer() == server) {
                 entry.getValue()
-                        .refreshSourceBudgets(server.getTickCount(), interval, sourceInspections, sourceMutations);
+                        .refreshSourceBudgets(
+                                server.getTickCount(),
+                                settings.sourceIntervalTicks(),
+                                settings.sourceInspectionBudget(),
+                                settings.sourceMutationBudget());
             }
         }
 
-        CleanupBudget global = new CleanupBudget(
-                FrontierProtocolServerConfig.CLEANUP_GLOBAL_INSPECTION_BUDGET_PER_TICK.get(),
-                FrontierProtocolServerConfig.CLEANUP_GLOBAL_MUTATION_BUDGET_PER_TICK.get());
+        CleanupBudget global =
+                new CleanupBudget(settings.globalInspectionBudget(), settings.globalMutationBudget());
         int activeTasks = activeTaskCount(server);
         Set<TaskIdentity> attemptedWithoutProgress = new HashSet<>();
         Map<ServerLevel, Set<Long>> blockedTasks = new IdentityHashMap<>();
         RoundRobinCleanupQueue<ServerLevel> dimensions = dimensionsByServer.get(server);
+        List<ResourceKey<Level>> inspectedDimensions = collectInspectedDimensions ? new ArrayList<>() : List.of();
 
         while (global.canInspect()
                 && activeTasks > 0
@@ -140,9 +168,12 @@ public final class ServerInfectionCleanupService {
             }
             counters.loadedTaskVisits++;
 
-            ProcessResult result = inspectOne(level, chunk, chunkKey, index, sponsor, global);
+            ProcessResult result = inspectOne(level, chunk, chunkKey, index, sponsor, global, blockMutator);
             counters.inspectedBlocks += result.inspected();
             counters.mutatedBlocks += result.mutated();
+            if (collectInspectedDimensions && result.inspected() > 0) {
+                inspectedDimensions.add(level.dimension());
+            }
             if (result.completed()) {
                 counters.completedTasks++;
                 index.suspendCompleted(chunkKey);
@@ -162,6 +193,10 @@ public final class ServerInfectionCleanupService {
         }
 
         logIfDue(server, counters, global, System.nanoTime() - started);
+        return new CleanupTickResult(
+                settings.globalInspectionBudget() - global.inspectionsRemaining(),
+                settings.globalMutationBudget() - global.mutationsRemaining(),
+                List.copyOf(inspectedDimensions));
     }
 
     public void clearRuntime(ServerLevel level) {
@@ -192,7 +227,8 @@ public final class ServerInfectionCleanupService {
             long chunkKey,
             DimensionCleanupIndex index,
             DimensionCleanupIndex.SourceRegistration sponsor,
-            CleanupBudget global) {
+            CleanupBudget global,
+            BlockMutator blockMutator) {
         InfectionCleanupSavedData data = InfectionCleanupSavedData.get(level);
         CleanupProgress progress = data.progress(chunkKey, level.getMinSection(), level.getSectionsCount());
         CleanupCursor cursor = progress.cursor();
@@ -226,7 +262,7 @@ public final class ServerInfectionCleanupService {
         if (!global.canMutate() || !sponsor.budget().canMutate()) {
             return new ProcessResult(1, 0, false, true, false);
         }
-        if (!level.setBlock(pos, replacement.orElseThrow(), CLEANUP_UPDATE_FLAGS)) {
+        if (!blockMutator.setBlock(level, pos, replacement.orElseThrow(), CLEANUP_UPDATE_FLAGS)) {
             return new ProcessResult(1, 0, false, true, false);
         }
 
@@ -314,6 +350,46 @@ public final class ServerInfectionCleanupService {
     }
 
     private record TaskIdentity(ServerLevel level, long chunkKey) {}
+
+    @FunctionalInterface
+    interface BlockMutator {
+        boolean setBlock(ServerLevel level, BlockPos pos, BlockState state, int flags);
+    }
+
+    record CleanupSettings(
+            boolean enabled,
+            int globalInspectionBudget,
+            int globalMutationBudget,
+            int sourceIntervalTicks,
+            int sourceInspectionBudget,
+            int sourceMutationBudget) {
+        CleanupSettings {
+            if (globalInspectionBudget < 0
+                    || globalMutationBudget < 0
+                    || sourceInspectionBudget < 0
+                    || sourceMutationBudget < 0
+                    || sourceIntervalTicks <= 0) {
+                throw new IllegalArgumentException("Cleanup settings contain an invalid budget or interval");
+            }
+        }
+
+        static CleanupSettings fromConfig() {
+            return new CleanupSettings(
+                    FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.get(),
+                    FrontierProtocolServerConfig.CLEANUP_GLOBAL_INSPECTION_BUDGET_PER_TICK.get(),
+                    FrontierProtocolServerConfig.CLEANUP_GLOBAL_MUTATION_BUDGET_PER_TICK.get(),
+                    FrontierProtocolServerConfig.TIER1_CLEANUP_INTERVAL_TICKS.get(),
+                    FrontierProtocolServerConfig.TIER1_CLEANUP_INSPECTION_BUDGET_PER_CYCLE.get(),
+                    FrontierProtocolServerConfig.TIER1_CLEANUP_MUTATION_BUDGET_PER_CYCLE.get());
+        }
+    }
+
+    record CleanupTickResult(
+            int inspected, int mutated, List<ResourceKey<Level>> inspectedDimensions) {
+        private static CleanupTickResult empty() {
+            return new CleanupTickResult(0, 0, List.of());
+        }
+    }
 
     private record ProcessResult(
             int inspected, int mutated, boolean completed, boolean blocked, boolean advanced) {}

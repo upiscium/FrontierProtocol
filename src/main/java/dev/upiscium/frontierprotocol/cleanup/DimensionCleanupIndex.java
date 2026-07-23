@@ -17,16 +17,19 @@ final class DimensionCleanupIndex {
     public ActivationChanges registerActive(
             SuppressionSourceId sourceId, Set<ChunkPos> coveredChunks, CleanupActivationMode activationMode) {
         SourceRegistration previous = registrations.get(sourceId);
-        Set<Long> previousActive = previous != null && previous.active() ? previous.chunkKeys() : Set.of();
+        Set<Long> previousRegistered = previous == null ? Set.of() : previous.chunkKeys();
+        Set<Long> previousActive = previous != null && previous.active() ? previousRegistered : Set.of();
         Set<Long> nextKeys = chunkKeys(coveredChunks);
-        Set<Long> newlyInactive = new LinkedHashSet<>();
-        Set<Long> newlyActive = new LinkedHashSet<>();
+        Set<Long> globallyNewlyActive = new LinkedHashSet<>();
+        Set<Long> ignoredInactive = new LinkedHashSet<>();
+        boolean sourceStartsNewPass = (previous == null || !previous.active())
+                && activationMode == CleanupActivationMode.NEW_PASS;
 
         for (long key : previousActive) {
-            if (!nextKeys.contains(key)) removeActiveSource(key, sourceId, newlyInactive);
+            if (!nextKeys.contains(key)) removeActiveSource(key, sourceId, ignoredInactive);
         }
         for (long key : nextKeys) {
-            if (!previousActive.contains(key)) addActiveSource(key, sourceId, newlyActive);
+            if (!previousActive.contains(key)) addActiveSource(key, sourceId, globallyNewlyActive);
         }
 
         SourceRegistration next = previous == null
@@ -34,7 +37,13 @@ final class DimensionCleanupIndex {
                 : previous.withCoverage(nextKeys, true);
         next.activationMode = activationMode;
         registrations.put(sourceId, next);
-        return new ActivationChanges(Set.copyOf(newlyActive), Set.copyOf(newlyInactive));
+
+        Set<Long> noLongerRegistered = new LinkedHashSet<>(previousRegistered);
+        noLongerRegistered.removeAll(nextKeys);
+        noLongerRegistered.removeIf(this::hasRegistrationCoveringInternal);
+        Set<Long> newPassChunks = sourceStartsNewPass ? nextKeys : Set.of();
+        return new ActivationChanges(
+                Set.copyOf(globallyNewlyActive), Set.copyOf(newPassChunks), Set.copyOf(noLongerRegistered));
     }
 
     public Set<Long> pause(SuppressionSourceId sourceId) {
@@ -83,6 +92,11 @@ final class DimensionCleanupIndex {
 
     public int activeTaskCount() {
         return tasks.size();
+    }
+
+    public int activeSourceCount(long chunkKey) {
+        Set<SuppressionSourceId> sources = activeSourcesByChunk.get(chunkKey);
+        return sources == null ? 0 : sources.size();
     }
 
     public int completedActiveTaskCount() {
@@ -168,7 +182,13 @@ final class DimensionCleanupIndex {
         return false;
     }
 
-    record ActivationChanges(Set<Long> newlyActive, Set<Long> newlyInactive) {}
+    /**
+     * @param globallyNewlyActive chunks whose active-source set changed from empty to non-empty
+     * @param newPassChunks every covered chunk of a source that transitioned from absent/paused through NEW_PASS
+     * @param noLongerRegistered removed coverage that no remaining active or paused source registration covers
+     */
+    record ActivationChanges(
+            Set<Long> globallyNewlyActive, Set<Long> newPassChunks, Set<Long> noLongerRegistered) {}
 
     static final class SourceRegistration {
         private final SuppressionSourceId sourceId;
