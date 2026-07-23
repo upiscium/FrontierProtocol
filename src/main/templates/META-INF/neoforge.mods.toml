@@ -51,6 +51,8 @@ initial-spawn protection, and optional initial-spawn ore-generation suppression.
 Integrates with exactly Fungal Infection: Spore 2.2.0j and incrementally removes
 audited removable infection foliage while Tier 1 is active. It does not restore
 infected terrain, destroy nests, or affect hostile mob movement or combat.
+Includes a minimal Create production chain for Stabilization Compound,
+Stabilization Cells, and the Tier 1 Stabilizer.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.

@@ -25,3 +25,7 @@ R6 uses exactly one Spore material: `spore:biomass_block`.
 ## Rejected first candidate
 
 `spore:biomass` is a registered standalone `com.Harbinger.Spore.Sitems.Biomass` item. It is craftable from renewable vanilla meat and Spore body parts, but it is not a BlockItem and therefore does not satisfy the explicit R6 first-candidate condition. R6 selects `spore:biomass_block` instead and does not accept any other Spore recipe input.
+
+## Production integration
+
+The generated `frontier_protocol:mixing/stabilization_compound` recipe requires one exact `spore:biomass_block`; it does not use a broad Spore tag. The server RecipeManager GameTest verifies both the exact Registry ID and BlockItem form against the loaded Spore 2.2.0j registry.

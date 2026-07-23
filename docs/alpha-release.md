@@ -27,15 +27,18 @@ Spore 2.2.0j is the artifact audited by SHA-256 in `docs/spore-integration-audit
 
 - The persisted initial Overworld spawn center supplies permanent suppression, using a configurable radius of two chunks by default.
 - Fresh-world spawn search publishes a provisional center before normal ore placement and replaces it with the final center when spawn selection completes.
-- The Tier 1 Stabilizer uses a real Create kinetic network and Stabilization Compound. It suppresses its chunk while ACTIVE and during its configured grace period, then unregisters when OFFLINE, unloaded, removed, or destroyed.
+- The Tier 1 Stabilizer uses a real Create kinetic network and finished Stabilization Cells. It consumes one Cell when beginning an operating duration, suppresses its chunk while ACTIVE and during its configured grace period, then unregisters when OFFLINE, unloaded, removed, or destroyed.
 - While ACTIVE, Tier 1 incrementally removes audited removable Spore foliage from its loaded placement chunk under global and per-source budgets. Cleanup pauses during grace and resumes from its persisted cursor after power recovery or reload.
 - Multiple sources can cover the same chunk without premature removal, and identical chunk coordinates remain independent across dimensions.
 - Audited Spore environmental spread, offset foliage and branch writes, configured conversion, falling wood conversion, HiveTumor/Proto CDU replacement, and Mound additions query the actual mutation target before writing.
+- Stabilization Compound is produced by heated Create Mixing and is only an intermediate. A Deployer seals it into a Cell, and Mechanical Crafters produce the Tier 1 Stabilizer.
 
 ## Alpha boundaries
 
 - Existing infected terrain, structures, nests, active hazards, and Block Entities are not restored, removed, replaced, or frozen. Cleanup is an explicit allowlist of audited non-Block-Entity foliage and replaces it only with air or retained water.
-- Tier 1 and Stabilization Compound have no survival recipes or creative-tab entries in this alpha. Use `/give @s frontier_protocol:tier_1_stabilizer` and `/give @s frontier_protocol:stabilization_compound` for testing.
+- Tier 1 and Stabilization Cells have Create production recipes. Compound cannot power Tier 1 directly; the bundled consumable tag accepts only Cells, while datapacks may explicitly extend that public tag.
+- Recipe quantities and processing requirements are provisional R6 balance and may change in R9.
+- Tier 1 block models, Compound, and Cell use explicit placeholder models and vanilla textures. They must be replaced before public distribution and are not an R6 completion blocker.
 - Hostile mob movement, combat, block breaking, and explosions are not containment responsibilities.
 - Spore random ticks, scheduled ticks, and existing infected block-entity state continue normally.
 - World-generation features outside the selected runtime Spore spread paths are not globally intercepted.
