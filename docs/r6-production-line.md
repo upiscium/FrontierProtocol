@@ -2,6 +2,8 @@
 
 R6 adds one finished consumable and exactly three Create recipes. It does not add Tier 2, Tier 3, empty or spent containers, a GUI, Ponder scenes, or custom logistics blocks. Recipe values are provisional and are reserved for balancing in R9.
 
+The consumable and production design is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md).
+
 ## Content contract
 
 - `frontier_protocol:stabilization_compound` is the only Frontier Protocol production intermediate. A Stabilizer rejects it.
@@ -55,10 +57,10 @@ There are no normal crafting, stonecutting, cooking, smithing, or other alternat
 
 The intended line uses a heated Basin and Mechanical Mixer for Compound, a Belt or Depot with a Deployer for Cell sealing, and a 3 by 3 Mechanical Crafter arrangement for Tier 1. Standard Create funnels, chutes, belts, or another normal NeoForge item-capability connection can supply Cells to Tier 1. Compound is rejected at the same capability boundary.
 
-GameTests verify the loaded Create recipe serializers, exact ingredients and pattern, output counts, heat and fluid contract, absence of alternate recipes, item-capability Cell insertion, Compound rejection, and one-at-a-time consumption. A complete physical Create-machine execution and continuous funnel/chute supply smoke test was not performed in the headless test environment and remains a manual development-world check.
+GameTests verify the loaded Create recipe serializers, exact ingredients and pattern, output counts, heat and fluid contract, absence of alternate recipes, item-capability Cell insertion, Compound rejection, and one-at-a-time consumption. The `r6_create_equipment` GameTest also executes Compound production in a real heated Basin and Mechanical Mixer and verifies that the four-item output reaches the structure's output chest through its Create logistics. Physical Deployer execution, Mechanical Crafter execution, and continuous funnel/chute Cell supply remain manual development-world checks; the implementation is therefore described as designed for full automation rather than fully automation-verified.
 
 ## JEI and EMI
 
-Frontier Protocol has no direct JEI or EMI dependency. The recipes use Create's standard Mixing, Deploying, and Mechanical Crafting serializers, so a compatible viewer can discover them through Create's categories without custom integration. RecipeManager tests confirm the category-defining serializers, inputs, 250 mB water, heated requirement, outputs, and absence of normal-crafting duplicates.
+Frontier Protocol has no required JEI or EMI dependency. The recipes use Create's standard Mixing, Deploying, and Mechanical Crafting serializers, so a compatible viewer discovers them through Create's categories without custom integration. RecipeManager tests confirm the category-defining serializers, inputs, 250 mB water, heated requirement, outputs, and absence of normal-crafting duplicates.
 
-JEI/EMI was not installed in the current development runtime, and no graphical display was available. Visual category rendering and click-through navigation were therefore not executed and are not reported as successful.
+For development verification, `-PenableRecipeViewerRuntime` adds JEI `19.39.0.370` to `localRuntime` only; it does not change published mod metadata. A graphical Xvfb development world confirmed the Compound Mixing view, Compound-to-Cell Deploying view, and Tier 1 Mechanical Crafting view. The Mixing view displayed the heated requirement, audited item inputs, and water input. EMI was not tested.

@@ -11,6 +11,8 @@ The candidate artifact produced by the build is `frontier_protocol-0.1.0-alpha.1
 Public distribution of 0.1.0-alpha.1 has been deferred.
 This version is currently used for internal testing and integration validation only.
 
+The accepted Stabilizer consumable and production model is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md).
+
 ## Compatibility matrix
 
 | Component | Supported version |

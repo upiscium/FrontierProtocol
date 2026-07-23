@@ -16,7 +16,7 @@ All notable changes to Frontier Protocol are documented in this file.
 - Added Stabilization Cell as the common finished Stabilizer consumable.
 - Changed Stabilization Compound into a production intermediate.
 - Added Create Mixing, Deploying, and Mechanical Crafting production recipes.
-- Added a fully automatable Tier 1 operating-supply chain.
+- Added a Tier 1 operating-supply chain designed for full Create automation.
 
 ### Compatibility
 

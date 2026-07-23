@@ -5,9 +5,11 @@ import com.simibubi.create.AllBlocks;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.content.processing.recipe.HeatCondition;
 import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
+import com.simibubi.create.infrastructure.gametest.CreateGameTestHelper;
 import dev.upiscium.frontierprotocol.FrontierProtocolMod;
 import dev.upiscium.frontierprotocol.registry.ModItems;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -24,8 +26,11 @@ import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 
 @GameTestHolder(FrontierProtocolMod.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -105,6 +110,41 @@ public final class ProductionRecipeGameTests {
                 "audited Spore input has an unexpected registry ID");
         assertNoProductionBypasses(helper, level, recipes);
         helper.succeed();
+    }
+
+    @GameTest(
+            template = "r6_physical_mixing",
+            batch = "r6_create_equipment",
+            timeoutTicks = 400)
+    public static void compoundRunsThroughPhysicalMixerAndOutputLogistics(GameTestHelper gameTestHelper) {
+        CreateGameTestHelper helper = CreateGameTestHelper.of(gameTestHelper);
+        BlockPos basin = findBlock(helper, AllBlocks.BASIN.get());
+        IItemHandler items = helper.itemStorageAt(basin);
+        helper.assertTrue(items != null, "physical Basin item storage is unavailable");
+        insert(helper, items, new ItemStack(Sitems.BIOMASS_BLOCK.get()));
+        insert(helper, items, new ItemStack(Items.REDSTONE));
+        insert(helper, items, new ItemStack(Items.CHARCOAL));
+
+        IFluidHandler fluids = helper.fluidStorageAt(basin);
+        helper.assertTrue(fluids != null, "physical Basin fluid storage is unavailable");
+        int filled = fluids.fill(new FluidStack(Fluids.WATER, 250), IFluidHandler.FluidAction.EXECUTE);
+        helper.assertTrue(filled == 250, "physical Basin did not accept exactly 250 mB water");
+
+        helper.pullLever(new BlockPos(2, 3, 2));
+        helper.succeedWhen(() -> helper.assertContainerContains(
+                new BlockPos(7, 3, 1), new ItemStack(ModItems.STABILIZATION_COMPOUND.get(), 4)));
+    }
+
+    private static BlockPos findBlock(CreateGameTestHelper helper, net.minecraft.world.level.block.Block block) {
+        for (BlockPos pos : BlockPos.betweenClosed(0, 0, 0, 10, 10, 10)) {
+            if (helper.getBlockState(pos).is(block)) return pos.immutable();
+        }
+        throw new IllegalStateException("missing physical Create block " + block);
+    }
+
+    private static void insert(GameTestHelper helper, IItemHandler handler, ItemStack stack) {
+        ItemStack remainder = ItemHandlerHelper.insertItemStacked(handler, stack, false);
+        helper.assertTrue(remainder.isEmpty(), "physical Basin rejected input " + stack);
     }
 
     private static Recipe<?> requireRecipe(
