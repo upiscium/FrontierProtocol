@@ -29,6 +29,24 @@ public final class FrontierProtocolServerConfig {
     public static final ModConfigSpec.IntValue TIER1_CONSUMABLE_DURATION_TICKS = BUILDER
             .comment("Active ticks supplied by one Tier 1 stabilization compound.")
             .defineInRange("tier1ConsumableDurationTicks", 6000, 1, 72000);
+    public static final ModConfigSpec.BooleanValue PROGRESSIVE_CLEANUP_ENABLED = BUILDER
+            .comment("Enable budgeted cleanup of audited removable infection foliage.")
+            .define("progressiveCleanupEnabled", true);
+    public static final ModConfigSpec.IntValue CLEANUP_GLOBAL_INSPECTION_BUDGET_PER_TICK = BUILDER
+            .comment("Maximum cleanup BlockState inspections across all dimensions per server tick.")
+            .defineInRange("cleanupGlobalInspectionBudgetPerTick", 512, 1, 65536);
+    public static final ModConfigSpec.IntValue CLEANUP_GLOBAL_MUTATION_BUDGET_PER_TICK = BUILDER
+            .comment("Maximum cleanup block replacements across all dimensions per server tick.")
+            .defineInRange("cleanupGlobalMutationBudgetPerTick", 16, 1, 4096);
+    public static final ModConfigSpec.IntValue TIER1_CLEANUP_INTERVAL_TICKS = BUILDER
+            .comment("Ticks between cleanup budget refreshes for each Tier 1 source.")
+            .defineInRange("tier1CleanupIntervalTicks", 20, 1, 1200);
+    public static final ModConfigSpec.IntValue TIER1_CLEANUP_INSPECTION_BUDGET_PER_CYCLE = BUILDER
+            .comment("Maximum inspections sponsored by one Tier 1 source per cleanup cycle.")
+            .defineInRange("tier1CleanupInspectionBudgetPerCycle", 128, 1, 8192);
+    public static final ModConfigSpec.IntValue TIER1_CLEANUP_MUTATION_BUDGET_PER_CYCLE = BUILDER
+            .comment("Maximum replacements sponsored by one Tier 1 source per cleanup cycle.")
+            .defineInRange("tier1CleanupMutationBudgetPerCycle", 4, 1, 512);
     public static final ModConfigSpec.BooleanValue DEBUG_LOGGING = BUILDER.define("debugLogging", false);
     public static final ModConfigSpec SPEC = BUILDER.build();
 
