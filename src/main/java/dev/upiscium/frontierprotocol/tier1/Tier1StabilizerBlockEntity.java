@@ -171,6 +171,15 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
     }
 
     private void pauseCleanup(ServerLevel serverLevel) {
+        if (cleanupRegistration == CleanupRegistration.NONE && resumeCleanupOnActivation) {
+            ServerInfectionCleanupService.INSTANCE.registerActiveSource(
+                    serverLevel,
+                    Tier1SuppressionSource.at(worldPosition).id(),
+                    Set.of(new ChunkPos(worldPosition)),
+                    CleanupActivationMode.RESUME);
+            cleanupRegistration = CleanupRegistration.ACTIVE;
+            resumeCleanupOnActivation = false;
+        }
         if (cleanupRegistration != CleanupRegistration.ACTIVE) return;
         ServerInfectionCleanupService.INSTANCE.pauseSource(
                 serverLevel, Tier1SuppressionSource.at(worldPosition).id());

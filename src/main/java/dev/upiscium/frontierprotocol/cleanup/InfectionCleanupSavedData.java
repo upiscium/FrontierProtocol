@@ -74,6 +74,13 @@ public final class InfectionCleanupSavedData extends SavedData {
         return Map.copyOf(progressByChunk);
     }
 
+    void restoreSnapshot(Map<Long, CleanupProgress> snapshot) {
+        if (progressByChunk.equals(snapshot)) return;
+        progressByChunk.clear();
+        progressByChunk.putAll(snapshot);
+        setDirty();
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putInt("schemaVersion", SCHEMA_VERSION);

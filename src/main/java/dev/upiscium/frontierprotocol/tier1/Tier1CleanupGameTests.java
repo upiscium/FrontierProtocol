@@ -11,6 +11,7 @@ import dev.upiscium.frontierprotocol.cleanup.ServerInfectionCleanupService;
 import dev.upiscium.frontierprotocol.config.FrontierProtocolServerConfig;
 import dev.upiscium.frontierprotocol.registry.ModBlocks;
 import dev.upiscium.frontierprotocol.registry.ModItems;
+import dev.upiscium.frontierprotocol.suppression.ServerInfectionSuppressionService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -75,6 +76,192 @@ public final class Tier1CleanupGameTests {
             placeMotor(level, first.west());
             placeMotor(level, second.west());
             helper.runAfterDelay(12, () -> verifyOverlappingCleanup(context));
+        });
+    }
+
+    @GameTest(template = "empty", batch = "tier1_cleanup_grace_reload", timeoutTicks = 200)
+    public static void graceReloadRestoresPausedCleanupRegistration(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel().getServer().overworld();
+        BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        ChunkPos chunk = new ChunkPos(origin);
+        BlockPos device = new BlockPos(chunk.getMinBlockX() + 8, origin.getY() + 1, chunk.getMinBlockZ() + 8);
+        BlockPos target = new BlockPos(chunk.getMinBlockX() + 2, 64, chunk.getMinBlockZ() + 2);
+        TestContext context = new TestContext(helper, level, device, null, target, ConfigSnapshot.capture());
+
+        runStage(context, () -> {
+            configureCleanupTest();
+            FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(20);
+            ServerInfectionCleanupService.INSTANCE.clearRuntime(level.getServer());
+            placeDevice(level, device);
+            insertCompound(level, device, 2, helper);
+            placeMotor(level, device.west());
+            helper.runAfterDelay(10, () -> enterGraceForReload(context));
+        });
+    }
+
+    @GameTest(template = "empty", batch = "tier1_cleanup_grace_overlap_reload", timeoutTicks = 200)
+    public static void graceOverlapReloadKeepsPausedCoverageRegistered(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel().getServer().overworld();
+        BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        ChunkPos chunk = new ChunkPos(origin);
+        BlockPos first = new BlockPos(chunk.getMinBlockX() + 5, origin.getY() + 1, chunk.getMinBlockZ() + 8);
+        BlockPos second = new BlockPos(chunk.getMinBlockX() + 11, origin.getY() + 1, chunk.getMinBlockZ() + 8);
+        BlockPos target = new BlockPos(chunk.getMinBlockX() + 2, 64, chunk.getMinBlockZ() + 2);
+        TestContext context = new TestContext(helper, level, first, second, target, ConfigSnapshot.capture());
+
+        runStage(context, () -> {
+            configureCleanupTest();
+            FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(20);
+            FrontierProtocolServerConfig.CLEANUP_GLOBAL_INSPECTION_BUDGET_PER_TICK.set(512);
+            FrontierProtocolServerConfig.TIER1_CLEANUP_INSPECTION_BUDGET_PER_CYCLE.set(128);
+            ServerInfectionCleanupService.INSTANCE.clearRuntime(level.getServer());
+            placeDevice(level, first);
+            placeDevice(level, second);
+            insertCompound(level, first, 2, helper);
+            insertCompound(level, second, 2, helper);
+            placeMotor(level, first.west());
+            placeMotor(level, second.west());
+            helper.runAfterDelay(10, () -> enterGraceForOverlapReload(context));
+        });
+    }
+
+    private static void enterGraceForReload(TestContext context) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE,
+                    "Tier 1 was not active before GRACE reload test");
+            context.level().setBlock(context.first().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            context.helper().runAfterDelay(3, () -> reloadGraceWithEmptyRuntime(context));
+        });
+    }
+
+    private static void reloadGraceWithEmptyRuntime(TestContext context) {
+        runStage(context, () -> {
+            Tier1StabilizerBlockEntity blockEntity = blockEntity(context.level(), context.first());
+            context.helper().assertTrue(
+                    blockEntity.status() == Tier1StabilizerStatus.GRACE_PERIOD,
+                    "Tier 1 did not enter GRACE before runtime clear");
+            placeRemovable(context.level(), context.target());
+            CleanupProgress partial = setCursor(
+                    context.level(), new ChunkPos(context.first()), context.target());
+            CompoundTag saved = blockEntity.saveWithFullMetadata(context.level().registryAccess());
+
+            ServerInfectionCleanupService.INSTANCE.clearRuntime(context.level().getServer());
+            reloadBlockEntity(context.level(), context.first(), saved);
+            context.helper().runAfterDelay(3, () -> verifyGraceReloadPaused(context, partial));
+        });
+    }
+
+    private static void verifyGraceReloadPaused(TestContext context, CleanupProgress partial) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.GRACE_PERIOD,
+                    "reloaded GRACE Tier 1 changed status");
+            context.helper().assertTrue(
+                    ServerInfectionSuppressionService.INSTANCE.isSuppressed(
+                            context.level(), new ChunkPos(context.first())),
+                    "reloaded GRACE Tier 1 lost suppression");
+            context.helper().assertTrue(
+                    context.level().getBlockState(context.target()).is(Sblocks.GROWTHS_BIG.get()),
+                    "reloaded GRACE Tier 1 performed cleanup");
+            context.helper().assertTrue(
+                    progress(context).equals(partial), "reloaded GRACE Tier 1 changed its cleanup cursor");
+            placeMotor(context.level(), context.first().west());
+            context.helper().runAfterDelay(5, () -> verifyGraceReloadResumed(context));
+        });
+    }
+
+    private static void verifyGraceReloadResumed(TestContext context) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE,
+                    "reloaded GRACE Tier 1 did not return to ACTIVE");
+            context.helper().assertTrue(
+                    context.level().getBlockState(context.target()).isAir(),
+                    "reloaded GRACE Tier 1 did not RESUME from the partial cursor");
+            cleanup(context);
+            context.helper().succeed();
+        });
+    }
+
+    private static void enterGraceForOverlapReload(TestContext context) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE
+                            && blockEntity(context.level(), context.second()).status() == Tier1StabilizerStatus.ACTIVE,
+                    "overlap reload devices were not active");
+            context.level().setBlock(context.first().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            context.helper().runAfterDelay(3, () -> rebuildGraceOverlapRuntime(context));
+        });
+    }
+
+    private static void rebuildGraceOverlapRuntime(TestContext context) {
+        runStage(context, () -> {
+            Tier1StabilizerBlockEntity first = blockEntity(context.level(), context.first());
+            Tier1StabilizerBlockEntity second = blockEntity(context.level(), context.second());
+            context.helper().assertTrue(
+                    first.status() == Tier1StabilizerStatus.GRACE_PERIOD
+                            && second.status() == Tier1StabilizerStatus.ACTIVE,
+                    "overlap reload did not start with A=GRACE and B=ACTIVE");
+            CleanupProgress partial = setCursor(
+                    context.level(), new ChunkPos(context.first()), context.target());
+            CompoundTag firstSaved = first.saveWithFullMetadata(context.level().registryAccess());
+            CompoundTag secondSaved = second.saveWithFullMetadata(context.level().registryAccess());
+
+            FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.set(false);
+            ServerInfectionCleanupService.INSTANCE.clearRuntime(context.level().getServer());
+            reloadBlockEntity(context.level(), context.first(), firstSaved);
+            reloadBlockEntity(context.level(), context.second(), secondSaved);
+            context.helper().runAfterDelay(2, () -> removeActiveOverlapAfterReload(context, partial));
+        });
+    }
+
+    private static void removeActiveOverlapAfterReload(TestContext context, CleanupProgress partial) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.GRACE_PERIOD
+                            && blockEntity(context.level(), context.second()).status()
+                                    == Tier1StabilizerStatus.ACTIVE,
+                    "reloaded overlap did not restore A=GRACE and B=ACTIVE");
+
+            context.level().destroyBlock(context.second(), false);
+            context.helper().assertTrue(
+                    progress(context).equals(partial),
+                    "destroying active overlap reset the shared cursor or marked restartRequired");
+            placeRemovable(context.level(), context.target());
+            FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.set(true);
+            context.helper().runAfterDelay(2, () -> verifyReloadedPausedOverlap(context, partial));
+        });
+    }
+
+    private static void verifyReloadedPausedOverlap(TestContext context, CleanupProgress partial) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    context.level().getBlockState(context.target()).is(Sblocks.GROWTHS_BIG.get()),
+                    "reloaded paused overlap continued cleanup after active source removal");
+            context.helper().assertTrue(
+                    progress(context).equals(partial),
+                    "reloaded paused overlap changed its shared cursor");
+            context.helper().assertTrue(
+                    !progress(context).restartRequired(),
+                    "paused overlap registration did not prevent restartRequired");
+            placeMotor(context.level(), context.first().west());
+            context.helper().runAfterDelay(10, () -> verifyReloadedOverlapResume(context));
+        });
+    }
+
+    private static void verifyReloadedOverlapResume(TestContext context) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE,
+                    "reloaded paused overlap did not return to ACTIVE");
+            CleanupProgress current = progress(context);
+            context.helper().assertTrue(
+                    context.level().getBlockState(context.target()).isAir(),
+                    "reloaded paused overlap did not RESUME its shared cursor: cursor="
+                            + current.cursor() + ", restartRequired=" + current.restartRequired());
+            cleanup(context);
+            context.helper().succeed();
         });
     }
 
@@ -317,6 +504,16 @@ public final class Tier1CleanupGameTests {
     private static Tier1StabilizerBlockEntity blockEntity(ServerLevel level, BlockPos pos) {
         if (level.getBlockEntity(pos) instanceof Tier1StabilizerBlockEntity blockEntity) return blockEntity;
         throw new IllegalStateException("Tier 1 block entity is missing at " + pos);
+    }
+
+    private static Tier1StabilizerBlockEntity reloadBlockEntity(
+            ServerLevel level, BlockPos pos, CompoundTag saved) {
+        BlockState state = level.getBlockState(pos);
+        level.removeBlockEntity(pos);
+        Tier1StabilizerBlockEntity reloaded = new Tier1StabilizerBlockEntity(pos, state);
+        reloaded.loadWithComponents(saved, level.registryAccess());
+        level.setBlockEntity(reloaded);
+        return reloaded;
     }
 
     private static void placeRemovable(ServerLevel level, BlockPos pos) {

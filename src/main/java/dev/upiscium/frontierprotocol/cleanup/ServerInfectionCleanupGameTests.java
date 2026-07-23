@@ -2,7 +2,13 @@ package dev.upiscium.frontierprotocol.cleanup;
 
 import com.Harbinger.Spore.core.Sblocks;
 import dev.upiscium.frontierprotocol.FrontierProtocolMod;
+import dev.upiscium.frontierprotocol.SporeGameTestAssertions;
 import dev.upiscium.frontierprotocol.api.suppression.SuppressionSourceId;
+import dev.upiscium.frontierprotocol.config.FrontierProtocolServerConfig;
+import dev.upiscium.frontierprotocol.spawnprotection.SpawnProtectionManager;
+import dev.upiscium.frontierprotocol.spawnprotection.SpawnProtectionSavedData;
+import dev.upiscium.frontierprotocol.suppression.ServerInfectionSuppressionService;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -178,6 +184,103 @@ public final class ServerInfectionCleanupGameTests {
             SERVICE.clearRuntime(server);
         }
         helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "initial_spawn_no_cleanup", timeoutTicks = 200)
+    public static void initialSpawnSuppressionDoesNotCreateCleanupWork(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerLevel level = server.overworld();
+        boolean originalEnabled = FrontierProtocolServerConfig.SPAWN_PROTECTION_ENABLED.get();
+        int originalRadius = FrontierProtocolServerConfig.SPAWN_PROTECTION_RADIUS_CHUNKS.get();
+        boolean originalCleanupEnabled = FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.get();
+        Map<Long, CleanupProgress> cleanupBefore = InfectionCleanupSavedData.get(level).snapshot();
+        BlockPos[] placed = new BlockPos[1];
+
+        try {
+            FrontierProtocolServerConfig.SPAWN_PROTECTION_ENABLED.set(true);
+            FrontierProtocolServerConfig.SPAWN_PROTECTION_RADIUS_CHUNKS.set(2);
+            FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.set(true);
+            ServerInfectionSuppressionService.INSTANCE.clear(level);
+            SpawnProtectionManager.rebuild(level);
+            SERVICE.clearRuntime(server);
+
+            ChunkPos spawnChunk = SpawnProtectionSavedData.get(level).centerChunk();
+            level.getChunk(spawnChunk.x, spawnChunk.z);
+            BlockPos foliage = new BlockPos(spawnChunk.getMinBlockX() + 2, 64, spawnChunk.getMinBlockZ() + 2);
+            placed[0] = foliage;
+            placeRemovable(level, foliage);
+            helper.assertTrue(
+                    ServerInfectionSuppressionService.INSTANCE.isSuppressed(level, spawnChunk),
+                    "initial spawn suppression is not active");
+            SporeGameTestAssertions.assertProtoMutationBlocked(
+                    helper,
+                    level,
+                    foliage.offset(2, 0, 0),
+                    "initial spawn source did not suppress a new Spore mutation");
+            helper.assertTrue(SERVICE.activeTaskCount(level) == 0, "initial spawn source created a cleanup task");
+            helper.runAfterDelay(20, () -> verifyInitialSpawnDoesNotClean(
+                    helper,
+                    level,
+                    spawnChunk,
+                    foliage,
+                    cleanupBefore,
+                    originalEnabled,
+                    originalRadius,
+                    originalCleanupEnabled));
+        } catch (RuntimeException error) {
+            restoreInitialSpawnTest(
+                    level,
+                    placed[0],
+                    cleanupBefore,
+                    originalEnabled,
+                    originalRadius,
+                    originalCleanupEnabled);
+            throw error;
+        }
+    }
+
+    private static void verifyInitialSpawnDoesNotClean(
+            GameTestHelper helper,
+            ServerLevel level,
+            ChunkPos spawnChunk,
+            BlockPos foliage,
+            Map<Long, CleanupProgress> cleanupBefore,
+            boolean originalEnabled,
+            int originalRadius,
+            boolean originalCleanupEnabled) {
+        try {
+            helper.assertTrue(
+                    level.getBlockState(foliage).is(Sblocks.GROWTHS_BIG.get()),
+                    "initial spawn suppression cleaned existing removable foliage");
+            helper.assertTrue(
+                    InfectionCleanupSavedData.get(level).snapshot().equals(cleanupBefore),
+                    "initial spawn source created or advanced cleanup progress for " + spawnChunk);
+            helper.assertTrue(SERVICE.activeTaskCount(level) == 0, "initial spawn source queued cleanup work");
+            restoreInitialSpawnTest(
+                    level, foliage, cleanupBefore, originalEnabled, originalRadius, originalCleanupEnabled);
+            helper.succeed();
+        } catch (RuntimeException error) {
+            restoreInitialSpawnTest(
+                    level, foliage, cleanupBefore, originalEnabled, originalRadius, originalCleanupEnabled);
+            throw error;
+        }
+    }
+
+    private static void restoreInitialSpawnTest(
+            ServerLevel level,
+            BlockPos foliage,
+            Map<Long, CleanupProgress> cleanupBefore,
+            boolean originalEnabled,
+            int originalRadius,
+            boolean originalCleanupEnabled) {
+        if (foliage != null) clear(level, foliage, foliage.below(), foliage.offset(2, 0, 0));
+        SERVICE.clearRuntime(level.getServer());
+        InfectionCleanupSavedData.get(level).restoreSnapshot(cleanupBefore);
+        FrontierProtocolServerConfig.SPAWN_PROTECTION_ENABLED.set(originalEnabled);
+        FrontierProtocolServerConfig.SPAWN_PROTECTION_RADIUS_CHUNKS.set(originalRadius);
+        FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.set(originalCleanupEnabled);
+        ServerInfectionSuppressionService.INSTANCE.clear(level);
+        SpawnProtectionManager.rebuild(level);
     }
 
     private static void assertOverlappingNewPassThroughService(
