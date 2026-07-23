@@ -7,9 +7,9 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 
 public final class ModItemTags {
-    public static final TagKey<Item> TIER_1_STABILIZER_CONSUMABLES = TagKey.create(
+    public static final TagKey<Item> STABILIZER_CONSUMABLES = TagKey.create(
             Registries.ITEM,
-            ResourceLocation.fromNamespaceAndPath(FrontierProtocolMod.MOD_ID, "tier_1_stabilizer_consumables"));
+            ResourceLocation.fromNamespaceAndPath(FrontierProtocolMod.MOD_ID, "stabilizer_consumables"));
 
     private ModItemTags() {}
 }

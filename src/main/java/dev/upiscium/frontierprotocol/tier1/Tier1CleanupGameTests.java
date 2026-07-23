@@ -46,7 +46,7 @@ public final class Tier1CleanupGameTests {
             configureCleanupTest();
             ServerInfectionCleanupService.INSTANCE.clearRuntime(level.getServer());
             placeDevice(level, device);
-            insertCompound(level, device, 2, helper);
+            insertCell(level, device, 2, helper);
             placeRemovable(level, target);
             setCursor(level, chunk, target);
             helper.runAfterDelay(2, () -> verifyOfflineDoesNotClean(context));
@@ -71,8 +71,8 @@ public final class Tier1CleanupGameTests {
             ServerInfectionCleanupService.INSTANCE.clearRuntime(level.getServer());
             placeDevice(level, first);
             placeDevice(level, second);
-            insertCompound(level, first, 2, helper);
-            insertCompound(level, second, 2, helper);
+            insertCell(level, first, 2, helper);
+            insertCell(level, second, 2, helper);
             placeMotor(level, first.west());
             placeMotor(level, second.west());
             helper.runAfterDelay(12, () -> verifyOverlappingCleanup(context));
@@ -93,7 +93,7 @@ public final class Tier1CleanupGameTests {
             FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(20);
             ServerInfectionCleanupService.INSTANCE.clearRuntime(level.getServer());
             placeDevice(level, device);
-            insertCompound(level, device, 2, helper);
+            insertCell(level, device, 2, helper);
             placeMotor(level, device.west());
             helper.runAfterDelay(10, () -> enterGraceForReload(context));
         });
@@ -117,8 +117,8 @@ public final class Tier1CleanupGameTests {
             ServerInfectionCleanupService.INSTANCE.clearRuntime(level.getServer());
             placeDevice(level, first);
             placeDevice(level, second);
-            insertCompound(level, first, 2, helper);
-            insertCompound(level, second, 2, helper);
+            insertCell(level, first, 2, helper);
+            insertCell(level, second, 2, helper);
             placeMotor(level, first.west());
             placeMotor(level, second.west());
             helper.runAfterDelay(10, () -> enterGraceForOverlapReload(context));
@@ -493,12 +493,12 @@ public final class Tier1CleanupGameTests {
                 Block.UPDATE_ALL);
     }
 
-    private static void insertCompound(ServerLevel level, BlockPos pos, int count, GameTestHelper helper) {
+    private static void insertCell(ServerLevel level, BlockPos pos, int count, GameTestHelper helper) {
         IItemHandler capability = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, Direction.UP);
         helper.assertTrue(capability != null, "Tier 1 item capability is unavailable");
         ItemStack remainder = capability.insertItem(
-                0, new ItemStack(ModItems.STABILIZATION_COMPOUND.get(), count), false);
-        helper.assertTrue(remainder.isEmpty(), "Tier 1 rejected stabilization compound");
+                0, new ItemStack(ModItems.STABILIZATION_CELL.get(), count), false);
+        helper.assertTrue(remainder.isEmpty(), "Tier 1 rejected stabilization cells");
     }
 
     private static Tier1StabilizerBlockEntity blockEntity(ServerLevel level, BlockPos pos) {

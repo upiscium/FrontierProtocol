@@ -1,4 +1,5 @@
 {
   "block.frontier_protocol.tier_1_stabilizer": "Tier 1 Stabilizer",
-  "item.frontier_protocol.stabilization_compound": "Stabilization Compound"
+  "item.frontier_protocol.stabilization_compound": "安定化化合物",
+  "item.frontier_protocol.stabilization_cell": "安定化セル"
 }

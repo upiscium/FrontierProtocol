@@ -27,7 +27,7 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
     private final ItemStackHandler inventory = new ItemStackHandler(1) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.is(ModItemTags.TIER_1_STABILIZER_CONSUMABLES);
+            return stack.is(ModItemTags.STABILIZER_CONSUMABLES);
         }
 
         @Override
