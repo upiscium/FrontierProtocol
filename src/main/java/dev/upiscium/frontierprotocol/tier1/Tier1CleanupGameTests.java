@@ -524,7 +524,7 @@ public final class Tier1CleanupGameTests {
     private static void configureCleanupTest() {
         FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.set(8);
         FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(10);
-        FrontierProtocolServerConfig.TIER1_CONSUMABLE_DURATION_TICKS.set(100);
+        FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.set(100);
         FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.set(true);
         FrontierProtocolServerConfig.CLEANUP_GLOBAL_INSPECTION_BUDGET_PER_TICK.set(8192);
         FrontierProtocolServerConfig.CLEANUP_GLOBAL_MUTATION_BUDGET_PER_TICK.set(16);
@@ -578,7 +578,7 @@ public final class Tier1CleanupGameTests {
             return new ConfigSnapshot(
                     FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.get(),
                     FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.get(),
-                    FrontierProtocolServerConfig.TIER1_CONSUMABLE_DURATION_TICKS.get(),
+                    FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.get(),
                     FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.get(),
                     FrontierProtocolServerConfig.CLEANUP_GLOBAL_INSPECTION_BUDGET_PER_TICK.get(),
                     FrontierProtocolServerConfig.CLEANUP_GLOBAL_MUTATION_BUDGET_PER_TICK.get(),
@@ -590,7 +590,7 @@ public final class Tier1CleanupGameTests {
         private void restore() {
             FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.set(minimumRpm);
             FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(graceTicks);
-            FrontierProtocolServerConfig.TIER1_CONSUMABLE_DURATION_TICKS.set(consumableTicks);
+            FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.set(consumableTicks);
             FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.set(cleanupEnabled);
             FrontierProtocolServerConfig.CLEANUP_GLOBAL_INSPECTION_BUDGET_PER_TICK.set(globalInspections);
             FrontierProtocolServerConfig.CLEANUP_GLOBAL_MUTATION_BUDGET_PER_TICK.set(globalMutations);

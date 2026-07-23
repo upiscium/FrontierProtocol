@@ -80,7 +80,7 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
                 powered,
                 hasConsumable(),
                 FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.getAsInt(),
-                FrontierProtocolServerConfig.TIER1_CONSUMABLE_DURATION_TICKS.getAsInt());
+                FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.getAsInt());
         if (result.consumeItem()) consumeOne();
         if (needsEvaluation || result.statusChanged()) updateBlockState();
         if (result.changed()) setChanged();

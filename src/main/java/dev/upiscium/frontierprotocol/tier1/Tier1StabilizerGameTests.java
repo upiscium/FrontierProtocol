@@ -61,7 +61,7 @@ public final class Tier1StabilizerGameTests {
                 netherDevice,
                 FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.getAsInt(),
                 FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.getAsInt(),
-                FrontierProtocolServerConfig.TIER1_CONSUMABLE_DURATION_TICKS.getAsInt());
+                FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.getAsInt());
 
         runStage(context, () -> {
             helper.assertTrue(ModBlocks.TIER_1_STABILIZER.isBound(), "Tier 1 block is not registered");
@@ -88,7 +88,7 @@ public final class Tier1StabilizerGameTests {
 
             FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.set(8);
             FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(10);
-            FrontierProtocolServerConfig.TIER1_CONSUMABLE_DURATION_TICKS.set(100);
+            FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.set(100);
             placeDevice(overworld, first);
             helper.runAfterDelay(2, () -> verifyOfflineWithoutConsumable(context));
         });
@@ -105,11 +105,11 @@ public final class Tier1StabilizerGameTests {
                 level,
                 device,
                 FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.get(),
-                FrontierProtocolServerConfig.TIER1_CONSUMABLE_DURATION_TICKS.get());
+                FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.get());
 
         runCellStage(context, () -> {
             FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.set(8);
-            FrontierProtocolServerConfig.TIER1_CONSUMABLE_DURATION_TICKS.set(20);
+            FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.set(20);
             placeDevice(level, device);
             placeMotor(level, device.west());
             IItemHandler capability = level.getCapability(Capabilities.ItemHandler.BLOCK, device, Direction.UP);
@@ -526,7 +526,7 @@ public final class Tier1StabilizerGameTests {
                 TicketType.FORCED, netherChunk, 2, netherChunk, true);
         FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.set(context.originalMinimumRpm());
         FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(context.originalGraceTicks());
-        FrontierProtocolServerConfig.TIER1_CONSUMABLE_DURATION_TICKS.set(context.originalConsumableTicks());
+        FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.set(context.originalConsumableTicks());
     }
 
     private static void removeDevice(ServerLevel level, BlockPos pos) {
@@ -537,7 +537,7 @@ public final class Tier1StabilizerGameTests {
     private static void cleanupCellTest(CellTestContext context) {
         removeDevice(context.level(), context.device());
         FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.set(context.originalMinimumRpm());
-        FrontierProtocolServerConfig.TIER1_CONSUMABLE_DURATION_TICKS.set(context.originalConsumableTicks());
+        FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.set(context.originalConsumableTicks());
     }
 
     private record TestContext(
