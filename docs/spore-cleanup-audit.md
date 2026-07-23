@@ -150,7 +150,7 @@ otherwise
   -> KEEP
 ```
 
-The future mutation caller must also recheck the loaded world's actual Block Entity at the target before changing a block. The state-level guard protects every registered `EntityBlock`, including accidental additions to `cleanup/removable`; the runtime guard protects inconsistent or dynamically present Block Entities.
+The runtime mutation service also rechecks the loaded world's actual Block Entity at the target before changing a block. The state-level guard protects every registered `EntityBlock`, including accidental additions to `cleanup/removable`; the runtime guard protects inconsistent or dynamically present Block Entities.
 
 For REMOVE only:
 

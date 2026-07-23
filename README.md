@@ -34,25 +34,32 @@ containment integration preview:
 - Initial-spawn ore-generation suppression for newly generated terrain.
 - A Create-powered Tier 1 Stabilizer that protects its placement chunk while
   ACTIVE or in its configured grace period.
+- Budgeted cleanup of audited removable Spore foliage in loaded chunks while
+  the Tier 1 Stabilizer is ACTIVE, with persisted progress across reloads.
 - Target-based integration with the audited environmental spread paths in
   Fungal Infection: Spore 2.2.0j.
 - Dimension-local and overlap-safe suppression, including negative chunk
   coordinates.
 
-Suppression prevents selected new Spore mutations. It does not remove or
-freeze existing infection, block hostile mobs, prevent combat or explosions,
-or provide Tier 2/Tier 3 containment. The Spore integration is intentionally
-pinned to the exact audited release. Tier 1 and Stabilization Compound do not
-yet have survival recipes or creative-tab entries; use commands when testing
-this alpha. The owned Create production chain is planned for a later milestone.
+Suppression prevents selected new Spore mutations. While ACTIVE, Tier 1 also
+removes only audited non-Block-Entity foliage under global and per-device
+budgets; it does not restore infected terrain or destroy nests. Cleanup pauses
+during the grace period and stops while the device is offline. Containment does not
+block hostile mobs, prevent combat or explosions, or provide Tier 2/Tier 3
+containment. The Spore integration is intentionally pinned to the exact audited
+release. Tier 1 and Stabilization Compound do not yet have survival recipes or
+creative-tab entries; use commands when testing this alpha. The owned Create
+production chain is planned for a later milestone.
 
 現在の開発versionは **0.1.0-alpha.1** です。このbuildは内部Alphaリリース候補で、
 一般公開は延期されており、まだ公開配布されていません。テスト前にワールドを
 バックアップしてください。本候補は初期スポーン周辺の永久抑制、初期地形の
 鉱石生成抑制、Create動力を使うTier 1 Stabilizer、およびSpore 2.2.0jの監査済み
-環境拡散経路との統合を提供します。既存感染の除去、Mob侵入防止、Tier 2/Tier 3は
-本Alphaの対象外です。Tier 1とStabilization Compoundのサバイバル用レシピは未実装の
-ため、本Alphaではコマンドで取得してテストしてください。
+環境拡散経路との統合を提供します。ACTIVE中のTier 1は、ロード済みチャンク内の
+監査済み非Block Entity感染植生だけを処理予算内で段階的に除去し、GRACE_PERIODと
+OFFLINE中は浄化を停止します。感染地形の復元、巣の自動破壊、Mob侵入防止、
+Tier 2/Tier 3は本Alphaの対象外です。Tier 1とStabilization Compoundのサバイバル用
+レシピは未実装のため、本Alphaではコマンドで取得してテストしてください。
 
 ## Requirements
 

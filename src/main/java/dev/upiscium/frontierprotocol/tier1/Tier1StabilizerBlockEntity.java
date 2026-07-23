@@ -3,6 +3,8 @@ package dev.upiscium.frontierprotocol.tier1;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 import dev.upiscium.frontierprotocol.api.suppression.SuppressionSource;
+import dev.upiscium.frontierprotocol.cleanup.CleanupActivationMode;
+import dev.upiscium.frontierprotocol.cleanup.ServerInfectionCleanupService;
 import dev.upiscium.frontierprotocol.config.FrontierProtocolServerConfig;
 import dev.upiscium.frontierprotocol.registry.ModBlockEntities;
 import dev.upiscium.frontierprotocol.registry.ModBlocks;
@@ -40,6 +42,8 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
     };
     private Tier1StabilizerStateMachine machine = new Tier1StabilizerStateMachine();
     private boolean sourceRegistered;
+    private CleanupRegistration cleanupRegistration = CleanupRegistration.NONE;
+    private boolean resumeCleanupOnActivation;
     private boolean needsEvaluation = true;
 
     public Tier1StabilizerBlockEntity(BlockPos pos, BlockState state) {
@@ -130,27 +134,70 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
                 sourceRegistered = true;
             }
         } else {
-            unregisterSource(serverLevel);
+            unregisterSuppressionSource(serverLevel);
+        }
+
+        switch (machine.status()) {
+            case ACTIVE -> activateCleanup(serverLevel);
+            case GRACE_PERIOD -> pauseCleanup(serverLevel);
+            case OFFLINE -> deactivateCleanup(serverLevel);
         }
     }
 
     private void unregisterSource(ServerLevel serverLevel) {
+        unregisterSuppressionSource(serverLevel);
+        deactivateCleanup(serverLevel);
+    }
+
+    private void unregisterSuppressionSource(ServerLevel serverLevel) {
         if (!sourceRegistered) return;
         ServerInfectionSuppressionService.INSTANCE.unregisterSource(
                 serverLevel, Tier1SuppressionSource.at(worldPosition).id());
         sourceRegistered = false;
     }
 
+    private void activateCleanup(ServerLevel serverLevel) {
+        if (cleanupRegistration == CleanupRegistration.ACTIVE) return;
+        CleanupActivationMode mode = cleanupRegistration == CleanupRegistration.PAUSED || resumeCleanupOnActivation
+                ? CleanupActivationMode.RESUME
+                : CleanupActivationMode.NEW_PASS;
+        ServerInfectionCleanupService.INSTANCE.registerActiveSource(
+                serverLevel,
+                Tier1SuppressionSource.at(worldPosition).id(),
+                Set.of(new ChunkPos(worldPosition)),
+                mode);
+        cleanupRegistration = CleanupRegistration.ACTIVE;
+        resumeCleanupOnActivation = false;
+    }
+
+    private void pauseCleanup(ServerLevel serverLevel) {
+        if (cleanupRegistration != CleanupRegistration.ACTIVE) return;
+        ServerInfectionCleanupService.INSTANCE.pauseSource(
+                serverLevel, Tier1SuppressionSource.at(worldPosition).id());
+        cleanupRegistration = CleanupRegistration.PAUSED;
+    }
+
+    private void deactivateCleanup(ServerLevel serverLevel) {
+        ServerInfectionCleanupService.INSTANCE.deactivateSource(
+                serverLevel, Tier1SuppressionSource.at(worldPosition).id());
+        cleanupRegistration = CleanupRegistration.NONE;
+        resumeCleanupOnActivation = false;
+    }
+
     @Override
     public void onLoad() {
         super.onLoad();
         sourceRegistered = false;
+        cleanupRegistration = CleanupRegistration.NONE;
         needsEvaluation = true;
     }
 
     @Override
     public void onChunkUnloaded() {
-        if (level instanceof ServerLevel serverLevel) unregisterSource(serverLevel);
+        if (level instanceof ServerLevel serverLevel) {
+            unregisterSuppressionSource(serverLevel);
+            pauseCleanup(serverLevel);
+        }
         super.onChunkUnloaded();
     }
 
@@ -190,6 +237,14 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
         super.read(tag, registries, clientPacket);
         machine = Tier1StabilizerNbt.read(tag, inventory, registries);
         sourceRegistered = false;
+        cleanupRegistration = CleanupRegistration.NONE;
+        resumeCleanupOnActivation = machine.status() != Tier1StabilizerStatus.OFFLINE;
         needsEvaluation = true;
+    }
+
+    private enum CleanupRegistration {
+        NONE,
+        PAUSED,
+        ACTIVE
     }
 }
