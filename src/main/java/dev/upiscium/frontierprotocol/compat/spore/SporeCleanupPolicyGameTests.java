@@ -4,8 +4,10 @@ import com.Harbinger.Spore.Sblocks.GenericFoliageBlock;
 import com.Harbinger.Spore.core.Sblocks;
 import dev.upiscium.frontierprotocol.FrontierProtocolMod;
 import dev.upiscium.frontierprotocol.registry.ModBlockTags;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -18,6 +20,8 @@ public final class SporeCleanupPolicyGameTests {
 
     @GameTest(template = "empty", batch = "spore_cleanup_policy")
     public static void auditedTagsAndPolicyResolve(GameTestHelper helper) {
+        assertTagContract(helper);
+
         BlockState removable = Sblocks.GROWTHS_BIG.get().defaultBlockState();
         helper.assertTrue(removable.is(ModBlockTags.CLEANUP_REMOVABLE), "audited foliage is not removable");
         helper.assertTrue(
@@ -37,6 +41,9 @@ public final class SporeCleanupPolicyGameTests {
         assertKept(helper, Sblocks.HIVE_SPAWN.get().defaultBlockState(), "hive spawn");
         assertKept(helper, Sblocks.INFESTED_STONE.get().defaultBlockState(), "infected structure block");
         assertKept(helper, Sblocks.BIOMASS_BLOCK.get().defaultBlockState(), "biomass structure block");
+        assertHazardKept(helper, Sblocks.BLOOM_G.get().defaultBlockState(), "blomfung");
+        assertHazardKept(helper, Sblocks.BLOOM_GG.get().defaultBlockState(), "bloomfung2");
+        assertHazardKept(helper, Sblocks.FUNGAL_CLAMP.get().defaultBlockState(), "fungal clamp");
 
         BlockState unlistedSporeBlock = Sblocks.ACID.get().defaultBlockState();
         helper.assertFalse(
@@ -46,6 +53,26 @@ public final class SporeCleanupPolicyGameTests {
                 SporeCleanupPolicy.replacementFor(unlistedSporeBlock).isEmpty(),
                 "Spore namespace alone produced a cleanup replacement");
         helper.succeed();
+    }
+
+    private static void assertTagContract(GameTestHelper helper) {
+        for (Block block : BuiltInRegistries.BLOCK) {
+            BlockState state = block.defaultBlockState();
+            boolean removable = state.is(ModBlockTags.CLEANUP_REMOVABLE);
+            boolean never = state.is(ModBlockTags.CLEANUP_NEVER);
+            String id = BuiltInRegistries.BLOCK.getKey(block).toString();
+
+            helper.assertFalse(removable && never, id + " is in both cleanup tags");
+            if (removable) {
+                helper.assertFalse(state.hasBlockEntity(), id + " declares a Block Entity but is removable");
+            }
+        }
+    }
+
+    private static void assertHazardKept(GameTestHelper helper, BlockState state, String description) {
+        helper.assertFalse(
+                state.is(ModBlockTags.CLEANUP_REMOVABLE), description + " remains in cleanup/removable");
+        assertKept(helper, state, description);
     }
 
     private static void assertKept(GameTestHelper helper, BlockState state, String description) {

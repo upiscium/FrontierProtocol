@@ -21,8 +21,6 @@ Only the following high-confidence, non-Block-Entity accretions are in `frontier
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `spore:growths_big` | `GenericFoliageBlock` | No | Waterlogged | Yes | Yes | No | Water fluid only | Incidental | No | REMOVE | AIR / WATER | Non-solid ground/underwater foliage. |
 | `spore:growths_small` | `GenericFoliageBlock` | No | Waterlogged | Yes | Yes | No | Water fluid only | Incidental | No | REMOVE | AIR / WATER | Non-solid ground/underwater foliage. |
-| `spore:blomfung` | `HangingPlant` | No | Waterlogged | Yes | Yes | Yes | Water fluid only | Incidental | No | REMOVE | AIR / WATER | Replaceable ground/roof foliage without inventory. |
-| `spore:bloomfung2` | `HangingPlantBub` | No | Waterlogged | Yes | Yes | No | Water fluid only | Incidental | No | REMOVE | AIR / WATER | Replaceable ground/roof foliage without inventory. |
 | `spore:growth_mycelium` | `GenericFoliageBlock` | No | Waterlogged | No | Yes | No | Water fluid only | Incidental | No | REMOVE | AIR / WATER | Non-solid mycelial foliage, not the solid mycelium block. |
 | `spore:fungal_stem_sapling` | `FungalSaplings` | No | No | Yes | Yes | Yes | No | Incidental | No | REMOVE | AIR | Non-structural growth precursor. |
 | `spore:fungal_roots` | `HangingRoots` | No | No | No | Yes | No | No | Incidental | No | REMOVE | AIR | Hanging decoration without state to restore. |
@@ -35,13 +33,12 @@ Only the following high-confidence, non-Block-Entity accretions are in `frontier
 | `spore:mycelium_veins` | `MyceliumVeins` | No | No | No | Yes | No | No | Incidental | No | REMOVE | AIR | Thin replaceable vein growth. |
 | `spore:fungal_stem` | `FungalStem` | No | No | No | Yes | No | No | Incidental | No | REMOVE | AIR | Temporary foliage stem, not converted terrain. |
 | `spore:fungal_stem_top` | `FungalStemTop` | No | No | No | Yes | No | No | Incidental | No | REMOVE | AIR | Temporary foliage tip. |
-| `spore:rotten_bush` | `RottenBush` | No | No | No | Yes | Yes | No | No | No | REMOVE | AIR | Replaceable infected bush; no original terrain is needed. |
-| `spore:rotten_grass` | `RottenBush` | No | No | No | Yes | Yes | No | No | No | REMOVE | AIR | Replaceable infected grass. |
-| `spore:rotten_fern` | `RottenBush` | No | No | No | Yes | Yes | No | No | No | REMOVE | AIR | Replaceable infected fern. |
+| `spore:rotten_bush` | `RottenBush` | No | Waterlogged | No | Yes | Yes | Water fluid only | No | No | REMOVE | AIR / WATER | Replaceable infected bush; no original terrain is needed. |
+| `spore:rotten_grass` | `RottenBush` | No | Waterlogged | No | Yes | Yes | Water fluid only | No | No | REMOVE | AIR / WATER | Replaceable infected grass. |
+| `spore:rotten_fern` | `RottenBush` | No | Waterlogged | No | Yes | Yes | Water fluid only | No | No | REMOVE | AIR / WATER | Replaceable infected fern. |
 | `spore:rotten_crops` | `FungalCrops` | No | No | No | Yes | No | No | No | No | REMOVE | AIR | Infection replaces a crop in place; removal does not guess the crop type. |
 | `spore:rotten_branch` | `Branch` | No | Waterlogged | No | Yes | No | Water fluid only | No | No | REMOVE | AIR / WATER | Non-colliding branch accretion placed beside converted wood. |
 | `spore:glowshroom` | `HangingGlowShroom` | No | No | No | Yes | No | No | Incidental | No | REMOVE | AIR | Hanging decorative foliage. |
-| `spore:fungal_clamp` | `FungalClamp` | No | No | No | Yes | No | No | Incidental | No | REMOVE | AIR | Attached non-inventory foliage. |
 
 Natural structures may incidentally contain foliage, but these blocks are not a structure's load-bearing terrain, inventory, machine, nest, or living core. Cleanup remains limited to loaded chunks and does not identify or alter a structure as a unit.
 
@@ -110,17 +107,22 @@ These blocks are explicitly protected by `cleanup/never`. Some appear in Spore's
 | Registry ID | Java class | Block Entity | Fluid / waterlogged | Natural | Spread | Random tick | Scheduled tick | Structure element | Player use | Classification | Replacement | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `spore:drowned_lump` | `DrownedLump` | No | Water context | No | Yes | No | No | No | No | UNRESOLVED | NONE | Specialized underwater behavior needs mutation testing. |
-| `spore:bile_lump` | `BileLump` | No | Water context | No | Yes | No | No | No | No | UNRESOLVED | Specialized bile behavior is not decorative foliage. |
-| `spore:fang_lump` | `FangLump` | No | No | No | Yes | No | No | No | No | UNRESOLVED | Specialized damaging behavior. |
-| `spore:exploding_lump` | `ExplodingLump` | No | No | No | Yes | No | No | No | No | UNRESOLVED | Explosive lifecycle behavior. |
-| `spore:poisoning_lump` | `CorrosiveDrownedLump` | No | Water context | No | Yes | No | No | No | No | UNRESOLVED | Corrosive lifecycle behavior. |
-| `spore:organite` | `OrganiteBlock` | No | No | No | Yes | No | Yes | Growth | No | UNRESOLVED | Scheduled lifecycle mutation. |
-| `spore:rotten_scraps` | `WoodenScraps` | No | Waterlogged | No | Yes | No | Water fluid only | Debris | No | UNRESOLVED | Falling debris rather than simple foliage. |
-| `spore:biomass_bulb` | `BiomassBulb` | No | Water context | No | Yes | No | No | Growth | No | UNRESOLVED | Biomass growth role is not proven disposable. |
-| `spore:hand` | `Hand` | No | No | No | Yes | Yes | No | Growth | No | UNRESOLVED | Active random-tick organ growth. |
-| `spore:lungs` | `CancerLungs` | No | No | No | Yes | No | No | Growth | No | UNRESOLVED | Organ-like growth. |
-| `spore:acidic_sack` | `FallingAcidSack` | No | No | No | Yes | No | No | Growth | No | UNRESOLVED | Falling hazardous organ. |
-| `spore:vocals` | `WallVocalsBlock` | No | No | No | Yes | No | No | Growth | Entity interaction | UNRESOLVED | Specialized entity interaction. |
+| `spore:bile_lump` | `BileLump` | No | Water context | No | Yes | No | No | No | No | UNRESOLVED | NONE | Specialized bile behavior is not decorative foliage. |
+| `spore:fang_lump` | `FangLump` | No | No | No | Yes | No | No | No | No | UNRESOLVED | NONE | Specialized damaging behavior. |
+| `spore:exploding_lump` | `ExplodingLump` | No | No | No | Yes | No | No | No | No | UNRESOLVED | NONE | Explosive lifecycle behavior. |
+| `spore:poisoning_lump` | `CorrosiveDrownedLump` | No | Water context | No | Yes | No | No | No | No | UNRESOLVED | NONE | Corrosive lifecycle behavior. |
+| `spore:organite` | `OrganiteBlock` | No | No | No | Yes | No | Yes | Growth | No | UNRESOLVED | NONE | Scheduled lifecycle mutation. |
+| `spore:rotten_scraps` | `WoodenScraps` | No | Waterlogged | No | Yes | No | Water fluid only | Debris | No | UNRESOLVED | NONE | Falling debris rather than simple foliage. |
+| `spore:biomass_bulb` | `BiomassBulb` | No | Water context | No | Yes | No | No | Growth | No | UNRESOLVED | NONE | Biomass growth role is not proven disposable. |
+| `spore:hand` | `Hand` | No | No | No | Yes | Yes | No | Growth | No | UNRESOLVED | NONE | Active random-tick organ growth. |
+| `spore:lungs` | `CancerLungs` | No | No | No | Yes | No | No | Growth | No | UNRESOLVED | NONE | Organ-like growth. |
+| `spore:acidic_sack` | `FallingAcidSack` | No | No | No | Yes | No | No | Growth | No | UNRESOLVED | NONE | Falling hazardous organ. |
+| `spore:vocals` | `WallVocalsBlock` | No | No | No | Yes | No | No | Growth | Entity interaction | UNRESOLVED | NONE | Specialized entity interaction. |
+| `spore:blomfung` | `HangingPlant` | No | Waterlogged | Yes | Yes | Yes | Water fluid only | Incidental | Slowing and contact movement damage | UNRESOLVED | NONE | Active infection trap that changes into another block during random ticks. |
+| `spore:bloomfung2` | `HangingPlantBub` | No | Waterlogged | Yes | Yes | Yes | Water fluid only | Incidental | Mycelium cloud and self-conversion | UNRESOLVED | NONE | Contact creates a Mycelium area-effect cloud and converts the block; random ticks generate hanging stem and foliage. |
+| `spore:fungal_clamp` | `FungalClamp` | No | Waterlogged | No | Yes | Yes | Water fluid only | Growth | Damage, slowing, Mycelium application, and OPEN state lifecycle | UNRESOLVED | NONE | Active infection trap whose OPEN state closes on contact and reopens during random ticks. |
+
+Promoting these three active hazards back to REMOVE requires an explicit game-design decision that infection traps are automatic cleanup targets and dedicated side-effect GameTests for each block.
 
 ## Hive, tumor, and structure boundaries
 

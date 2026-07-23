@@ -3,8 +3,6 @@
   "values": [
     "spore:growths_big",
     "spore:growths_small",
-    "spore:blomfung",
-    "spore:bloomfung2",
     "spore:growth_mycelium",
     "spore:fungal_stem_sapling",
     "spore:fungal_roots",
@@ -22,7 +20,6 @@
     "spore:rotten_fern",
     "spore:rotten_crops",
     "spore:rotten_branch",
-    "spore:glowshroom",
-    "spore:fungal_clamp"
+    "spore:glowshroom"
   ]
 }
