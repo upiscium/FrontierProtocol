@@ -2,12 +2,12 @@
 
 All notable changes to Frontier Protocol are documented in this file.
 
-## [0.1.0-alpha.1] - 2026-07-23
+## [0.1.0-alpha.1] - Unreleased
 
 ### Added
 
 - A dimension-local, overlap-safe infection suppression API and runtime index.
-- Permanent initial-spawn suppression with persisted center, enablement, and radius.
+- Permanent initial-spawn suppression with a persisted initial center and independently configurable enablement and radius.
 - A Create-powered Tier 1 Stabilizer with consumable, RPM, ACTIVE, grace-period, and offline states.
 - Initial-spawn ore-generation suppression for normal, scattered, and provisional spawn-search paths.
 - Target-based integration with audited Spore 2.2.0j foliage, conversion, CDU, and Mound mutation paths.

@@ -1,10 +1,15 @@
 # Frontier Protocol 0.1.0-alpha.1
 
-## Release status
+## Candidate status
 
-This is the first public alpha of the rebuilt Frontier Protocol design. It is intended for compatibility testing and early gameplay feedback. Worlds should be backed up before installation, and upgrading Spore independently is unsupported until its mutation paths are re-audited.
+This is an internal alpha release candidate of the rebuilt Frontier Protocol design. It is intended for internal compatibility testing and integration validation. Worlds should be backed up before testing, and upgrading Spore independently is unsupported until its mutation paths are re-audited.
 
-The distributable artifact is `frontier_protocol-0.1.0-alpha.1.jar`. Frontier Protocol remains **All Rights Reserved**.
+The candidate artifact produced by the build is `frontier_protocol-0.1.0-alpha.1.jar`. It has not been approved for public distribution. Frontier Protocol remains **All Rights Reserved**.
+
+## Publication status
+
+Public distribution of 0.1.0-alpha.1 has been deferred.
+This version is currently used for internal testing and integration validation only.
 
 ## Compatibility matrix
 
@@ -50,3 +55,17 @@ The release candidate must pass:
 The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. A production NeoForge dedicated server smoke test should load the built JAR with Create and Spore and reach the server-ready state without a Mixin application or client-class error.
 
 `runClient` requires a graphical display. A `glfwInit` failure when `DISPLAY` is unavailable is an environment limitation and does not constitute a successful client smoke test.
+
+## Future publication checklist
+
+- Decide the distribution channel.
+- Confirm the license and distribution terms.
+- Add any required `LICENSE` document before publication.
+- Confirm the release branch and default branch.
+- Run a clean build.
+- Run the complete GameTest suite.
+- Complete a dedicated-server smoke test.
+- Complete a client smoke test with a graphical display.
+- Inspect the production JAR contents and generated metadata.
+- Set the actual release date.
+- Prepare an icon or screenshots only if required by the selected channel.
