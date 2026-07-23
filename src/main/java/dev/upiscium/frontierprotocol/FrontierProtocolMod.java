@@ -2,6 +2,7 @@ package dev.upiscium.frontierprotocol;
 
 import com.mojang.logging.LogUtils;
 import dev.upiscium.frontierprotocol.config.FrontierProtocolServerConfig;
+import dev.upiscium.frontierprotocol.datagen.FrontierProtocolDataGenerators;
 import dev.upiscium.frontierprotocol.registry.ModBlocks;
 import dev.upiscium.frontierprotocol.registry.ModBlockEntities;
 import dev.upiscium.frontierprotocol.registry.ModItems;
@@ -21,6 +22,7 @@ public final class FrontierProtocolMod {
         modBus.addListener(SuppressionConfigEvents::configReloading);
         modBus.addListener(FrontierProtocolMod::commonSetup);
         modBus.addListener(ModBlockEntities::registerCapabilities);
+        modBus.addListener(FrontierProtocolDataGenerators::gatherData);
         ModBlocks.register(modBus);
         ModBlockEntities.register(modBus);
         ModItems.register(modBus);

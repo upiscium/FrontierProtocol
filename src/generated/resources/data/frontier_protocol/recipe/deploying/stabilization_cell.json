@@ -1,0 +1,16 @@
+{
+  "type": "create:deploying",
+  "ingredients": [
+    {
+      "item": "create:iron_sheet"
+    },
+    {
+      "item": "frontier_protocol:stabilization_compound"
+    }
+  ],
+  "results": [
+    {
+      "id": "frontier_protocol:stabilization_cell"
+    }
+  ]
+}
