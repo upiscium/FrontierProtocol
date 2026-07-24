@@ -15,7 +15,9 @@ public final class ModBlockEntities {
             Registries.BLOCK_ENTITY_TYPE, FrontierProtocolMod.MOD_ID);
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<StabilizerBlockEntity>> STABILIZER =
             TYPES.register("stabilizer", () -> BlockEntityType.Builder.of(
-                    StabilizerBlockEntity::new, ModBlocks.TIER_1_STABILIZER.get()).build(null));
+                    StabilizerBlockEntity::new,
+                    ModBlocks.TIER_1_STABILIZER.get(),
+                    ModBlocks.TIER_2_STABILIZER.get()).build(null));
 
     private ModBlockEntities() {}
 

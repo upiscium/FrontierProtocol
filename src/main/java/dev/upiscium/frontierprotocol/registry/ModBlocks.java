@@ -18,6 +18,12 @@ public final class ModBlocks {
             net.minecraft.world.level.block.state.BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5F)
                     .requiresCorrectToolForDrops());
+    public static final DeferredBlock<StabilizerBlock> TIER_2_STABILIZER = BLOCKS.registerBlock(
+            "tier_2_stabilizer",
+            properties -> new StabilizerBlock(StabilizerTier.TIER_2, properties),
+            net.minecraft.world.level.block.state.BlockBehaviour.Properties.ofFullCopy(Blocks.COPPER_BLOCK)
+                    .strength(5.0F)
+                    .requiresCorrectToolForDrops());
 
     private ModBlocks() {}
 
@@ -29,5 +35,8 @@ public final class ModBlocks {
         BlockStressValues.IMPACTS.register(
                 TIER_1_STABILIZER.get(),
                 () -> StabilizerTierDefinitions.resolve(StabilizerTier.TIER_1).stressImpact());
+        BlockStressValues.IMPACTS.register(
+                TIER_2_STABILIZER.get(),
+                () -> StabilizerTierDefinitions.resolve(StabilizerTier.TIER_2).stressImpact());
     }
 }

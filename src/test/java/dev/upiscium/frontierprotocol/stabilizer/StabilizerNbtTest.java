@@ -67,4 +67,24 @@ class StabilizerNbtTest {
         assertEquals(9, restored.graceRemainingTicks());
         assertEquals(17, restored.cellRemainingTicks());
     }
+
+    @Test
+    void tierTwoRoundTripPreservesTierLifecycleAndInventory() {
+        RegistryAccess registries = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
+        StabilizerStateMachine original = new StabilizerStateMachine(StabilizerStatus.ACTIVE, 90, 211);
+        ItemStackHandler inventory = new ItemStackHandler(1);
+        inventory.setStackInSlot(0, new ItemStack(Items.COPPER_INGOT, 12));
+        CompoundTag tag = new CompoundTag();
+
+        StabilizerNbt.write(tag, StabilizerTier.TIER_2, original, inventory, registries);
+        ItemStackHandler restoredInventory = new ItemStackHandler(1);
+        StabilizerStateMachine restored = StabilizerNbt.read(
+                tag, StabilizerTier.TIER_2, restoredInventory, registries);
+
+        assertEquals("tier_2", tag.getString("tier"));
+        assertEquals(StabilizerStatus.ACTIVE, restored.status());
+        assertEquals(90, restored.graceRemainingTicks());
+        assertEquals(211, restored.cellRemainingTicks());
+        assertEquals(12, restoredInventory.getStackInSlot(0).getCount());
+    }
 }

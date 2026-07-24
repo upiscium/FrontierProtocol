@@ -15,5 +15,9 @@ public final class FrontierProtocolDataGenerators {
                 event.getGenerator().getPackOutput(), event.getLookupProvider()));
         event.addProvider(new FrontierProtocolItemTagProvider(
                 event.getGenerator().getPackOutput(), event.getLookupProvider(), event.getExistingFileHelper()));
+        event.addProvider(new FrontierProtocolBlockTagProvider(
+                event.getGenerator().getPackOutput(), event.getLookupProvider(), event.getExistingFileHelper()));
+        event.addProvider(FrontierProtocolBlockLootProvider.create(
+                event.getGenerator().getPackOutput(), event.getLookupProvider()));
     }
 }
