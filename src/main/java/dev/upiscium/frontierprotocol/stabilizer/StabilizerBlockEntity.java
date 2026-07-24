@@ -4,6 +4,7 @@ import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 import dev.upiscium.frontierprotocol.api.suppression.SuppressionSource;
 import dev.upiscium.frontierprotocol.cleanup.CleanupActivationMode;
+import dev.upiscium.frontierprotocol.cleanup.CleanupSourceProfile;
 import dev.upiscium.frontierprotocol.cleanup.ServerInfectionCleanupService;
 import dev.upiscium.frontierprotocol.registry.ModBlockEntities;
 import dev.upiscium.frontierprotocol.registry.ModItemTags;
@@ -16,6 +17,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -54,6 +56,8 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     private CleanupRegistration cleanupRegistration = CleanupRegistration.NONE;
     private boolean resumeCleanupOnActivation;
     private boolean needsEvaluation = true;
+    private Set<ChunkPos> registeredCoverage;
+    private CleanupSourceProfile registeredProfile;
 
     public StabilizerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STABILIZER.get(), pos, state);
@@ -98,7 +102,12 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         if (result.consumeItem()) consumeOne();
         if (needsEvaluation || result.statusChanged()) updateBlockState();
         if (result.changed()) setChanged();
-        if (needsEvaluation || result.statusChanged()) syncSource(serverLevel, definition);
+        Set<ChunkPos> coverage = StabilizerCoverage.coveredChunks(worldPosition, definition.chunkRadius());
+        boolean registrationChanged = !coverage.equals(registeredCoverage)
+                || !definition.cleanupProfile().equals(registeredProfile);
+        if (needsEvaluation || result.statusChanged() || registrationChanged) {
+            syncSource(serverLevel, coverage, definition.cleanupProfile(), registrationChanged);
+        }
         needsEvaluation = false;
     }
 
@@ -145,11 +154,13 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         }
     }
 
-    private void syncSource(ServerLevel serverLevel, StabilizerTierDefinition definition) {
-        Set<net.minecraft.world.level.ChunkPos> coverage =
-                StabilizerCoverage.coveredChunks(worldPosition, definition.chunkRadius());
+    private void syncSource(
+            ServerLevel serverLevel,
+            Set<ChunkPos> coverage,
+            CleanupSourceProfile profile,
+            boolean registrationChanged) {
         if (machine.status().suppressesInfection()) {
-            if (!sourceRegistered) {
+            if (!sourceRegistered || !coverage.equals(registeredCoverage)) {
                 SuppressionSource source = StabilizerSuppressionSource.at(tier, worldPosition);
                 ServerInfectionSuppressionService.INSTANCE.registerOrUpdateSource(serverLevel, source, coverage);
                 sourceRegistered = true;
@@ -159,15 +170,19 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         }
 
         switch (machine.status()) {
-            case ACTIVE -> activateCleanup(serverLevel, coverage);
-            case GRACE_PERIOD -> pauseCleanup(serverLevel, coverage);
+            case ACTIVE -> activateCleanup(serverLevel, coverage, profile, registrationChanged);
+            case GRACE_PERIOD -> pauseCleanup(serverLevel, coverage, profile, registrationChanged);
             case OFFLINE -> deactivateCleanup(serverLevel);
         }
+        registeredCoverage = coverage;
+        registeredProfile = profile;
     }
 
     private void unregisterSource(ServerLevel serverLevel) {
         unregisterSuppressionSource(serverLevel);
         deactivateCleanup(serverLevel);
+        registeredCoverage = null;
+        registeredProfile = null;
     }
 
     private void unregisterSuppressionSource(ServerLevel serverLevel) {
@@ -177,34 +192,47 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         sourceRegistered = false;
     }
 
-    private void activateCleanup(ServerLevel serverLevel, Set<net.minecraft.world.level.ChunkPos> coverage) {
-        if (cleanupRegistration == CleanupRegistration.ACTIVE) return;
-        CleanupActivationMode mode = cleanupRegistration == CleanupRegistration.PAUSED || resumeCleanupOnActivation
-                ? CleanupActivationMode.RESUME
-                : CleanupActivationMode.NEW_PASS;
+    private void activateCleanup(
+            ServerLevel serverLevel,
+            Set<ChunkPos> coverage,
+            CleanupSourceProfile profile,
+            boolean registrationChanged) {
+        if (cleanupRegistration == CleanupRegistration.ACTIVE && !registrationChanged) return;
+        CleanupActivationMode mode;
+        if (cleanupRegistration == CleanupRegistration.ACTIVE) {
+            mode = coverage.equals(registeredCoverage)
+                    ? CleanupActivationMode.RESUME
+                    : CleanupActivationMode.NEW_PASS;
+        } else {
+            mode = cleanupRegistration == CleanupRegistration.PAUSED || resumeCleanupOnActivation
+                    ? CleanupActivationMode.RESUME
+                    : CleanupActivationMode.NEW_PASS;
+        }
         ServerInfectionCleanupService.INSTANCE.registerActiveSource(
                 serverLevel,
                 StabilizerSuppressionSource.at(tier, worldPosition).id(),
                 coverage,
-                mode);
+                mode,
+                profile);
         cleanupRegistration = CleanupRegistration.ACTIVE;
         resumeCleanupOnActivation = false;
     }
 
-    private void pauseCleanup(ServerLevel serverLevel, Set<net.minecraft.world.level.ChunkPos> coverage) {
-        if (cleanupRegistration == CleanupRegistration.NONE && resumeCleanupOnActivation) {
-            ServerInfectionCleanupService.INSTANCE.registerActiveSource(
-                    serverLevel,
-                    StabilizerSuppressionSource.at(tier, worldPosition).id(),
-                    coverage,
-                    CleanupActivationMode.RESUME);
-            cleanupRegistration = CleanupRegistration.ACTIVE;
-            resumeCleanupOnActivation = false;
-        }
-        if (cleanupRegistration != CleanupRegistration.ACTIVE) return;
-        ServerInfectionCleanupService.INSTANCE.pauseSource(
-                serverLevel, StabilizerSuppressionSource.at(tier, worldPosition).id());
+    private void pauseCleanup(
+            ServerLevel serverLevel,
+            Set<ChunkPos> coverage,
+            CleanupSourceProfile profile,
+            boolean registrationChanged) {
+        if (cleanupRegistration == CleanupRegistration.PAUSED && !registrationChanged) return;
+        if (cleanupRegistration == CleanupRegistration.NONE && !resumeCleanupOnActivation) return;
+        ServerInfectionCleanupService.INSTANCE.registerPausedSource(
+                serverLevel,
+                StabilizerSuppressionSource.at(tier, worldPosition).id(),
+                coverage,
+                CleanupActivationMode.RESUME,
+                profile);
         cleanupRegistration = CleanupRegistration.PAUSED;
+        resumeCleanupOnActivation = false;
     }
 
     private void deactivateCleanup(ServerLevel serverLevel) {
@@ -219,6 +247,8 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         super.onLoad();
         sourceRegistered = false;
         cleanupRegistration = CleanupRegistration.NONE;
+        registeredCoverage = null;
+        registeredProfile = null;
         needsEvaluation = true;
     }
 
@@ -226,7 +256,11 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     public void onChunkUnloaded() {
         if (level instanceof ServerLevel serverLevel) {
             unregisterSuppressionSource(serverLevel);
-            pauseCleanup(serverLevel, StabilizerCoverage.coveredChunks(worldPosition, definition().chunkRadius()));
+            StabilizerTierDefinition definition = definition();
+            Set<ChunkPos> coverage = StabilizerCoverage.coveredChunks(worldPosition, definition.chunkRadius());
+            pauseCleanup(serverLevel, coverage, definition.cleanupProfile(), true);
+            registeredCoverage = coverage;
+            registeredProfile = definition.cleanupProfile();
         }
         super.onChunkUnloaded();
     }
@@ -269,6 +303,8 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         sourceRegistered = false;
         cleanupRegistration = CleanupRegistration.NONE;
         resumeCleanupOnActivation = machine.status() != StabilizerStatus.OFFLINE;
+        registeredCoverage = null;
+        registeredProfile = null;
         needsEvaluation = true;
     }
 

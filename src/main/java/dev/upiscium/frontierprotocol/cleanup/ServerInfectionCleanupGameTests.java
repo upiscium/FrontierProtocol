@@ -28,6 +28,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class ServerInfectionCleanupGameTests {
     private static final ServerInfectionCleanupService SERVICE = ServerInfectionCleanupService.INSTANCE;
     private static final ServerInfectionCleanupService.BlockMutator NORMAL_MUTATOR = ServerLevel::setBlock;
+    private static final CleanupSourceProfile DEFAULT_PROFILE = new CleanupSourceProfile(20, 10, 10);
 
     private ServerInfectionCleanupGameTests() {}
 
@@ -53,10 +54,11 @@ public final class ServerInfectionCleanupGameTests {
                     "removable setup block was not retained");
             helper.assertTrue(level.getBlockEntity(blockEntityPos) != null, "container Block Entity was not created");
             setCursor(level, chunkKey, 0);
-            SERVICE.registerActiveSource(level, source, Set.of(chunk), CleanupActivationMode.RESUME);
+            SERVICE.registerActiveSource(
+                    level, source, Set.of(chunk), CleanupActivationMode.RESUME, DEFAULT_PROFILE);
 
             ServerInfectionCleanupService.CleanupTickResult result = SERVICE.tick(
-                    server, settings(3, 3, 3, 3), NORMAL_MUTATOR);
+                    server, settings(3, 3), NORMAL_MUTATOR);
 
             helper.assertTrue(result.inspected() == 3, "cleanup did not inspect the configured three positions");
             helper.assertTrue(
@@ -107,9 +109,13 @@ public final class ServerInfectionCleanupGameTests {
                     "unloaded test chunk was already loaded");
             setCursor(level, unloadedKey, 0);
             SERVICE.registerActiveSource(
-                    level, source("unloaded"), Set.of(unloaded), CleanupActivationMode.RESUME);
+                    level,
+                    source("unloaded"),
+                    Set.of(unloaded),
+                    CleanupActivationMode.RESUME,
+                    DEFAULT_PROFILE);
             ServerInfectionCleanupService.CleanupTickResult unloadedResult =
-                    SERVICE.tick(server, settings(8, 8, 8, 8), NORMAL_MUTATOR);
+                    SERVICE.tick(server, settings(8, 8), NORMAL_MUTATOR);
             helper.assertTrue(unloadedResult.inspected() == 0, "unloaded chunk was inspected");
             helper.assertTrue(
                     level.getChunkSource().getChunkNow(unloaded.x, unloaded.z) == null,
@@ -140,12 +146,20 @@ public final class ServerInfectionCleanupGameTests {
             setCursor(overworld, overworldChunk.toLong(), 0);
             setCursor(nether, netherChunk.toLong(), 0);
             SERVICE.registerActiveSource(
-                    overworld, source("dimension_overworld"), Set.of(overworldChunk), CleanupActivationMode.RESUME);
+                    overworld,
+                    source("dimension_overworld"),
+                    Set.of(overworldChunk),
+                    CleanupActivationMode.RESUME,
+                    DEFAULT_PROFILE);
             SERVICE.registerActiveSource(
-                    nether, source("dimension_nether"), Set.of(netherChunk), CleanupActivationMode.RESUME);
+                    nether,
+                    source("dimension_nether"),
+                    Set.of(netherChunk),
+                    CleanupActivationMode.RESUME,
+                    DEFAULT_PROFILE);
 
             ServerInfectionCleanupService.CleanupTickResult fairness =
-                    SERVICE.tick(server, settings(2, 0, 2, 0), NORMAL_MUTATOR);
+                    SERVICE.tick(server, settings(2, 0), NORMAL_MUTATOR);
             helper.assertTrue(fairness.inspected() == 2, "dimension fairness test missed an inspection");
             helper.assertTrue(
                     fairness.inspectedDimensions().size() == 2
@@ -156,9 +170,13 @@ public final class ServerInfectionCleanupGameTests {
             placeRemovable(overworld, negativeTarget);
             setCursor(overworld, overworldChunk.toLong(), 0);
             SERVICE.registerActiveSource(
-                    overworld, source("negative_chunk"), Set.of(overworldChunk), CleanupActivationMode.RESUME);
+                    overworld,
+                    source("negative_chunk"),
+                    Set.of(overworldChunk),
+                    CleanupActivationMode.RESUME,
+                    DEFAULT_PROFILE);
             ServerInfectionCleanupService.CleanupTickResult negative =
-                    SERVICE.tick(server, settings(1, 1, 1, 1), NORMAL_MUTATOR);
+                    SERVICE.tick(server, settings(1, 1), NORMAL_MUTATOR);
             helper.assertTrue(negative.mutated() == 1, "negative chunk cleanup did not mutate once");
             helper.assertTrue(overworld.getBlockState(negativeTarget).isAir(), "negative chunk target remains");
         } finally {
@@ -179,7 +197,52 @@ public final class ServerInfectionCleanupGameTests {
             SERVICE.clearRuntime(server);
             assertDuplicateRegistrationThroughService(helper, level);
             SERVICE.clearRuntime(server);
+            assertActiveExpansionThroughService(helper, level);
+            SERVICE.clearRuntime(server);
+            assertShrinkOverlapThroughService(helper, level);
+            SERVICE.clearRuntime(server);
             assertPausedCoverageMoveThroughService(helper, level);
+        } finally {
+            SERVICE.clearRuntime(server);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "cleanup_service_profiles", timeoutTicks = 200)
+    public static void distinctSourceBudgetsRemainUnderGlobalCap(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerLevel level = server.overworld();
+        ChunkPos limitedChunk = new ChunkPos(-74, -70);
+        ChunkPos largerChunk = new ChunkPos(-75, -70);
+
+        try {
+            SERVICE.clearRuntime(server);
+            level.getChunk(limitedChunk.x, limitedChunk.z);
+            level.getChunk(largerChunk.x, largerChunk.z);
+            setCursor(level, limitedChunk.toLong(), 0);
+            setCursor(level, largerChunk.toLong(), 0);
+            SERVICE.registerActiveSource(
+                    level,
+                    source("profile_limited"),
+                    Set.of(limitedChunk),
+                    CleanupActivationMode.RESUME,
+                    new CleanupSourceProfile(20, 1, 1));
+            SERVICE.registerActiveSource(
+                    level,
+                    source("profile_larger"),
+                    Set.of(largerChunk),
+                    CleanupActivationMode.RESUME,
+                    new CleanupSourceProfile(20, 3, 1));
+
+            ServerInfectionCleanupService.CleanupTickResult first =
+                    SERVICE.tick(server, settings(2, 0), NORMAL_MUTATOR);
+            ServerInfectionCleanupService.CleanupTickResult second =
+                    SERVICE.tick(server, settings(2, 0), NORMAL_MUTATOR);
+
+            helper.assertTrue(first.inspected() == 2, "distinct profiles did not reach the global cap");
+            helper.assertTrue(second.inspected() == 2, "larger source profile did not retain its independent budget");
+            assertCursor(helper, level, limitedChunk.toLong(), 1, "limited source exceeded its inspection budget");
+            assertCursor(helper, level, largerChunk.toLong(), 3, "larger source budget was not enforced exactly");
         } finally {
             SERVICE.clearRuntime(server);
         }
@@ -289,7 +352,7 @@ public final class ServerInfectionCleanupGameTests {
         long chunkKey = chunk.toLong();
         level.getChunk(chunk.x, chunk.z);
         SERVICE.registerActiveSource(
-                level, source("overlap_a"), Set.of(chunk), CleanupActivationMode.NEW_PASS);
+                level, source("overlap_a"), Set.of(chunk), CleanupActivationMode.NEW_PASS, DEFAULT_PROFILE);
         InfectionCleanupSavedData.get(level)
                 .update(
                         chunkKey,
@@ -298,11 +361,11 @@ public final class ServerInfectionCleanupGameTests {
                                 false,
                                 level.getMinSection(),
                                 level.getSectionsCount()));
-        SERVICE.tick(server, settings(1, 1, 1, 1), NORMAL_MUTATOR);
+        SERVICE.tick(server, settings(1, 1), NORMAL_MUTATOR);
         helper.assertTrue(SERVICE.activeTaskCount(level) == 0, "completed overlap task remained queued");
 
         SERVICE.registerActiveSource(
-                level, source("overlap_b"), Set.of(chunk), CleanupActivationMode.NEW_PASS);
+                level, source("overlap_b"), Set.of(chunk), CleanupActivationMode.NEW_PASS, DEFAULT_PROFILE);
 
         helper.assertTrue(
                 InfectionCleanupSavedData.get(level).snapshot().get(chunkKey).cursor().equals(CleanupCursor.start()),
@@ -315,7 +378,8 @@ public final class ServerInfectionCleanupGameTests {
         ChunkPos chunk = new ChunkPos(-71, -70);
         long chunkKey = chunk.toLong();
         SuppressionSourceId source = source("duplicate_registration");
-        SERVICE.registerActiveSource(level, source, Set.of(chunk), CleanupActivationMode.NEW_PASS);
+        SERVICE.registerActiveSource(
+                level, source, Set.of(chunk), CleanupActivationMode.NEW_PASS, DEFAULT_PROFILE);
         CleanupProgress partial = new CleanupProgress(
                 new CleanupCursor(cleanupSectionIndex(level), 321, false),
                 false,
@@ -323,11 +387,70 @@ public final class ServerInfectionCleanupGameTests {
                 level.getSectionsCount());
         InfectionCleanupSavedData.get(level).update(chunkKey, partial);
 
-        SERVICE.registerActiveSource(level, source, Set.of(chunk), CleanupActivationMode.NEW_PASS);
+        SERVICE.registerActiveSource(
+                level, source, Set.of(chunk), CleanupActivationMode.NEW_PASS, DEFAULT_PROFILE);
 
         helper.assertTrue(
                 InfectionCleanupSavedData.get(level).snapshot().get(chunkKey).equals(partial),
                 "duplicate active NEW_PASS reset cursor");
+    }
+
+    private static void assertActiveExpansionThroughService(GameTestHelper helper, ServerLevel level) {
+        ChunkPos retained = new ChunkPos(-76, -70);
+        ChunkPos added = new ChunkPos(-77, -70);
+        long retainedKey = retained.toLong();
+        long addedKey = added.toLong();
+        SuppressionSourceId source = source("active_expansion");
+        SERVICE.registerActiveSource(
+                level, source, Set.of(retained), CleanupActivationMode.NEW_PASS, DEFAULT_PROFILE);
+        setCursor(level, retainedKey, 31);
+        setCursor(level, addedKey, 47);
+
+        SERVICE.registerActiveSource(
+                level,
+                source,
+                Set.of(retained, added),
+                CleanupActivationMode.NEW_PASS,
+                DEFAULT_PROFILE);
+
+        assertCursor(helper, level, retainedKey, 31, "ACTIVE expansion reset retained coverage");
+        helper.assertTrue(
+                InfectionCleanupSavedData.get(level)
+                        .snapshot()
+                        .get(addedKey)
+                        .cursor()
+                        .equals(CleanupCursor.start()),
+                "ACTIVE expansion did not start new coverage at NEW_PASS");
+    }
+
+    private static void assertShrinkOverlapThroughService(GameTestHelper helper, ServerLevel level) {
+        ChunkPos activeChunk = new ChunkPos(-78, -70);
+        ChunkPos pausedChunk = new ChunkPos(-79, -70);
+        ChunkPos finalChunk = new ChunkPos(-80, -70);
+        SuppressionSourceId shrinking = source("shrinking");
+        SuppressionSourceId activeOverlap = source("shrink_active_overlap");
+        SuppressionSourceId pausedOverlap = source("shrink_paused_overlap");
+        SERVICE.registerActiveSource(
+                level,
+                shrinking,
+                Set.of(activeChunk, pausedChunk, finalChunk),
+                CleanupActivationMode.NEW_PASS,
+                DEFAULT_PROFILE);
+        SERVICE.registerActiveSource(
+                level, activeOverlap, Set.of(activeChunk), CleanupActivationMode.NEW_PASS, DEFAULT_PROFILE);
+        SERVICE.registerPausedSource(
+                level, pausedOverlap, Set.of(pausedChunk), CleanupActivationMode.RESUME, DEFAULT_PROFILE);
+        setCursor(level, activeChunk.toLong(), 12);
+        setCursor(level, pausedChunk.toLong(), 13);
+        setCursor(level, finalChunk.toLong(), 14);
+
+        SERVICE.registerActiveSource(
+                level, shrinking, Set.of(), CleanupActivationMode.NEW_PASS, DEFAULT_PROFILE);
+
+        Map<Long, CleanupProgress> progress = InfectionCleanupSavedData.get(level).snapshot();
+        helper.assertTrue(!progress.get(activeChunk.toLong()).restartRequired(), "active overlap was restarted on shrink");
+        helper.assertTrue(!progress.get(pausedChunk.toLong()).restartRequired(), "paused overlap was restarted on shrink");
+        helper.assertTrue(progress.get(finalChunk.toLong()).restartRequired(), "final removed coverage was not restarted");
     }
 
     private static void assertPausedCoverageMoveThroughService(
@@ -337,12 +460,14 @@ public final class ServerInfectionCleanupGameTests {
         long previousKey = previous.toLong();
         long nextKey = next.toLong();
         SuppressionSourceId source = source("paused_move");
-        SERVICE.registerActiveSource(level, source, Set.of(previous), CleanupActivationMode.NEW_PASS);
+        SERVICE.registerActiveSource(
+                level, source, Set.of(previous), CleanupActivationMode.NEW_PASS, DEFAULT_PROFILE);
         SERVICE.pauseSource(level, source);
         setCursor(level, previousKey, 11);
         setCursor(level, nextKey, 22);
 
-        SERVICE.registerActiveSource(level, source, Set.of(next), CleanupActivationMode.RESUME);
+        SERVICE.registerActiveSource(
+                level, source, Set.of(next), CleanupActivationMode.RESUME, DEFAULT_PROFILE);
 
         CleanupProgress oldProgress =
                 InfectionCleanupSavedData.get(level).snapshot().get(previousKey);
@@ -361,17 +486,28 @@ public final class ServerInfectionCleanupGameTests {
             SuppressionSourceId source) {
         SERVICE.clearRuntime(server);
         level.getChunk(chunk.x, chunk.z);
-        BlockPos target = position(level, chunk, 0);
+        BlockPos first = position(level, chunk, 0);
+        BlockPos target = position(level, chunk, 1);
+        placeRemovable(level, first);
         placeRemovable(level, target);
         setCursor(level, chunk.toLong(), 0);
-        SERVICE.registerActiveSource(level, source, Set.of(chunk), CleanupActivationMode.RESUME);
+        SERVICE.registerActiveSource(
+                level,
+                source,
+                Set.of(chunk),
+                CleanupActivationMode.RESUME,
+                new CleanupSourceProfile(20, 2, 1));
+
+        ServerInfectionCleanupService.CleanupTickResult firstResult =
+                SERVICE.tick(server, settings(1, 1), NORMAL_MUTATOR);
+        helper.assertTrue(firstResult.mutated() == 1, "source mutation setup did not consume its budget");
 
         ServerInfectionCleanupService.CleanupTickResult result =
-                SERVICE.tick(server, settings(1, 1, 1, 0), NORMAL_MUTATOR);
+                SERVICE.tick(server, settings(1, 1), NORMAL_MUTATOR);
         helper.assertTrue(result.inspected() == 1 && result.mutated() == 0, "zero source mutation budget was exceeded");
-        assertCursor(helper, level, chunk.toLong(), 0, "cursor advanced without source mutation budget");
+        assertCursor(helper, level, chunk.toLong(), 1, "cursor advanced without source mutation budget");
         helper.assertTrue(level.getBlockState(target).is(Sblocks.GROWTHS_BIG.get()), "deferred target was replaced");
-        clear(level, target, target.below());
+        clear(level, first, first.below(), target, target.below());
     }
 
     private static void assertFailedMutationDefers(
@@ -385,10 +521,15 @@ public final class ServerInfectionCleanupGameTests {
         BlockPos target = position(level, chunk, 0);
         placeRemovable(level, target);
         setCursor(level, chunk.toLong(), 0);
-        SERVICE.registerActiveSource(level, source, Set.of(chunk), CleanupActivationMode.RESUME);
+        SERVICE.registerActiveSource(
+                level,
+                source,
+                Set.of(chunk),
+                CleanupActivationMode.RESUME,
+                new CleanupSourceProfile(20, 1, 1));
 
         ServerInfectionCleanupService.CleanupTickResult result =
-                SERVICE.tick(server, settings(1, 1, 1, 1), (ignoredLevel, ignoredPos, ignoredState, ignoredFlags) -> false);
+                SERVICE.tick(server, settings(1, 1), (ignoredLevel, ignoredPos, ignoredState, ignoredFlags) -> false);
         helper.assertTrue(result.inspected() == 1 && result.mutated() == 0, "failed setBlock counted as mutation");
         assertCursor(helper, level, chunk.toLong(), 0, "cursor advanced after failed setBlock");
         clear(level, target, target.below());
@@ -406,9 +547,10 @@ public final class ServerInfectionCleanupGameTests {
             level.setBlock(position(level, chunk, index), Blocks.STONE.defaultBlockState(), Block.UPDATE_NONE);
         }
         setCursor(level, chunk.toLong(), 0);
-        SERVICE.registerActiveSource(level, source, Set.of(chunk), CleanupActivationMode.RESUME);
+        SERVICE.registerActiveSource(
+                level, source, Set.of(chunk), CleanupActivationMode.RESUME, DEFAULT_PROFILE);
         ServerInfectionCleanupService.CleanupTickResult inspections =
-                SERVICE.tick(server, settings(2, 2, 10, 10), NORMAL_MUTATOR);
+                SERVICE.tick(server, settings(2, 2), NORMAL_MUTATOR);
         helper.assertTrue(inspections.inspected() == 2, "global inspection budget was not enforced exactly");
 
         SERVICE.clearRuntime(server);
@@ -416,10 +558,11 @@ public final class ServerInfectionCleanupGameTests {
             placeRemovable(level, position(level, chunk, index));
         }
         setCursor(level, chunk.toLong(), 0);
-        SERVICE.registerActiveSource(level, source, Set.of(chunk), CleanupActivationMode.RESUME);
+        SERVICE.registerActiveSource(
+                level, source, Set.of(chunk), CleanupActivationMode.RESUME, DEFAULT_PROFILE);
 
         ServerInfectionCleanupService.CleanupTickResult result =
-                SERVICE.tick(server, settings(3, 1, 10, 10), NORMAL_MUTATOR);
+                SERVICE.tick(server, settings(3, 1), NORMAL_MUTATOR);
         helper.assertTrue(result.inspected() <= 3, "global mutation test exceeded inspection budget");
         helper.assertTrue(result.mutated() == 1, "global mutation budget was exceeded");
         for (int index = 0; index < 3; index++) {
@@ -440,10 +583,15 @@ public final class ServerInfectionCleanupGameTests {
             placeRemovable(level, position(level, chunk, index));
         }
         setCursor(level, chunk.toLong(), 0);
-        SERVICE.registerActiveSource(level, source, Set.of(chunk), CleanupActivationMode.RESUME);
+        SERVICE.registerActiveSource(
+                level,
+                source,
+                Set.of(chunk),
+                CleanupActivationMode.RESUME,
+                new CleanupSourceProfile(20, 2, 1));
 
         ServerInfectionCleanupService.CleanupTickResult result =
-                SERVICE.tick(server, settings(10, 10, 2, 1), NORMAL_MUTATOR);
+                SERVICE.tick(server, settings(10, 10), NORMAL_MUTATOR);
         helper.assertTrue(result.inspected() == 2, "source inspection cycle budget was not enforced exactly");
         helper.assertTrue(
                 result.mutated() == 1,
@@ -461,21 +609,22 @@ public final class ServerInfectionCleanupGameTests {
         SuppressionSourceId source = source("runtime_resume");
         level.getChunk(chunk.x, chunk.z);
         setCursor(level, chunkKey, 100);
-        SERVICE.registerActiveSource(level, source, Set.of(chunk), CleanupActivationMode.RESUME);
-        SERVICE.tick(server, settings(1, 0, 1, 0), NORMAL_MUTATOR);
+        SERVICE.registerActiveSource(
+                level, source, Set.of(chunk), CleanupActivationMode.RESUME, DEFAULT_PROFILE);
+        SERVICE.tick(server, settings(1, 0), NORMAL_MUTATOR);
         assertCursor(helper, level, chunkKey, 101, "first runtime cursor did not advance");
 
         SERVICE.clearRuntime(server);
-        SERVICE.registerActiveSource(level, source, Set.of(chunk), CleanupActivationMode.RESUME);
+        SERVICE.registerActiveSource(
+                level, source, Set.of(chunk), CleanupActivationMode.RESUME, DEFAULT_PROFILE);
         assertCursor(helper, level, chunkKey, 101, "clearRuntime discarded persisted cursor");
-        SERVICE.tick(server, settings(1, 0, 1, 0), NORMAL_MUTATOR);
+        SERVICE.tick(server, settings(1, 0), NORMAL_MUTATOR);
         assertCursor(helper, level, chunkKey, 102, "RESUME did not continue persisted cursor");
     }
 
     private static ServerInfectionCleanupService.CleanupSettings settings(
-            int globalInspections, int globalMutations, int sourceInspections, int sourceMutations) {
-        return new ServerInfectionCleanupService.CleanupSettings(
-                true, globalInspections, globalMutations, 20, sourceInspections, sourceMutations);
+            int globalInspections, int globalMutations) {
+        return new ServerInfectionCleanupService.CleanupSettings(true, globalInspections, globalMutations);
     }
 
     private static void setCursor(ServerLevel level, long chunkKey, int localIndex) {

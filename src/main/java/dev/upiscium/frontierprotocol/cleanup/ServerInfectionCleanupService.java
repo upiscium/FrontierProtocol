@@ -38,11 +38,32 @@ public final class ServerInfectionCleanupService {
             ServerLevel level,
             SuppressionSourceId sourceId,
             Set<ChunkPos> coveredChunks,
-            CleanupActivationMode activationMode) {
+            CleanupActivationMode activationMode,
+            CleanupSourceProfile profile) {
         requireServerThread(level);
         DimensionCleanupIndex index = indexes.computeIfAbsent(level, ignored -> new DimensionCleanupIndex());
         DimensionCleanupIndex.ActivationChanges changes =
-                index.registerActive(sourceId, coveredChunks, activationMode);
+                index.registerActive(sourceId, coveredChunks, activationMode, profile);
+        applyActivationChanges(level, index, changes);
+    }
+
+    public void registerPausedSource(
+            ServerLevel level,
+            SuppressionSourceId sourceId,
+            Set<ChunkPos> coveredChunks,
+            CleanupActivationMode activationMode,
+            CleanupSourceProfile profile) {
+        requireServerThread(level);
+        DimensionCleanupIndex index = indexes.computeIfAbsent(level, ignored -> new DimensionCleanupIndex());
+        DimensionCleanupIndex.ActivationChanges changes =
+                index.registerPaused(sourceId, coveredChunks, activationMode, profile);
+        applyActivationChanges(level, index, changes);
+    }
+
+    private void applyActivationChanges(
+            ServerLevel level,
+            DimensionCleanupIndex index,
+            DimensionCleanupIndex.ActivationChanges changes) {
         InfectionCleanupSavedData data = InfectionCleanupSavedData.get(level);
 
         for (long chunkKey : changes.noLongerRegistered()) {
@@ -115,12 +136,7 @@ public final class ServerInfectionCleanupService {
 
         for (Map.Entry<ServerLevel, DimensionCleanupIndex> entry : indexes.entrySet()) {
             if (entry.getKey().getServer() == server) {
-                entry.getValue()
-                        .refreshSourceBudgets(
-                                server.getTickCount(),
-                                settings.sourceIntervalTicks(),
-                                settings.sourceInspectionBudget(),
-                                settings.sourceMutationBudget());
+                entry.getValue().refreshSourceBudgets(server.getTickCount());
             }
         }
 
@@ -357,18 +373,9 @@ public final class ServerInfectionCleanupService {
     }
 
     record CleanupSettings(
-            boolean enabled,
-            int globalInspectionBudget,
-            int globalMutationBudget,
-            int sourceIntervalTicks,
-            int sourceInspectionBudget,
-            int sourceMutationBudget) {
+            boolean enabled, int globalInspectionBudget, int globalMutationBudget) {
         CleanupSettings {
-            if (globalInspectionBudget < 0
-                    || globalMutationBudget < 0
-                    || sourceInspectionBudget < 0
-                    || sourceMutationBudget < 0
-                    || sourceIntervalTicks <= 0) {
+            if (globalInspectionBudget < 0 || globalMutationBudget < 0) {
                 throw new IllegalArgumentException("Cleanup settings contain an invalid budget or interval");
             }
         }
@@ -377,10 +384,7 @@ public final class ServerInfectionCleanupService {
             return new CleanupSettings(
                     FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.get(),
                     FrontierProtocolServerConfig.CLEANUP_GLOBAL_INSPECTION_BUDGET_PER_TICK.get(),
-                    FrontierProtocolServerConfig.CLEANUP_GLOBAL_MUTATION_BUDGET_PER_TICK.get(),
-                    FrontierProtocolServerConfig.TIER1_CLEANUP_INTERVAL_TICKS.get(),
-                    FrontierProtocolServerConfig.TIER1_CLEANUP_INSPECTION_BUDGET_PER_CYCLE.get(),
-                    FrontierProtocolServerConfig.TIER1_CLEANUP_MUTATION_BUDGET_PER_CYCLE.get());
+                    FrontierProtocolServerConfig.CLEANUP_GLOBAL_MUTATION_BUDGET_PER_TICK.get());
         }
     }
 

@@ -15,33 +15,60 @@ final class DimensionCleanupIndex {
     private final RoundRobinCleanupQueue<Long> tasks = new RoundRobinCleanupQueue<>();
 
     public ActivationChanges registerActive(
-            SuppressionSourceId sourceId, Set<ChunkPos> coveredChunks, CleanupActivationMode activationMode) {
+            SuppressionSourceId sourceId,
+            Set<ChunkPos> coveredChunks,
+            CleanupActivationMode activationMode,
+            CleanupSourceProfile profile) {
+        return register(sourceId, coveredChunks, activationMode, profile, true);
+    }
+
+    public ActivationChanges registerPaused(
+            SuppressionSourceId sourceId,
+            Set<ChunkPos> coveredChunks,
+            CleanupActivationMode activationMode,
+            CleanupSourceProfile profile) {
+        return register(sourceId, coveredChunks, activationMode, profile, false);
+    }
+
+    private ActivationChanges register(
+            SuppressionSourceId sourceId,
+            Set<ChunkPos> coveredChunks,
+            CleanupActivationMode activationMode,
+            CleanupSourceProfile profile,
+            boolean active) {
         SourceRegistration previous = registrations.get(sourceId);
+        boolean previousWasActive = previous != null && previous.active();
         Set<Long> previousRegistered = previous == null ? Set.of() : previous.chunkKeys();
-        Set<Long> previousActive = previous != null && previous.active() ? previousRegistered : Set.of();
+        Set<Long> previousActive = previousWasActive ? previousRegistered : Set.of();
         Set<Long> nextKeys = chunkKeys(coveredChunks);
+        Set<Long> newlyCovered = new LinkedHashSet<>(nextKeys);
+        newlyCovered.removeAll(previousRegistered);
+        Set<Long> removed = new LinkedHashSet<>(previousRegistered);
+        removed.removeAll(nextKeys);
         Set<Long> globallyNewlyActive = new LinkedHashSet<>();
         Set<Long> ignoredInactive = new LinkedHashSet<>();
-        boolean sourceStartsNewPass = (previous == null || !previous.active())
-                && activationMode == CleanupActivationMode.NEW_PASS;
 
         for (long key : previousActive) {
-            if (!nextKeys.contains(key)) removeActiveSource(key, sourceId, ignoredInactive);
+            if (!active || !nextKeys.contains(key)) removeActiveSource(key, sourceId, ignoredInactive);
         }
-        for (long key : nextKeys) {
-            if (!previousActive.contains(key)) addActiveSource(key, sourceId, globallyNewlyActive);
+        if (active) {
+            for (long key : nextKeys) {
+                if (!previousActive.contains(key)) addActiveSource(key, sourceId, globallyNewlyActive);
+            }
         }
 
         SourceRegistration next = previous == null
-                ? new SourceRegistration(sourceId, nextKeys, true)
-                : previous.withCoverage(nextKeys, true);
+                ? new SourceRegistration(sourceId, nextKeys, active, profile)
+                : previous.update(nextKeys, active, profile);
         next.activationMode = activationMode;
         registrations.put(sourceId, next);
 
-        Set<Long> noLongerRegistered = new LinkedHashSet<>(previousRegistered);
-        noLongerRegistered.removeAll(nextKeys);
+        Set<Long> noLongerRegistered = new LinkedHashSet<>(removed);
         noLongerRegistered.removeIf(this::hasRegistrationCoveringInternal);
-        Set<Long> newPassChunks = sourceStartsNewPass ? nextKeys : Set.of();
+        Set<Long> newPassChunks = Set.of();
+        if (activationMode == CleanupActivationMode.NEW_PASS) {
+            newPassChunks = previous == null || !previousWasActive ? nextKeys : Set.copyOf(newlyCovered);
+        }
         return new ActivationChanges(
                 Set.copyOf(globallyNewlyActive), Set.copyOf(newPassChunks), Set.copyOf(noLongerRegistered));
     }
@@ -122,12 +149,9 @@ final class DimensionCleanupIndex {
         return selected;
     }
 
-    public void refreshSourceBudgets(
-            long gameTick, int intervalTicks, int inspectionBudget, int mutationBudget) {
+    public void refreshSourceBudgets(long gameTick) {
         for (SourceRegistration registration : registrations.values()) {
-            if (registration.active()) {
-                registration.refreshBudget(gameTick, intervalTicks, inspectionBudget, mutationBudget);
-            }
+            if (registration.active()) registration.refreshBudget(gameTick);
         }
     }
 
@@ -184,7 +208,7 @@ final class DimensionCleanupIndex {
 
     /**
      * @param globallyNewlyActive chunks whose active-source set changed from empty to non-empty
-     * @param newPassChunks every covered chunk of a source that transitioned from absent/paused through NEW_PASS
+     * @param newPassChunks all coverage for an absent/paused NEW_PASS source, or newly added ACTIVE coverage
      * @param noLongerRegistered removed coverage that no remaining active or paused source registration covers
      */
     record ActivationChanges(
@@ -198,23 +222,34 @@ final class DimensionCleanupIndex {
         private long nextCycleTick;
         private boolean cycleInitialized;
         private CleanupActivationMode activationMode;
+        private CleanupSourceProfile profile;
 
-        private SourceRegistration(SuppressionSourceId sourceId, Set<Long> chunkKeys, boolean active) {
+        private SourceRegistration(
+                SuppressionSourceId sourceId,
+                Set<Long> chunkKeys,
+                boolean active,
+                CleanupSourceProfile profile) {
             this.sourceId = sourceId;
             this.chunkKeys = chunkKeys;
             this.active = active;
+            this.profile = profile;
         }
 
-        private SourceRegistration withCoverage(Set<Long> nextKeys, boolean nextActive) {
+        private SourceRegistration update(
+                Set<Long> nextKeys, boolean nextActive, CleanupSourceProfile nextProfile) {
             chunkKeys = nextKeys;
             active = nextActive;
+            if (!profile.equals(nextProfile)) {
+                profile = nextProfile;
+                cycleInitialized = false;
+            }
             return this;
         }
 
-        private void refreshBudget(long gameTick, int intervalTicks, int inspections, int mutations) {
+        private void refreshBudget(long gameTick) {
             if (!cycleInitialized || gameTick >= nextCycleTick) {
-                budget.reset(inspections, mutations);
-                nextCycleTick = gameTick + intervalTicks;
+                budget.reset(profile.inspectionBudget(), profile.mutationBudget());
+                nextCycleTick = gameTick + profile.intervalTicks();
                 cycleInitialized = true;
             }
         }
@@ -237,6 +272,10 @@ final class DimensionCleanupIndex {
 
         public CleanupActivationMode activationMode() {
             return activationMode;
+        }
+
+        CleanupSourceProfile profile() {
+            return profile;
         }
     }
 }

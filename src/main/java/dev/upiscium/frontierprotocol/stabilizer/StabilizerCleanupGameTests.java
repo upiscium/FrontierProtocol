@@ -12,6 +12,7 @@ import dev.upiscium.frontierprotocol.config.FrontierProtocolServerConfig;
 import dev.upiscium.frontierprotocol.registry.ModBlocks;
 import dev.upiscium.frontierprotocol.registry.ModItems;
 import dev.upiscium.frontierprotocol.suppression.ServerInfectionSuppressionService;
+import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -122,6 +123,119 @@ public final class StabilizerCleanupGameTests {
             placeMotor(level, first.west());
             placeMotor(level, second.west());
             helper.runAfterDelay(10, () -> enterGraceForOverlapReload(context));
+        });
+    }
+
+    @GameTest(template = "empty", batch = "tier1_cleanup_config_update", timeoutTicks = 200)
+    public static void activeAndGraceConfigUpdatesRefreshCoverageAndProfile(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel().getServer().overworld();
+        BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        ChunkPos center = new ChunkPos(origin);
+        ChunkPos expanded = new ChunkPos(center.x + 1, center.z);
+        BlockPos device = new BlockPos(center.getMinBlockX() + 8, origin.getY() + 1, center.getMinBlockZ() + 8);
+        BlockPos target = new BlockPos(expanded.getMinBlockX() + 2, 64, expanded.getMinBlockZ() + 2);
+        TestContext context = new TestContext(helper, level, device, null, target, ConfigSnapshot.capture());
+
+        runStage(context, () -> {
+            configureCleanupTest();
+            FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.set(false);
+            FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(0);
+            FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(40);
+            ServerInfectionCleanupService.INSTANCE.clearRuntime(level.getServer());
+            placeDevice(level, device);
+            insertCell(level, device, 2, helper);
+            placeMotor(level, device.west());
+            helper.runAfterDelay(10, () -> updateActiveProfile(context, center, expanded));
+        });
+    }
+
+    private static void updateActiveProfile(TestContext context, ChunkPos center, ChunkPos expanded) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE,
+                    "config-update Tier 1 was not ACTIVE");
+            CleanupProgress retained = setCursor(
+                    context.level(), center, new BlockPos(center.getMinBlockX() + 1, 64, center.getMinBlockZ() + 1));
+            setCompleted(context.level(), expanded);
+            FrontierProtocolServerConfig.TIER1_CLEANUP_INSPECTION_BUDGET_PER_CYCLE.set(4095);
+            context.helper().runAfterDelay(2, () -> expandActiveCoverage(context, center, expanded, retained));
+        });
+    }
+
+    private static void expandActiveCoverage(
+            TestContext context, ChunkPos center, ChunkPos expanded, CleanupProgress retained) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    InfectionCleanupSavedData.get(context.level()).snapshot().get(center.toLong()).equals(retained),
+                    "ACTIVE profile-only update reset the retained cursor");
+            FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(1);
+            context.helper().runAfterDelay(2, () -> verifyActiveExpansion(context, center, expanded, retained));
+        });
+    }
+
+    private static void verifyActiveExpansion(
+            TestContext context, ChunkPos center, ChunkPos expanded, CleanupProgress retained) {
+        runStage(context, () -> {
+            Map<Long, CleanupProgress> progress = InfectionCleanupSavedData.get(context.level()).snapshot();
+            context.helper().assertTrue(
+                    ServerInfectionSuppressionService.INSTANCE.isSuppressed(context.level(), expanded),
+                    "ordinary ACTIVE tick did not expand suppression coverage");
+            context.helper().assertTrue(
+                    progress.get(center.toLong()).equals(retained),
+                    "ACTIVE expansion reset retained cleanup coverage");
+            context.helper().assertTrue(
+                    progress.get(expanded.toLong()).cursor().equals(CleanupCursor.start()),
+                    "ACTIVE expansion did not NEW_PASS newly covered chunks");
+            context.level().setBlock(context.first().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            context.helper().runAfterDelay(3, () -> updateGraceProfile(context, center, expanded));
+        });
+    }
+
+    private static void updateGraceProfile(TestContext context, ChunkPos center, ChunkPos expanded) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.GRACE_PERIOD,
+                    "config-update Tier 1 did not enter GRACE");
+            CleanupProgress paused = setCursor(
+                    context.level(), center, new BlockPos(center.getMinBlockX() + 3, 64, center.getMinBlockZ() + 3));
+            FrontierProtocolServerConfig.TIER1_CLEANUP_MUTATION_BUDGET_PER_CYCLE.set(3);
+            context.helper().runAfterDelay(2, () -> shrinkGraceCoverage(context, center, expanded, paused));
+        });
+    }
+
+    private static void shrinkGraceCoverage(
+            TestContext context, ChunkPos center, ChunkPos expanded, CleanupProgress paused) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.GRACE_PERIOD,
+                    "GRACE profile update changed lifecycle status");
+            context.helper().assertTrue(
+                    InfectionCleanupSavedData.get(context.level()).snapshot().get(center.toLong()).equals(paused),
+                    "GRACE profile update reset or advanced the cursor");
+            FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(0);
+            context.helper().runAfterDelay(2, () -> verifyGraceShrink(context, expanded, paused));
+        });
+    }
+
+    private static void verifyGraceShrink(
+            TestContext context, ChunkPos expanded, CleanupProgress paused) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.GRACE_PERIOD,
+                    "GRACE coverage shrink transiently activated cleanup");
+            context.helper().assertTrue(
+                    !ServerInfectionSuppressionService.INSTANCE.isSuppressed(context.level(), expanded),
+                    "ordinary GRACE tick did not shrink suppression coverage");
+            context.helper().assertTrue(
+                    InfectionCleanupSavedData.get(context.level())
+                            .snapshot()
+                            .get(expanded.toLong())
+                            .restartRequired(),
+                    "final GRACE coverage shrink did not require a future pass");
+            context.helper().assertTrue(
+                    progress(context).equals(paused), "GRACE coverage update changed retained progress");
+            cleanup(context);
+            context.helper().succeed();
         });
     }
 
@@ -566,6 +680,7 @@ public final class StabilizerCleanupGameTests {
 
     private record ConfigSnapshot(
             int minimumRpm,
+            int chunkRadius,
             int graceTicks,
             int consumableTicks,
             boolean cleanupEnabled,
@@ -577,6 +692,7 @@ public final class StabilizerCleanupGameTests {
         private static ConfigSnapshot capture() {
             return new ConfigSnapshot(
                     FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.get(),
+                    FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.get(),
                     FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.get(),
                     FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.get(),
                     FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.get(),
@@ -589,6 +705,7 @@ public final class StabilizerCleanupGameTests {
 
         private void restore() {
             FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.set(minimumRpm);
+            FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(chunkRadius);
             FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(graceTicks);
             FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.set(consumableTicks);
             FrontierProtocolServerConfig.PROGRESSIVE_CLEANUP_ENABLED.set(cleanupEnabled);
