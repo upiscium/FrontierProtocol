@@ -24,6 +24,12 @@ public final class ModBlocks {
             net.minecraft.world.level.block.state.BlockBehaviour.Properties.ofFullCopy(Blocks.COPPER_BLOCK)
                     .strength(5.0F)
                     .requiresCorrectToolForDrops());
+    public static final DeferredBlock<StabilizerBlock> TIER_3_STABILIZER = BLOCKS.registerBlock(
+            "tier_3_stabilizer",
+            properties -> new StabilizerBlock(StabilizerTier.TIER_3, properties),
+            net.minecraft.world.level.block.state.BlockBehaviour.Properties.ofFullCopy(Blocks.NETHERITE_BLOCK)
+                    .strength(8.0F, 8.0F)
+                    .requiresCorrectToolForDrops());
 
     private ModBlocks() {}
 
@@ -38,5 +44,8 @@ public final class ModBlocks {
         BlockStressValues.IMPACTS.register(
                 TIER_2_STABILIZER.get(),
                 () -> StabilizerTierDefinitions.resolve(StabilizerTier.TIER_2).stressImpact());
+        BlockStressValues.IMPACTS.register(
+                TIER_3_STABILIZER.get(),
+                () -> StabilizerTierDefinitions.resolve(StabilizerTier.TIER_3).stressImpact());
     }
 }

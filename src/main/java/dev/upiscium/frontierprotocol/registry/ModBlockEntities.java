@@ -17,7 +17,8 @@ public final class ModBlockEntities {
             TYPES.register("stabilizer", () -> BlockEntityType.Builder.of(
                     StabilizerBlockEntity::new,
                     ModBlocks.TIER_1_STABILIZER.get(),
-                    ModBlocks.TIER_2_STABILIZER.get()).build(null));
+                    ModBlocks.TIER_2_STABILIZER.get(),
+                    ModBlocks.TIER_3_STABILIZER.get()).build(null));
 
     private ModBlockEntities() {}
 

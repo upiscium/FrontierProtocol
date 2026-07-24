@@ -87,4 +87,24 @@ class StabilizerNbtTest {
         assertEquals(211, restored.cellRemainingTicks());
         assertEquals(12, restoredInventory.getStackInSlot(0).getCount());
     }
+
+    @Test
+    void tierThreeRoundTripPreservesTierLifecycleAndInventory() {
+        RegistryAccess registries = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
+        StabilizerStateMachine original = new StabilizerStateMachine(StabilizerStatus.GRACE_PERIOD, 240, 511);
+        ItemStackHandler inventory = new ItemStackHandler(1);
+        inventory.setStackInSlot(0, new ItemStack(Items.NETHERITE_INGOT, 64));
+        CompoundTag tag = new CompoundTag();
+
+        StabilizerNbt.write(tag, StabilizerTier.TIER_3, original, inventory, registries);
+        ItemStackHandler restoredInventory = new ItemStackHandler(1);
+        StabilizerStateMachine restored = StabilizerNbt.read(
+                tag, StabilizerTier.TIER_3, restoredInventory, registries);
+
+        assertEquals("tier_3", tag.getString("tier"));
+        assertEquals(StabilizerStatus.GRACE_PERIOD, restored.status());
+        assertEquals(240, restored.graceRemainingTicks());
+        assertEquals(511, restored.cellRemainingTicks());
+        assertEquals(64, restoredInventory.getStackInSlot(0).getCount());
+    }
 }

@@ -31,10 +31,14 @@ public final class FrontierProtocolBlockLootProvider extends BlockLootSubProvide
     protected void generate() {
         dropSelf(ModBlocks.TIER_1_STABILIZER.get());
         dropSelf(ModBlocks.TIER_2_STABILIZER.get());
+        dropSelf(ModBlocks.TIER_3_STABILIZER.get());
     }
 
     @Override
     protected Iterable<Block> getKnownBlocks() {
-        return List.of(ModBlocks.TIER_1_STABILIZER.get(), ModBlocks.TIER_2_STABILIZER.get());
+        return List.of(
+                ModBlocks.TIER_1_STABILIZER.get(),
+                ModBlocks.TIER_2_STABILIZER.get(),
+                ModBlocks.TIER_3_STABILIZER.get());
     }
 }

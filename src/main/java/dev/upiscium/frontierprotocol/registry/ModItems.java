@@ -13,6 +13,8 @@ public final class ModItems {
             "tier_1_stabilizer", ModBlocks.TIER_1_STABILIZER);
     public static final DeferredItem<BlockItem> TIER_2_STABILIZER = ITEMS.registerSimpleBlockItem(
             "tier_2_stabilizer", ModBlocks.TIER_2_STABILIZER);
+    public static final DeferredItem<BlockItem> TIER_3_STABILIZER = ITEMS.registerSimpleBlockItem(
+            "tier_3_stabilizer", ModBlocks.TIER_3_STABILIZER);
     public static final DeferredItem<Item> STABILIZATION_COMPOUND = ITEMS.registerSimpleItem(
             "stabilization_compound", new Item.Properties().stacksTo(64));
     public static final DeferredItem<Item> STABILIZATION_CELL = ITEMS.registerSimpleItem(

@@ -27,10 +27,17 @@ public final class FrontierProtocolBlockTagProvider extends BlockTagsProvider {
     @Override
     protected void addTags(HolderLookup.Provider registries) {
         tag(BlockTags.MINEABLE_WITH_PICKAXE)
-                .add(ModBlocks.TIER_1_STABILIZER.get(), ModBlocks.TIER_2_STABILIZER.get());
+                .add(
+                        ModBlocks.TIER_1_STABILIZER.get(),
+                        ModBlocks.TIER_2_STABILIZER.get(),
+                        ModBlocks.TIER_3_STABILIZER.get());
         tag(BlockTags.NEEDS_IRON_TOOL)
                 .add(ModBlocks.TIER_1_STABILIZER.get(), ModBlocks.TIER_2_STABILIZER.get());
+        tag(BlockTags.NEEDS_DIAMOND_TOOL).add(ModBlocks.TIER_3_STABILIZER.get());
         tag(CREATE_NON_MOVABLE)
-                .add(ModBlocks.TIER_1_STABILIZER.get(), ModBlocks.TIER_2_STABILIZER.get());
+                .add(
+                        ModBlocks.TIER_1_STABILIZER.get(),
+                        ModBlocks.TIER_2_STABILIZER.get(),
+                        ModBlocks.TIER_3_STABILIZER.get());
     }
 }

@@ -1,6 +1,7 @@
 {
   "block.frontier_protocol.tier_1_stabilizer": "Tier 1 Stabilizer",
-  "block.frontier_protocol.tier_2_stabilizer": "Tier 2 Stabilizer",
+  "block.frontier_protocol.tier_2_stabilizer": "Tier 2 安定化装置",
+  "block.frontier_protocol.tier_3_stabilizer": "Tier 3 安定化装置",
   "item.frontier_protocol.stabilization_compound": "安定化化合物",
   "item.frontier_protocol.stabilization_cell": "安定化セル"
 }
