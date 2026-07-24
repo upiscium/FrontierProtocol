@@ -1,4 +1,4 @@
-package dev.upiscium.frontierprotocol.tier1;
+package dev.upiscium.frontierprotocol.stabilizer;
 
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.api.stress.BlockStressValues;
@@ -37,8 +37,8 @@ import net.neoforged.neoforge.items.IItemHandler;
 
 @GameTestHolder(FrontierProtocolMod.MOD_ID)
 @PrefixGameTestTemplate(false)
-public final class Tier1StabilizerGameTests {
-    private Tier1StabilizerGameTests() {}
+public final class StabilizerGameTests {
+    private StabilizerGameTests() {}
 
     @GameTest(template = "empty", batch = "tier1", timeoutTicks = 200)
     public static void tierOneLifecycleUsesCreateKineticsAndSuppressionCore(GameTestHelper helper) {
@@ -81,7 +81,11 @@ public final class Tier1StabilizerGameTests {
             helper.assertTrue(
                     !new ItemStack(ModItems.STABILIZATION_COMPOUND.get()).is(ModItemTags.STABILIZER_CONSUMABLES),
                     "stabilization compound is unexpectedly a Stabilizer consumable");
-            helper.assertTrue(ModBlockEntities.TIER_1_STABILIZER.isBound(), "Tier 1 block entity is not registered");
+            helper.assertTrue(ModBlockEntities.STABILIZER.isBound(), "Tier 1 block entity is not registered");
+            helper.assertTrue(
+                    BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(ModBlockEntities.STABILIZER.get()).toString()
+                            .equals("frontier_protocol:stabilizer"),
+                    "shared Stabilizer block entity has the wrong registry ID");
             helper.assertTrue(BlockStressValues.getImpact(ModBlocks.TIER_1_STABILIZER.get())
                             == FrontierProtocolServerConfig.TIER1_STRESS_IMPACT.getAsDouble(),
                     "Tier 1 stress impact does not match the current server config");
@@ -124,8 +128,8 @@ public final class Tier1StabilizerGameTests {
 
     private static void verifyCompoundCannotActivate(CellTestContext context) {
         runCellStage(context, () -> {
-            Tier1StabilizerBlockEntity blockEntity = blockEntity(context.level(), context.device());
-            context.helper().assertTrue(blockEntity.status() == Tier1StabilizerStatus.OFFLINE,
+            StabilizerBlockEntity blockEntity = blockEntity(context.level(), context.device());
+            context.helper().assertTrue(blockEntity.status() == StabilizerStatus.OFFLINE,
                     "Tier 1 became active with rotation and rejected compound only");
             context.helper().assertTrue(blockEntity.externalInventory().getStackInSlot(0).isEmpty(),
                     "rejected compound entered the Tier 1 inventory");
@@ -136,12 +140,12 @@ public final class Tier1StabilizerGameTests {
 
     private static void verifyFirstCellConsumption(CellTestContext context) {
         runCellStage(context, () -> {
-            Tier1StabilizerBlockEntity blockEntity = blockEntity(context.level(), context.device());
-            context.helper().assertTrue(blockEntity.status() == Tier1StabilizerStatus.ACTIVE,
+            StabilizerBlockEntity blockEntity = blockEntity(context.level(), context.device());
+            context.helper().assertTrue(blockEntity.status() == StabilizerStatus.ACTIVE,
                     "Tier 1 did not activate from an inserted stabilization cell");
             context.helper().assertTrue(blockEntity.externalInventory().getStackInSlot(0).getCount() == 1,
                     "Tier 1 did not consume exactly one stabilization cell at activation");
-            int remainingTicks = blockEntity.consumableRemainingTicks();
+            int remainingTicks = blockEntity.cellRemainingTicks();
             context.helper().assertTrue(remainingTicks > 2, "cell duration was exhausted before consumption checks");
             context.helper().runAfterDelay(2, () -> verifyNoEarlyAdditionalConsumption(context, remainingTicks));
         });
@@ -159,12 +163,12 @@ public final class Tier1StabilizerGameTests {
 
     private static void verifySecondCellConsumption(CellTestContext context) {
         runCellStage(context, () -> {
-            Tier1StabilizerBlockEntity blockEntity = blockEntity(context.level(), context.device());
-            context.helper().assertTrue(blockEntity.status() == Tier1StabilizerStatus.ACTIVE,
+            StabilizerBlockEntity blockEntity = blockEntity(context.level(), context.device());
+            context.helper().assertTrue(blockEntity.status() == StabilizerStatus.ACTIVE,
                     "Tier 1 did not remain active after consuming its next cell");
             context.helper().assertTrue(blockEntity.externalInventory().getStackInSlot(0).isEmpty(),
                     "Tier 1 did not consume exactly one next cell after duration expiry");
-            context.helper().assertTrue(blockEntity.consumableRemainingTicks() > 0,
+            context.helper().assertTrue(blockEntity.cellRemainingTicks() > 0,
                     "next cell was consumed without starting a new active duration");
             cleanupCellTest(context);
             context.helper().succeed();
@@ -173,8 +177,8 @@ public final class Tier1StabilizerGameTests {
 
     private static void verifyOfflineWithoutConsumable(TestContext context) {
         runStage(context, () -> {
-            Tier1StabilizerBlockEntity blockEntity = blockEntity(context.overworld(), context.first());
-            context.helper().assertTrue(blockEntity.status() == Tier1StabilizerStatus.OFFLINE,
+            StabilizerBlockEntity blockEntity = blockEntity(context.overworld(), context.first());
+            context.helper().assertTrue(blockEntity.status() == StabilizerStatus.OFFLINE,
                     "unpowered Tier 1 is not offline");
             context.helper().assertTrue(!service().isSuppressed(context.overworld(), new ChunkPos(context.first())),
                     "unpowered Tier 1 registered suppression");
@@ -188,8 +192,8 @@ public final class Tier1StabilizerGameTests {
 
     private static void verifyOfflineWithoutPower(TestContext context) {
         runStage(context, () -> {
-            Tier1StabilizerBlockEntity blockEntity = blockEntity(context.overworld(), context.first());
-            context.helper().assertTrue(blockEntity.status() == Tier1StabilizerStatus.OFFLINE,
+            StabilizerBlockEntity blockEntity = blockEntity(context.overworld(), context.first());
+            context.helper().assertTrue(blockEntity.status() == StabilizerStatus.OFFLINE,
                     "Tier 1 became active without a kinetic network");
             context.helper().assertTrue(blockEntity.externalInventory().getStackInSlot(0).getCount() == 2,
                     "Tier 1 consumed an item without power");
@@ -200,9 +204,9 @@ public final class Tier1StabilizerGameTests {
 
     private static void verifyActive(TestContext context) {
         runStage(context, () -> {
-            Tier1StabilizerBlockEntity blockEntity = blockEntity(context.overworld(), context.first());
+            StabilizerBlockEntity blockEntity = blockEntity(context.overworld(), context.first());
             ChunkPos chunk = new ChunkPos(context.first());
-            context.helper().assertTrue(blockEntity.status() == Tier1StabilizerStatus.ACTIVE,
+            context.helper().assertTrue(blockEntity.status() == StabilizerStatus.ACTIVE,
                     "Create-powered Tier 1 did not become active");
             context.helper().assertTrue(blockEntity.externalInventory().getStackInSlot(0).getCount() == 1,
                     "Tier 1 did not consume exactly one cell");
@@ -221,8 +225,8 @@ public final class Tier1StabilizerGameTests {
 
     private static void verifyGrace(TestContext context) {
         runStage(context, () -> {
-            Tier1StabilizerBlockEntity blockEntity = blockEntity(context.overworld(), context.first());
-            context.helper().assertTrue(blockEntity.status() == Tier1StabilizerStatus.GRACE_PERIOD,
+            StabilizerBlockEntity blockEntity = blockEntity(context.overworld(), context.first());
+            context.helper().assertTrue(blockEntity.status() == StabilizerStatus.GRACE_PERIOD,
                     "power loss did not enter grace period");
             context.helper().assertTrue(service().isSuppressed(context.overworld(), new ChunkPos(context.first())),
                     "grace period did not retain suppression");
@@ -237,7 +241,7 @@ public final class Tier1StabilizerGameTests {
     private static void verifyRecovered(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(blockEntity(context.overworld(), context.first()).status()
-                            == Tier1StabilizerStatus.ACTIVE,
+                            == StabilizerStatus.ACTIVE,
                     "power restoration did not return Tier 1 to active");
             context.overworld().setBlock(context.first().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             context.helper().runAfterDelay(12, () -> verifyGraceExpired(context));
@@ -247,7 +251,7 @@ public final class Tier1StabilizerGameTests {
     private static void verifyGraceExpired(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(blockEntity(context.overworld(), context.first()).status()
-                            == Tier1StabilizerStatus.OFFLINE,
+                            == StabilizerStatus.OFFLINE,
                     "expired grace period did not become offline");
             context.helper().assertTrue(!service().isSuppressed(context.overworld(), new ChunkPos(context.first())),
                     "expired grace period retained suppression");
@@ -284,7 +288,8 @@ public final class Tier1StabilizerGameTests {
             context.helper().assertTrue(tierOneSourceCount(context.overworld(), chunk) == 1,
                     "virtual Tier 1 did not unregister exactly one source on its next tick");
             context.helper().assertTrue(service().getSources(context.overworld(), chunk).stream()
-                            .anyMatch(source -> source.id().equals(Tier1SuppressionSource.at(context.second()).id())),
+                            .anyMatch(source -> source.id().equals(
+                                    StabilizerSuppressionSource.at(StabilizerTier.TIER_1, context.second()).id())),
                     "virtual Tier 1 removed the neighboring device source");
             context.helper().assertTrue(service().isSuppressed(context.overworld(), chunk),
                     "virtual Tier 1 removed overlapping suppression");
@@ -304,8 +309,8 @@ public final class Tier1StabilizerGameTests {
             context.helper().assertTrue(tierOneSourceCount(context.overworld(), chunk) == 1,
                     "breaking one Tier 1 removed the wrong source set");
 
-            Tier1StabilizerBlockEntity oldBlockEntity = blockEntity(context.overworld(), context.second());
-            int remainingTicks = oldBlockEntity.consumableRemainingTicks();
+            StabilizerBlockEntity oldBlockEntity = blockEntity(context.overworld(), context.second());
+            int remainingTicks = oldBlockEntity.cellRemainingTicks();
             CompoundTag saved = oldBlockEntity.saveWithFullMetadata(context.overworld().registryAccess());
             oldBlockEntity.onChunkUnloaded();
             context.helper().assertTrue(!service().isSuppressed(context.overworld(), chunk),
@@ -316,11 +321,11 @@ public final class Tier1StabilizerGameTests {
 
             BlockState state = context.overworld().getBlockState(context.second());
             context.overworld().removeBlockEntity(context.second());
-            Tier1StabilizerBlockEntity reloaded = new Tier1StabilizerBlockEntity(context.second(), state);
+            StabilizerBlockEntity reloaded = new StabilizerBlockEntity(context.second(), state);
             reloaded.loadWithComponents(saved, context.overworld().registryAccess());
             context.overworld().setBlockEntity(reloaded);
             context.helper().assertTrue(
-                    reloaded.consumableRemainingTicks() == remainingTicks,
+                    reloaded.cellRemainingTicks() == remainingTicks,
                     "Tier 1 NBT roundtrip changed the remaining cell duration");
             context.helper().runAfterDelay(8, () -> verifyReloadAndDestroy(context));
         });
@@ -330,7 +335,7 @@ public final class Tier1StabilizerGameTests {
         runStage(context, () -> {
             ChunkPos chunk = new ChunkPos(context.second());
             context.helper().assertTrue(blockEntity(context.overworld(), context.second()).status()
-                            == Tier1StabilizerStatus.ACTIVE,
+                            == StabilizerStatus.ACTIVE,
                     "reloaded Tier 1 did not reevaluate to active");
             context.helper().assertTrue(
                     blockEntity(context.overworld(), context.second()).externalInventory().getStackInSlot(0).getCount()
@@ -385,7 +390,7 @@ public final class Tier1StabilizerGameTests {
     private static void verifyNegativeNetherDevice(TestContext context) {
         runStage(context, () -> {
             ChunkPos negativeChunk = new ChunkPos(context.netherDevice());
-            Tier1StabilizerBlockEntity netherBlockEntity = blockEntity(context.nether(), context.netherDevice());
+            StabilizerBlockEntity netherBlockEntity = blockEntity(context.nether(), context.netherDevice());
             Object motorBlockEntity = context.nether().getBlockEntity(context.netherDevice().west());
             // GameTestServer does not advance newly placed block entity tickers in its remote Nether level.
             ((KineticBlockEntity) motorBlockEntity).tick();
@@ -401,7 +406,7 @@ public final class Tier1StabilizerGameTests {
                             + ", motorSpeed=" + (motorBlockEntity instanceof KineticBlockEntity kinetic
                                     ? kinetic.getSpeed()
                                     : "n/a"));
-            context.helper().assertTrue(netherBlockEntity.status() == Tier1StabilizerStatus.ACTIVE,
+            context.helper().assertTrue(netherBlockEntity.status() == StabilizerStatus.ACTIVE,
                     "negative-coordinate Nether Tier 1 did not become active");
             context.helper().assertTrue(netherBlockEntity.externalInventory().getStackInSlot(0).getCount() == 1,
                     "negative-coordinate Nether Tier 1 did not consume exactly one cell");
@@ -441,7 +446,7 @@ public final class Tier1StabilizerGameTests {
 
     private static void placeDevice(ServerLevel level, BlockPos pos) {
         level.setBlock(pos, ModBlocks.TIER_1_STABILIZER.get().defaultBlockState()
-                .setValue(Tier1StabilizerBlock.HORIZONTAL_AXIS, Direction.Axis.X), Block.UPDATE_ALL);
+                .setValue(StabilizerBlock.HORIZONTAL_AXIS, Direction.Axis.X), Block.UPDATE_ALL);
     }
 
     private static void placeMotor(ServerLevel level, BlockPos pos) {
@@ -480,8 +485,8 @@ public final class Tier1StabilizerGameTests {
                 "invalid item changed the Tier 1 inventory");
     }
 
-    private static Tier1StabilizerBlockEntity blockEntity(ServerLevel level, BlockPos pos) {
-        if (level.getBlockEntity(pos) instanceof Tier1StabilizerBlockEntity blockEntity) return blockEntity;
+    private static StabilizerBlockEntity blockEntity(ServerLevel level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof StabilizerBlockEntity blockEntity) return blockEntity;
         throw new IllegalStateException("Tier 1 block entity is missing at " + pos);
     }
 
@@ -491,7 +496,7 @@ public final class Tier1StabilizerGameTests {
 
     private static long tierOneSourceCount(ServerLevel level, ChunkPos chunk) {
         return service().getSources(level, chunk).stream()
-                .filter(source -> source.type() == SuppressionSourceType.TIER_1_STABILIZER)
+                .filter(source -> source.type() == SuppressionSourceType.STABILIZER)
                 .count();
     }
 

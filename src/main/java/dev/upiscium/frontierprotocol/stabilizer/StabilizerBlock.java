@@ -1,11 +1,13 @@
-package dev.upiscium.frontierprotocol.tier1;
+package dev.upiscium.frontierprotocol.stabilizer;
 
 import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.simibubi.create.content.kinetics.base.HorizontalAxisKineticBlock;
 import com.simibubi.create.foundation.block.IBE;
 import dev.upiscium.frontierprotocol.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -13,16 +15,28 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 
-public final class Tier1StabilizerBlock extends HorizontalAxisKineticBlock implements IBE<Tier1StabilizerBlockEntity> {
-    public static final MapCodec<Tier1StabilizerBlock> CODEC = simpleCodec(Tier1StabilizerBlock::new);
-    public static final EnumProperty<Tier1StabilizerStatus> STATUS =
-            EnumProperty.create("status", Tier1StabilizerStatus.class);
+public final class StabilizerBlock extends HorizontalAxisKineticBlock implements IBE<StabilizerBlockEntity> {
+    public static final MapCodec<StabilizerBlock> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+                    StringRepresentable.fromEnum(StabilizerTier::values)
+                            .fieldOf("tier")
+                            .forGetter(StabilizerBlock::tier),
+                    propertiesCodec())
+            .apply(instance, StabilizerBlock::new));
+    public static final EnumProperty<StabilizerStatus> STATUS =
+            EnumProperty.create("status", StabilizerStatus.class);
 
-    public Tier1StabilizerBlock(Properties properties) {
+    private final StabilizerTier tier;
+
+    public StabilizerBlock(StabilizerTier tier, Properties properties) {
         super(properties);
+        this.tier = tier;
         registerDefaultState(defaultBlockState()
                 .setValue(HORIZONTAL_AXIS, Direction.Axis.X)
-                .setValue(STATUS, Tier1StabilizerStatus.OFFLINE));
+                .setValue(STATUS, StabilizerStatus.OFFLINE));
+    }
+
+    public StabilizerTier tier() {
+        return tier;
     }
 
     @Override
@@ -42,12 +56,12 @@ public final class Tier1StabilizerBlock extends HorizontalAxisKineticBlock imple
     }
 
     @Override
-    public Class<Tier1StabilizerBlockEntity> getBlockEntityClass() {
-        return Tier1StabilizerBlockEntity.class;
+    public Class<StabilizerBlockEntity> getBlockEntityClass() {
+        return StabilizerBlockEntity.class;
     }
 
     @Override
-    public BlockEntityType<? extends Tier1StabilizerBlockEntity> getBlockEntityType() {
-        return ModBlockEntities.TIER_1_STABILIZER.get();
+    public BlockEntityType<? extends StabilizerBlockEntity> getBlockEntityType() {
+        return ModBlockEntities.STABILIZER.get();
     }
 }

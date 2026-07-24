@@ -1,13 +1,11 @@
-package dev.upiscium.frontierprotocol.tier1;
+package dev.upiscium.frontierprotocol.stabilizer;
 
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 import dev.upiscium.frontierprotocol.api.suppression.SuppressionSource;
 import dev.upiscium.frontierprotocol.cleanup.CleanupActivationMode;
 import dev.upiscium.frontierprotocol.cleanup.ServerInfectionCleanupService;
-import dev.upiscium.frontierprotocol.config.FrontierProtocolServerConfig;
 import dev.upiscium.frontierprotocol.registry.ModBlockEntities;
-import dev.upiscium.frontierprotocol.registry.ModBlocks;
 import dev.upiscium.frontierprotocol.registry.ModItemTags;
 import dev.upiscium.frontierprotocol.suppression.ServerInfectionSuppressionService;
 import java.util.List;
@@ -18,16 +16,27 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
+public final class StabilizerBlockEntity extends KineticBlockEntity {
+    private final StabilizerTier tier;
     private final ItemStackHandler inventory = new ItemStackHandler(1) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
             return stack.is(ModItemTags.STABILIZER_CONSUMABLES);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return definition().cellCapacity();
+        }
+
+        @Override
+        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            if (getStackInSlot(slot).getCount() > getSlotLimit(slot)) return stack;
+            return super.insertItem(slot, stack, simulate);
         }
 
         @Override
@@ -37,17 +46,18 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
 
         @Override
         protected void onContentsChanged(int slot) {
-            Tier1StabilizerBlockEntity.this.setChanged();
+            StabilizerBlockEntity.this.setChanged();
         }
     };
-    private Tier1StabilizerStateMachine machine = new Tier1StabilizerStateMachine();
+    private StabilizerStateMachine machine = new StabilizerStateMachine();
     private boolean sourceRegistered;
     private CleanupRegistration cleanupRegistration = CleanupRegistration.NONE;
     private boolean resumeCleanupOnActivation;
     private boolean needsEvaluation = true;
 
-    public Tier1StabilizerBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.TIER_1_STABILIZER.get(), pos, state);
+    public StabilizerBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.STABILIZER.get(), pos, state);
+        tier = StabilizerTier.fromBlock(state);
     }
 
     public IItemHandler externalInventory() {
@@ -68,23 +78,27 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
             unregisterSource(serverLevel);
             return;
         }
-        if (serverLevel.getBlockEntity(worldPosition) != this || !getBlockState().is(ModBlocks.TIER_1_STABILIZER)) {
+        BlockState state = getBlockState();
+        if (serverLevel.getBlockEntity(worldPosition) != this
+                || !(state.getBlock() instanceof StabilizerBlock)
+                || StabilizerTier.fromBlock(state) != tier) {
             unregisterSource(serverLevel);
             return;
         }
 
+        StabilizerTierDefinition definition = definition();
         boolean powered = hasNetwork()
                 && !isOverStressed()
-                && isRpmSufficient(getSpeed(), FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.getAsInt());
-        Tier1StabilizerStateMachine.TickResult result = machine.tick(
+                && isRpmSufficient(getSpeed(), definition.minimumRpm());
+        StabilizerStateMachine.TickResult result = machine.tick(
                 powered,
-                hasConsumable(),
-                FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.getAsInt(),
-                FrontierProtocolServerConfig.TIER1_CELL_DURATION_TICKS.getAsInt());
+                hasCell(),
+                definition.gracePeriodTicks(),
+                definition.cellDurationTicks());
         if (result.consumeItem()) consumeOne();
         if (needsEvaluation || result.statusChanged()) updateBlockState();
         if (result.changed()) setChanged();
-        if (needsEvaluation || result.statusChanged()) syncSource(serverLevel);
+        if (needsEvaluation || result.statusChanged()) syncSource(serverLevel, definition);
         needsEvaluation = false;
     }
 
@@ -92,7 +106,7 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
         return Math.abs(speed) >= minimumRpm;
     }
 
-    Tier1StabilizerStatus status() {
+    StabilizerStatus status() {
         return machine.status();
     }
 
@@ -100,11 +114,15 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
         return machine.graceRemainingTicks();
     }
 
-    int consumableRemainingTicks() {
-        return machine.consumableRemainingTicks();
+    int cellRemainingTicks() {
+        return machine.cellRemainingTicks();
     }
 
-    private boolean hasConsumable() {
+    private StabilizerTierDefinition definition() {
+        return StabilizerTierDefinitions.resolve(tier);
+    }
+
+    private boolean hasCell() {
         ItemStack stack = inventory.getStackInSlot(0);
         return !stack.isEmpty() && inventory.isItemValid(0, stack);
     }
@@ -118,19 +136,22 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
 
     private void updateBlockState() {
         BlockState state = getBlockState();
-        if (level != null && state.hasProperty(Tier1StabilizerBlock.STATUS)
-                && state.getValue(Tier1StabilizerBlock.STATUS) != machine.status()) {
-            level.setBlock(worldPosition, state.setValue(Tier1StabilizerBlock.STATUS, machine.status()),
+        if (level != null && state.hasProperty(StabilizerBlock.STATUS)
+                && state.getValue(StabilizerBlock.STATUS) != machine.status()) {
+            level.setBlock(
+                    worldPosition,
+                    state.setValue(StabilizerBlock.STATUS, machine.status()),
                     net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
         }
     }
 
-    private void syncSource(ServerLevel serverLevel) {
+    private void syncSource(ServerLevel serverLevel, StabilizerTierDefinition definition) {
+        Set<net.minecraft.world.level.ChunkPos> coverage =
+                StabilizerCoverage.coveredChunks(worldPosition, definition.chunkRadius());
         if (machine.status().suppressesInfection()) {
             if (!sourceRegistered) {
-                SuppressionSource source = Tier1SuppressionSource.at(worldPosition);
-                ServerInfectionSuppressionService.INSTANCE.registerOrUpdateSource(
-                        serverLevel, source, Set.of(new ChunkPos(worldPosition)));
+                SuppressionSource source = StabilizerSuppressionSource.at(tier, worldPosition);
+                ServerInfectionSuppressionService.INSTANCE.registerOrUpdateSource(serverLevel, source, coverage);
                 sourceRegistered = true;
             }
         } else {
@@ -138,8 +159,8 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
         }
 
         switch (machine.status()) {
-            case ACTIVE -> activateCleanup(serverLevel);
-            case GRACE_PERIOD -> pauseCleanup(serverLevel);
+            case ACTIVE -> activateCleanup(serverLevel, coverage);
+            case GRACE_PERIOD -> pauseCleanup(serverLevel, coverage);
             case OFFLINE -> deactivateCleanup(serverLevel);
         }
     }
@@ -152,43 +173,43 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
     private void unregisterSuppressionSource(ServerLevel serverLevel) {
         if (!sourceRegistered) return;
         ServerInfectionSuppressionService.INSTANCE.unregisterSource(
-                serverLevel, Tier1SuppressionSource.at(worldPosition).id());
+                serverLevel, StabilizerSuppressionSource.at(tier, worldPosition).id());
         sourceRegistered = false;
     }
 
-    private void activateCleanup(ServerLevel serverLevel) {
+    private void activateCleanup(ServerLevel serverLevel, Set<net.minecraft.world.level.ChunkPos> coverage) {
         if (cleanupRegistration == CleanupRegistration.ACTIVE) return;
         CleanupActivationMode mode = cleanupRegistration == CleanupRegistration.PAUSED || resumeCleanupOnActivation
                 ? CleanupActivationMode.RESUME
                 : CleanupActivationMode.NEW_PASS;
         ServerInfectionCleanupService.INSTANCE.registerActiveSource(
                 serverLevel,
-                Tier1SuppressionSource.at(worldPosition).id(),
-                Set.of(new ChunkPos(worldPosition)),
+                StabilizerSuppressionSource.at(tier, worldPosition).id(),
+                coverage,
                 mode);
         cleanupRegistration = CleanupRegistration.ACTIVE;
         resumeCleanupOnActivation = false;
     }
 
-    private void pauseCleanup(ServerLevel serverLevel) {
+    private void pauseCleanup(ServerLevel serverLevel, Set<net.minecraft.world.level.ChunkPos> coverage) {
         if (cleanupRegistration == CleanupRegistration.NONE && resumeCleanupOnActivation) {
             ServerInfectionCleanupService.INSTANCE.registerActiveSource(
                     serverLevel,
-                    Tier1SuppressionSource.at(worldPosition).id(),
-                    Set.of(new ChunkPos(worldPosition)),
+                    StabilizerSuppressionSource.at(tier, worldPosition).id(),
+                    coverage,
                     CleanupActivationMode.RESUME);
             cleanupRegistration = CleanupRegistration.ACTIVE;
             resumeCleanupOnActivation = false;
         }
         if (cleanupRegistration != CleanupRegistration.ACTIVE) return;
         ServerInfectionCleanupService.INSTANCE.pauseSource(
-                serverLevel, Tier1SuppressionSource.at(worldPosition).id());
+                serverLevel, StabilizerSuppressionSource.at(tier, worldPosition).id());
         cleanupRegistration = CleanupRegistration.PAUSED;
     }
 
     private void deactivateCleanup(ServerLevel serverLevel) {
         ServerInfectionCleanupService.INSTANCE.deactivateSource(
-                serverLevel, Tier1SuppressionSource.at(worldPosition).id());
+                serverLevel, StabilizerSuppressionSource.at(tier, worldPosition).id());
         cleanupRegistration = CleanupRegistration.NONE;
         resumeCleanupOnActivation = false;
     }
@@ -205,7 +226,7 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
     public void onChunkUnloaded() {
         if (level instanceof ServerLevel serverLevel) {
             unregisterSuppressionSource(serverLevel);
-            pauseCleanup(serverLevel);
+            pauseCleanup(serverLevel, StabilizerCoverage.coveredChunks(worldPosition, definition().chunkRadius()));
         }
         super.onChunkUnloaded();
     }
@@ -237,17 +258,17 @@ public final class Tier1StabilizerBlockEntity extends KineticBlockEntity {
 
     @Override
     protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
-        Tier1StabilizerNbt.write(tag, machine, inventory, registries);
+        StabilizerNbt.write(tag, tier, machine, inventory, registries);
         super.write(tag, registries, clientPacket);
     }
 
     @Override
     protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(tag, registries, clientPacket);
-        machine = Tier1StabilizerNbt.read(tag, inventory, registries);
+        machine = StabilizerNbt.read(tag, tier, inventory, registries);
         sourceRegistered = false;
         cleanupRegistration = CleanupRegistration.NONE;
-        resumeCleanupOnActivation = machine.status() != Tier1StabilizerStatus.OFFLINE;
+        resumeCleanupOnActivation = machine.status() != StabilizerStatus.OFFLINE;
         needsEvaluation = true;
     }
 

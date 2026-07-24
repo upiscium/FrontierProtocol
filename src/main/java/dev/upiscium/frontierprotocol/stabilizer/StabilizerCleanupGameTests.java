@@ -1,4 +1,4 @@
-package dev.upiscium.frontierprotocol.tier1;
+package dev.upiscium.frontierprotocol.stabilizer;
 
 import com.Harbinger.Spore.core.Sblocks;
 import com.simibubi.create.AllBlocks;
@@ -30,8 +30,8 @@ import net.neoforged.neoforge.items.IItemHandler;
 
 @GameTestHolder(FrontierProtocolMod.MOD_ID)
 @PrefixGameTestTemplate(false)
-public final class Tier1CleanupGameTests {
-    private Tier1CleanupGameTests() {}
+public final class StabilizerCleanupGameTests {
+    private StabilizerCleanupGameTests() {}
 
     @GameTest(template = "empty", batch = "tier1_cleanup_lifecycle", timeoutTicks = 200)
     public static void tierOneCleanupFollowsLifecycleAndReload(GameTestHelper helper) {
@@ -128,7 +128,7 @@ public final class Tier1CleanupGameTests {
     private static void enterGraceForReload(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE,
                     "Tier 1 was not active before GRACE reload test");
             context.level().setBlock(context.first().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             context.helper().runAfterDelay(3, () -> reloadGraceWithEmptyRuntime(context));
@@ -137,9 +137,9 @@ public final class Tier1CleanupGameTests {
 
     private static void reloadGraceWithEmptyRuntime(TestContext context) {
         runStage(context, () -> {
-            Tier1StabilizerBlockEntity blockEntity = blockEntity(context.level(), context.first());
+            StabilizerBlockEntity blockEntity = blockEntity(context.level(), context.first());
             context.helper().assertTrue(
-                    blockEntity.status() == Tier1StabilizerStatus.GRACE_PERIOD,
+                    blockEntity.status() == StabilizerStatus.GRACE_PERIOD,
                     "Tier 1 did not enter GRACE before runtime clear");
             placeRemovable(context.level(), context.target());
             CleanupProgress partial = setCursor(
@@ -155,7 +155,7 @@ public final class Tier1CleanupGameTests {
     private static void verifyGraceReloadPaused(TestContext context, CleanupProgress partial) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.GRACE_PERIOD,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.GRACE_PERIOD,
                     "reloaded GRACE Tier 1 changed status");
             context.helper().assertTrue(
                     ServerInfectionSuppressionService.INSTANCE.isSuppressed(
@@ -174,7 +174,7 @@ public final class Tier1CleanupGameTests {
     private static void verifyGraceReloadResumed(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE,
                     "reloaded GRACE Tier 1 did not return to ACTIVE");
             context.helper().assertTrue(
                     context.level().getBlockState(context.target()).isAir(),
@@ -187,8 +187,8 @@ public final class Tier1CleanupGameTests {
     private static void enterGraceForOverlapReload(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE
-                            && blockEntity(context.level(), context.second()).status() == Tier1StabilizerStatus.ACTIVE,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE
+                            && blockEntity(context.level(), context.second()).status() == StabilizerStatus.ACTIVE,
                     "overlap reload devices were not active");
             context.level().setBlock(context.first().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             context.helper().runAfterDelay(3, () -> rebuildGraceOverlapRuntime(context));
@@ -197,11 +197,11 @@ public final class Tier1CleanupGameTests {
 
     private static void rebuildGraceOverlapRuntime(TestContext context) {
         runStage(context, () -> {
-            Tier1StabilizerBlockEntity first = blockEntity(context.level(), context.first());
-            Tier1StabilizerBlockEntity second = blockEntity(context.level(), context.second());
+            StabilizerBlockEntity first = blockEntity(context.level(), context.first());
+            StabilizerBlockEntity second = blockEntity(context.level(), context.second());
             context.helper().assertTrue(
-                    first.status() == Tier1StabilizerStatus.GRACE_PERIOD
-                            && second.status() == Tier1StabilizerStatus.ACTIVE,
+                    first.status() == StabilizerStatus.GRACE_PERIOD
+                            && second.status() == StabilizerStatus.ACTIVE,
                     "overlap reload did not start with A=GRACE and B=ACTIVE");
             CleanupProgress partial = setCursor(
                     context.level(), new ChunkPos(context.first()), context.target());
@@ -219,9 +219,9 @@ public final class Tier1CleanupGameTests {
     private static void removeActiveOverlapAfterReload(TestContext context, CleanupProgress partial) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.GRACE_PERIOD
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.GRACE_PERIOD
                             && blockEntity(context.level(), context.second()).status()
-                                    == Tier1StabilizerStatus.ACTIVE,
+                                    == StabilizerStatus.ACTIVE,
                     "reloaded overlap did not restore A=GRACE and B=ACTIVE");
 
             context.level().destroyBlock(context.second(), false);
@@ -253,7 +253,7 @@ public final class Tier1CleanupGameTests {
     private static void verifyReloadedOverlapResume(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE,
                     "reloaded paused overlap did not return to ACTIVE");
             CleanupProgress current = progress(context);
             context.helper().assertTrue(
@@ -268,16 +268,16 @@ public final class Tier1CleanupGameTests {
     private static void verifyOfflineDoesNotClean(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.OFFLINE,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.OFFLINE,
                     "offline Tier 1 unexpectedly became active");
             context.helper().assertTrue(
                     context.level().getBlockState(context.target()).is(Sblocks.GROWTHS_BIG.get()),
                     "offline Tier 1 cleaned existing infection");
-            Tier1StabilizerBlockEntity oldBlockEntity = blockEntity(context.level(), context.first());
+            StabilizerBlockEntity oldBlockEntity = blockEntity(context.level(), context.first());
             CompoundTag saved = oldBlockEntity.saveWithFullMetadata(context.level().registryAccess());
             BlockState state = context.level().getBlockState(context.first());
             context.level().removeBlockEntity(context.first());
-            Tier1StabilizerBlockEntity reloaded = new Tier1StabilizerBlockEntity(context.first(), state);
+            StabilizerBlockEntity reloaded = new StabilizerBlockEntity(context.first(), state);
             reloaded.loadWithComponents(saved, context.level().registryAccess());
             context.level().setBlockEntity(reloaded);
             setCompleted(context.level(), new ChunkPos(context.first()));
@@ -289,7 +289,7 @@ public final class Tier1CleanupGameTests {
     private static void verifyFreshActiveCleanup(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE,
                     "powered Tier 1 did not become active");
             context.helper().assertTrue(
                     context.level().getBlockState(context.target()).isAir(),
@@ -302,7 +302,7 @@ public final class Tier1CleanupGameTests {
     private static void prepareGracePauseCheck(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.GRACE_PERIOD,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.GRACE_PERIOD,
                     "power loss did not pause cleanup in grace period");
             placeRemovable(context.level(), context.target());
             CleanupProgress paused = setCursor(context.level(), new ChunkPos(context.first()), context.target());
@@ -325,13 +325,13 @@ public final class Tier1CleanupGameTests {
     private static void verifyGraceResume(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE,
                     "Tier 1 did not recover from grace period");
             context.helper().assertTrue(
                     context.level().getBlockState(context.target()).isAir(),
                     "recovered Tier 1 did not RESUME cleanup");
 
-            Tier1StabilizerBlockEntity oldBlockEntity = blockEntity(context.level(), context.first());
+            StabilizerBlockEntity oldBlockEntity = blockEntity(context.level(), context.first());
             CompoundTag saved = oldBlockEntity.saveWithFullMetadata(context.level().registryAccess());
             oldBlockEntity.onChunkUnloaded();
             BlockPos reloadTarget = context.target().atY(context.level().getMaxBuildHeight() - 2);
@@ -342,7 +342,7 @@ public final class Tier1CleanupGameTests {
                     !beforeReload.restartRequired(), "chunk unload incorrectly required a new cleanup pass");
             BlockState state = context.level().getBlockState(context.first());
             context.level().removeBlockEntity(context.first());
-            Tier1StabilizerBlockEntity reloaded = new Tier1StabilizerBlockEntity(context.first(), state);
+            StabilizerBlockEntity reloaded = new StabilizerBlockEntity(context.first(), state);
             reloaded.loadWithComponents(saved, context.level().registryAccess());
             context.level().setBlockEntity(reloaded);
             context.helper().runAfterDelay(10, () -> verifyReloadResume(context, reloadTarget));
@@ -352,7 +352,7 @@ public final class Tier1CleanupGameTests {
     private static void verifyReloadResume(TestContext context, BlockPos reloadTarget) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE,
                     "reloaded active Tier 1 did not rebuild runtime state");
             context.helper().assertTrue(
                     context.level().getBlockState(reloadTarget).isAir(),
@@ -366,7 +366,7 @@ public final class Tier1CleanupGameTests {
     private static void prepareOfflineCheck(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.GRACE_PERIOD,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.GRACE_PERIOD,
                     "reloaded Tier 1 did not enter grace period");
             placeRemovable(context.level(), context.target());
             setCursor(context.level(), new ChunkPos(context.first()), context.target());
@@ -377,7 +377,7 @@ public final class Tier1CleanupGameTests {
     private static void verifyOfflineDeactivation(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.OFFLINE,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.OFFLINE,
                     "expired grace period did not stop Tier 1 cleanup");
             context.helper().assertTrue(
                     context.level().getBlockState(context.target()).is(Sblocks.GROWTHS_BIG.get()),
@@ -393,8 +393,8 @@ public final class Tier1CleanupGameTests {
     private static void verifyOverlappingCleanup(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.ACTIVE
-                            && blockEntity(context.level(), context.second()).status() == Tier1StabilizerStatus.ACTIVE,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE
+                            && blockEntity(context.level(), context.second()).status() == StabilizerStatus.ACTIVE,
                     "overlapping Tier 1 devices did not become active");
             context.level().setBlock(context.first().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             context.helper().runAfterDelay(3, () -> verifyOnePausedOverlapCleans(context));
@@ -404,7 +404,7 @@ public final class Tier1CleanupGameTests {
     private static void verifyOnePausedOverlapCleans(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(
-                    blockEntity(context.level(), context.first()).status() == Tier1StabilizerStatus.GRACE_PERIOD,
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.GRACE_PERIOD,
                     "first overlapping Tier 1 did not enter grace period");
             placeRemovable(context.level(), context.target());
             setCursor(context.level(), new ChunkPos(context.first()), context.target());
@@ -480,7 +480,7 @@ public final class Tier1CleanupGameTests {
                 ModBlocks.TIER_1_STABILIZER
                         .get()
                         .defaultBlockState()
-                        .setValue(Tier1StabilizerBlock.HORIZONTAL_AXIS, Direction.Axis.X),
+                        .setValue(StabilizerBlock.HORIZONTAL_AXIS, Direction.Axis.X),
                 Block.UPDATE_ALL);
     }
 
@@ -501,16 +501,16 @@ public final class Tier1CleanupGameTests {
         helper.assertTrue(remainder.isEmpty(), "Tier 1 rejected stabilization cells");
     }
 
-    private static Tier1StabilizerBlockEntity blockEntity(ServerLevel level, BlockPos pos) {
-        if (level.getBlockEntity(pos) instanceof Tier1StabilizerBlockEntity blockEntity) return blockEntity;
+    private static StabilizerBlockEntity blockEntity(ServerLevel level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof StabilizerBlockEntity blockEntity) return blockEntity;
         throw new IllegalStateException("Tier 1 block entity is missing at " + pos);
     }
 
-    private static Tier1StabilizerBlockEntity reloadBlockEntity(
+    private static StabilizerBlockEntity reloadBlockEntity(
             ServerLevel level, BlockPos pos, CompoundTag saved) {
         BlockState state = level.getBlockState(pos);
         level.removeBlockEntity(pos);
-        Tier1StabilizerBlockEntity reloaded = new Tier1StabilizerBlockEntity(pos, state);
+        StabilizerBlockEntity reloaded = new StabilizerBlockEntity(pos, state);
         reloaded.loadWithComponents(saved, level.registryAccess());
         level.setBlockEntity(reloaded);
         return reloaded;

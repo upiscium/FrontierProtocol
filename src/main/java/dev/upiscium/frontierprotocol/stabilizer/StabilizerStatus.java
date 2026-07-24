@@ -1,15 +1,15 @@
-package dev.upiscium.frontierprotocol.tier1;
+package dev.upiscium.frontierprotocol.stabilizer;
 
 import net.minecraft.util.StringRepresentable;
 
-public enum Tier1StabilizerStatus implements StringRepresentable {
+public enum StabilizerStatus implements StringRepresentable {
     OFFLINE("offline"),
     GRACE_PERIOD("grace_period"),
     ACTIVE("active");
 
     private final String serializedName;
 
-    Tier1StabilizerStatus(String serializedName) {
+    StabilizerStatus(String serializedName) {
         this.serializedName = serializedName;
     }
 
@@ -18,8 +18,8 @@ public enum Tier1StabilizerStatus implements StringRepresentable {
         return serializedName;
     }
 
-    static Tier1StabilizerStatus fromSerializedName(String value) {
-        for (Tier1StabilizerStatus status : values()) {
+    static StabilizerStatus fromSerializedName(String value) {
+        for (StabilizerStatus status : values()) {
             if (status.serializedName.equals(value)) return status;
         }
         return OFFLINE;

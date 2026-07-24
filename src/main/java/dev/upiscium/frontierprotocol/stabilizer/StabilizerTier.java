@@ -3,9 +3,11 @@ package dev.upiscium.frontierprotocol.stabilizer;
 import dev.upiscium.frontierprotocol.FrontierProtocolMod;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
-public enum StabilizerTier {
+public enum StabilizerTier implements StringRepresentable {
     TIER_1("tier_1"),
     TIER_2("tier_2"),
     TIER_3("tier_3");
@@ -20,6 +22,11 @@ public enum StabilizerTier {
         return serializedName;
     }
 
+    @Override
+    public String getSerializedName() {
+        return serializedName;
+    }
+
     public String registryPrefix() {
         return serializedName;
     }
@@ -31,6 +38,18 @@ public enum StabilizerTier {
             throw new IllegalArgumentException("Unknown Stabilizer block: " + id);
         }
         return fromRegistryPath(id.getPath());
+    }
+
+    public static StabilizerTier fromBlock(BlockState state) {
+        if (state == null) throw new IllegalArgumentException("state must not be null");
+        return fromBlock(state.getBlock());
+    }
+
+    public static StabilizerTier fromSerializedName(String value) {
+        for (StabilizerTier tier : values()) {
+            if (tier.serializedName.equals(value)) return tier;
+        }
+        return null;
     }
 
     public static StabilizerTier fromRegistryPath(String registryPath) {
