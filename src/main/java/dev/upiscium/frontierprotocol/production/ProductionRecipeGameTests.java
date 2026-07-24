@@ -8,6 +8,7 @@ import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
 import com.simibubi.create.infrastructure.gametest.CreateGameTestHelper;
 import dev.upiscium.frontierprotocol.FrontierProtocolMod;
 import dev.upiscium.frontierprotocol.registry.ModItems;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -37,8 +38,10 @@ import net.neoforged.neoforge.items.ItemHandlerHelper;
 public final class ProductionRecipeGameTests {
     private static final ResourceLocation MIXING = id("mixing/stabilization_compound");
     private static final ResourceLocation DEPLOYING = id("deploying/stabilization_cell");
-    private static final ResourceLocation MECHANICAL_CRAFTING = id("mechanical_crafting/tier_1_stabilizer");
-    private static final Set<ResourceLocation> EXPECTED_RECIPES = Set.of(MIXING, DEPLOYING, MECHANICAL_CRAFTING);
+    private static final ResourceLocation TIER_1 = id("mechanical_crafting/tier_1_stabilizer");
+    private static final ResourceLocation TIER_2 = id("mechanical_crafting/tier_2_stabilizer");
+    private static final ResourceLocation TIER_3 = id("mechanical_crafting/tier_3_stabilizer");
+    private static final Set<ResourceLocation> EXPECTED_RECIPES = Set.of(MIXING, DEPLOYING, TIER_1, TIER_2, TIER_3);
 
     private ProductionRecipeGameTests() {}
 
@@ -80,27 +83,48 @@ public final class ProductionRecipeGameTests {
         helper.assertTrue(deployingProcess.getRequiredHeat() == HeatCondition.NONE,
                 "deploying recipe unexpectedly requires heat");
 
-        Recipe<?> mechanical = requireRecipe(
-                helper, recipes, MECHANICAL_CRAFTING, "create:mechanical_crafting");
-        assertResult(helper, level, mechanical, ModItems.TIER_1_STABILIZER.get(), 1, "mechanical crafting");
-        helper.assertTrue(mechanical instanceof ShapedRecipe, "Tier 1 mechanical recipe is not shaped");
-        ShapedRecipe shaped = (ShapedRecipe) mechanical;
-        helper.assertTrue(shaped.getWidth() == 3 && shaped.getHeight() == 3,
-                "Tier 1 mechanical pattern is not 3 by 3");
-        ItemLike[] pattern = {
-            AllItems.IRON_SHEET.get(),
-            ModItems.STABILIZATION_CELL.get(),
-            AllItems.IRON_SHEET.get(),
-            AllBlocks.ANDESITE_CASING.get(),
-            AllItems.PRECISION_MECHANISM.get(),
-            AllBlocks.ANDESITE_CASING.get(),
-            AllItems.IRON_SHEET.get(),
-            AllBlocks.SHAFT.get(),
-            AllItems.IRON_SHEET.get()
-        };
-        for (int index = 0; index < pattern.length; index++) {
-            assertExactIngredient(helper, shaped.getIngredients().get(index), pattern[index], "mechanical slot " + index);
-        }
+        assertMechanicalRecipe(
+                helper,
+                level,
+                recipes,
+                TIER_1,
+                ModItems.TIER_1_STABILIZER.get(),
+                new String[] {"ICI", "APA", "ISI"},
+                Map.of(
+                        'I', AllItems.IRON_SHEET.get(),
+                        'C', ModItems.STABILIZATION_CELL.get(),
+                        'A', AllBlocks.ANDESITE_CASING.get(),
+                        'P', AllItems.PRECISION_MECHANISM.get(),
+                        'S', AllBlocks.SHAFT.get()),
+                "Tier 1");
+        assertMechanicalRecipe(
+                helper,
+                level,
+                recipes,
+                TIER_2,
+                ModItems.TIER_2_STABILIZER.get(),
+                new String[] {"SCS", "P1P", "SBS"},
+                Map.of(
+                        'S', AllItems.STURDY_SHEET.get(),
+                        'C', ModItems.STABILIZATION_CELL.get(),
+                        'P', AllItems.PRECISION_MECHANISM.get(),
+                        '1', ModItems.TIER_1_STABILIZER.get(),
+                        'B', AllBlocks.BRASS_CASING.get()),
+                "Tier 2");
+        assertMechanicalRecipe(
+                helper,
+                level,
+                recipes,
+                TIER_3,
+                ModItems.TIER_3_STABILIZER.get(),
+                new String[] {"SSCSS", "SRPRS", "CP2PC", "SRPRS", "SSCSS"},
+                Map.of(
+                        'S', AllItems.STURDY_SHEET.get(),
+                        'C', ModItems.STABILIZATION_CELL.get(),
+                        'R', AllBlocks.RAILWAY_CASING.get(),
+                        'P', AllItems.PRECISION_MECHANISM.get(),
+                        '2', ModItems.TIER_2_STABILIZER.get()),
+                "Tier 3");
 
         helper.assertTrue(Sitems.BIOMASS_BLOCK.get() instanceof BlockItem,
                 "audited spore:biomass_block is not registered as a BlockItem");
@@ -182,12 +206,46 @@ public final class ProductionRecipeGameTests {
                 description + " ingredient is missing or accepts alternate items");
     }
 
+    private static void assertMechanicalRecipe(
+            GameTestHelper helper,
+            ServerLevel level,
+            RecipeManager recipes,
+            ResourceLocation id,
+            ItemLike output,
+            String[] pattern,
+            Map<Character, ItemLike> symbols,
+            String description) {
+        Recipe<?> recipe = requireRecipe(helper, recipes, id, "create:mechanical_crafting");
+        assertResult(helper, level, recipe, output, 1, description + " mechanical crafting");
+        helper.assertTrue(recipe instanceof ShapedRecipe, description + " mechanical recipe is not shaped");
+        ShapedRecipe shaped = (ShapedRecipe) recipe;
+        int width = pattern[0].length();
+        helper.assertTrue(shaped.getWidth() == width && shaped.getHeight() == pattern.length,
+                description + " mechanical pattern dimensions changed");
+        helper.assertTrue(shaped.getIngredients().size() == width * pattern.length,
+                description + " mechanical pattern slot count changed");
+        for (int row = 0; row < pattern.length; row++) {
+            helper.assertTrue(pattern[row].length() == width, description + " expected pattern row width is invalid");
+            for (int column = 0; column < width; column++) {
+                char symbol = pattern[row].charAt(column);
+                ItemLike expected = symbols.get(symbol);
+                helper.assertTrue(expected != null, description + " pattern uses an undefined symbol " + symbol);
+                int slot = row * width + column;
+                assertExactIngredient(
+                        helper,
+                        shaped.getIngredients().get(slot),
+                        expected,
+                        description + " symbol " + symbol + " at row " + row + ", column " + column);
+            }
+        }
+    }
+
     private static void assertNoProductionBypasses(
             GameTestHelper helper, ServerLevel level, RecipeManager recipes) {
         long frontierRecipes = recipes.getRecipeIds()
                 .filter(id -> id.getNamespace().equals(FrontierProtocolMod.MOD_ID))
                 .count();
-        helper.assertTrue(frontierRecipes == 3, "R6 loaded more or fewer than exactly three Frontier recipes");
+        helper.assertTrue(frontierRecipes == 5, "loaded more or fewer than exactly five Frontier recipes");
 
         for (RecipeHolder<?> holder : recipes.getRecipes()) {
             if (!producesProductionOutput(holder.value(), level)) continue;
@@ -210,7 +268,9 @@ public final class ProductionRecipeGameTests {
     private static boolean isProductionOutput(ItemStack stack) {
         return stack.is(ModItems.STABILIZATION_COMPOUND.get())
                 || stack.is(ModItems.STABILIZATION_CELL.get())
-                || stack.is(ModItems.TIER_1_STABILIZER.get());
+                || stack.is(ModItems.TIER_1_STABILIZER.get())
+                || stack.is(ModItems.TIER_2_STABILIZER.get())
+                || stack.is(ModItems.TIER_3_STABILIZER.get());
     }
 
     private static ResourceLocation id(String path) {

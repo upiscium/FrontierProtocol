@@ -1,0 +1,31 @@
+{
+  "type": "create:mechanical_crafting",
+  "accept_mirrored": true,
+  "category": "misc",
+  "key": {
+    "1": {
+      "item": "frontier_protocol:tier_1_stabilizer"
+    },
+    "B": {
+      "item": "create:brass_casing"
+    },
+    "C": {
+      "item": "frontier_protocol:stabilization_cell"
+    },
+    "P": {
+      "item": "create:precision_mechanism"
+    },
+    "S": {
+      "item": "create:sturdy_sheet"
+    }
+  },
+  "pattern": [
+    "SCS",
+    "P1P",
+    "SBS"
+  ],
+  "result": {
+    "count": 1,
+    "id": "frontier_protocol:tier_2_stabilizer"
+  }
+}
