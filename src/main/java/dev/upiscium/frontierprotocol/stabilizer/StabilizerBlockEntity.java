@@ -15,7 +15,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.Containers;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -146,8 +146,14 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     void dropInventory(ServerLevel serverLevel) {
         ItemStack stack = inventory.getStackInSlot(0);
         if (stack.isEmpty()) return;
-        Containers.dropItemStack(
-                serverLevel, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
+        ItemEntity dropped = new ItemEntity(
+                serverLevel,
+                worldPosition.getX() + 0.5,
+                worldPosition.getY() + 0.5,
+                worldPosition.getZ() + 0.5,
+                stack.copy());
+        dropped.setDeltaMovement(0, 0, 0);
+        serverLevel.addFreshEntity(dropped);
         inventory.setStackInSlot(0, ItemStack.EMPTY);
     }
 
