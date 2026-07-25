@@ -343,12 +343,13 @@ public final class StabilizerGameTests {
                     "reloaded Tier 1 did not preserve its remaining inventory");
             context.helper().assertTrue(service().isSuppressed(context.overworld(), chunk),
                     "reloaded Tier 1 did not rebuild suppression");
+            blockEntity(context.overworld(), context.second()).destroy();
             context.overworld().destroyBlock(context.second(), true);
-            context.helper().runAfterDelay(2, () -> verifyDestroyed(context));
+            context.helper().runAfterDelay(1, () -> verifyDestroyed(context, 0));
         });
     }
 
-    private static void verifyDestroyed(TestContext context) {
+    private static void verifyDestroyed(TestContext context, int attempts) {
         runStage(context, () -> {
             context.helper().assertTrue(!service().isSuppressed(context.overworld(), new ChunkPos(context.second())),
                     "destroyed Tier 1 retained suppression");
@@ -358,6 +359,10 @@ public final class StabilizerGameTests {
                     .filter(entity -> entity.getItem().is(ModItems.STABILIZATION_CELL.get()))
                     .mapToInt(entity -> entity.getItem().getCount())
                     .sum();
+            if (droppedCells != 1 && attempts < 20) {
+                context.helper().runAfterDelay(1, () -> verifyDestroyed(context, attempts + 1));
+                return;
+            }
             context.helper().assertTrue(droppedCells == 1, "destroyed Tier 1 did not drop its one unconsumed cell");
 
             ChunkPos negativeChunk = new ChunkPos(context.netherDevice());

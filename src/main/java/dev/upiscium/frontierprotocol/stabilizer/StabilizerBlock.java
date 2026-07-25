@@ -7,7 +7,9 @@ import com.simibubi.create.foundation.block.IBE;
 import dev.upiscium.frontierprotocol.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -53,6 +55,16 @@ public final class StabilizerBlock extends HorizontalAxisKineticBlock implements
     @Override
     public boolean hasShaftTowards(LevelReader level, BlockPos pos, BlockState state, Direction face) {
         return face.getAxis() == state.getValue(HORIZONTAL_AXIS);
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock())
+                && level instanceof ServerLevel serverLevel
+                && level.getBlockEntity(pos) instanceof StabilizerBlockEntity blockEntity) {
+            blockEntity.dropInventory(serverLevel);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
     @Override

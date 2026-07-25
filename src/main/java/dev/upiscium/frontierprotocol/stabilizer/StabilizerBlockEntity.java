@@ -143,6 +143,14 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         inventory.setStackInSlot(0, stack);
     }
 
+    void dropInventory(ServerLevel serverLevel) {
+        ItemStack stack = inventory.getStackInSlot(0);
+        if (stack.isEmpty()) return;
+        Containers.dropItemStack(
+                serverLevel, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
+        inventory.setStackInSlot(0, ItemStack.EMPTY);
+    }
+
     private void updateBlockState() {
         BlockState state = getBlockState();
         if (level != null && state.hasProperty(StabilizerBlock.STATUS)
@@ -282,11 +290,7 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         super.destroy();
         if (level instanceof ServerLevel serverLevel) {
             unregisterSource(serverLevel);
-            ItemStack stack = inventory.getStackInSlot(0);
-            if (!stack.isEmpty()) {
-                Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
-                inventory.setStackInSlot(0, ItemStack.EMPTY);
-            }
+            dropInventory(serverLevel);
         }
     }
 

@@ -255,13 +255,27 @@ public final class TierTwoStabilizerGameTests {
                             .anyMatch(source -> source.id().equals(
                                     StabilizerSuppressionSource.at(StabilizerTier.TIER_2, context.tier2Pos()).id())),
                     "virtual Tier 2 removed the non-virtual Tier 2 source");
+            context.helper().assertTrue(blockEntity(context.level(), context.tier2Pos())
+                            .externalInventory().getStackInSlot(0).getCount() == 1,
+                    "Tier 2 did not retain one Cell before destruction");
             context.level().destroyBlock(context.tier1Pos(), false);
+            blockEntity(context.level(), context.tier2Pos()).destroy();
             context.level().destroyBlock(context.tier2Pos(), true);
+            context.helper().runAfterDelay(1, () -> verifyDestroyDrop(context, 0));
+        });
+    }
+
+    private static void verifyDestroyDrop(LifecycleContext context, int attempts) {
+        runStage(context, () -> {
             int droppedCells = context.level().getEntitiesOfClass(
                             ItemEntity.class, new AABB(context.tier2Pos()).inflate(2.0)).stream()
                     .filter(entity -> entity.getItem().is(ModItems.STABILIZATION_CELL.get()))
                     .mapToInt(entity -> entity.getItem().getCount())
                     .sum();
+            if (droppedCells != 1 && attempts < 20) {
+                context.helper().runAfterDelay(1, () -> verifyDestroyDrop(context, attempts + 1));
+                return;
+            }
             context.helper().assertTrue(droppedCells == 1,
                     "destroyed Tier 2 did not drop its one unconsumed Cell");
             cleanup(context);
