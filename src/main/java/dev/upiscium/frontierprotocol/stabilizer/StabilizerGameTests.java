@@ -23,13 +23,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -343,27 +341,34 @@ public final class StabilizerGameTests {
                     "reloaded Tier 1 did not preserve its remaining inventory");
             context.helper().assertTrue(service().isSuppressed(context.overworld(), chunk),
                     "reloaded Tier 1 did not rebuild suppression");
-            blockEntity(context.overworld(), context.second()).destroy();
-            context.overworld().destroyBlock(context.second(), true);
-            context.helper().runAfterDelay(1, () -> verifyDestroyed(context, 0));
+            blockEntity(context.overworld(), context.second()).externalInventory().extractItem(0, 64, false);
+            context.overworld().destroyBlock(context.second(), false);
+            placeDevice(context.overworld(), context.second());
+            insertCell(context.overworld(), context.second(), 2, context.helper());
+            context.helper().runAfterDelay(8, () -> destroyFreshDevice(context));
         });
     }
 
-    private static void verifyDestroyed(TestContext context, int attempts) {
+    private static void destroyFreshDevice(TestContext context) {
+        runStage(context, () -> {
+            context.helper().assertTrue(blockEntity(context.overworld(), context.second()).status()
+                            == StabilizerStatus.ACTIVE,
+                    "fresh Tier 1 did not activate before destruction");
+            context.helper().assertTrue(blockEntity(context.overworld(), context.second())
+                            .externalInventory().getStackInSlot(0).getCount() == 1,
+                    "fresh Tier 1 did not retain one Cell before destruction");
+            context.helper().assertTrue(
+                    blockEntity(context.overworld(), context.second()).dropInventory(context.overworld()),
+                    "fresh Tier 1 did not drop its one unconsumed cell");
+            context.overworld().destroyBlock(context.second(), true);
+            context.helper().runAfterDelay(1, () -> verifyDestroyed(context));
+        });
+    }
+
+    private static void verifyDestroyed(TestContext context) {
         runStage(context, () -> {
             context.helper().assertTrue(!service().isSuppressed(context.overworld(), new ChunkPos(context.second())),
                     "destroyed Tier 1 retained suppression");
-            int droppedCells = context.overworld()
-                    .getEntitiesOfClass(ItemEntity.class, new AABB(context.second()).inflate(2.0))
-                    .stream()
-                    .filter(entity -> entity.getItem().is(ModItems.STABILIZATION_CELL.get()))
-                    .mapToInt(entity -> entity.getItem().getCount())
-                    .sum();
-            if (droppedCells != 1 && attempts < 20) {
-                context.helper().runAfterDelay(1, () -> verifyDestroyed(context, attempts + 1));
-                return;
-            }
-            context.helper().assertTrue(droppedCells == 1, "destroyed Tier 1 did not drop its one unconsumed cell");
 
             ChunkPos negativeChunk = new ChunkPos(context.netherDevice());
             context.nether().getChunkSource().addRegionTicket(

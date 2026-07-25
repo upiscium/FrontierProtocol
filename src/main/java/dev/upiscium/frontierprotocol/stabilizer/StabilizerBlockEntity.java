@@ -143,9 +143,9 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         inventory.setStackInSlot(0, stack);
     }
 
-    void dropInventory(ServerLevel serverLevel) {
+    boolean dropInventory(ServerLevel serverLevel) {
         ItemStack stack = inventory.getStackInSlot(0);
-        if (stack.isEmpty()) return;
+        if (stack.isEmpty()) return true;
         ItemEntity dropped = new ItemEntity(
                 serverLevel,
                 worldPosition.getX() + 0.5,
@@ -153,8 +153,9 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
                 worldPosition.getZ() + 0.5,
                 stack.copy());
         dropped.setDeltaMovement(0, 0, 0);
-        serverLevel.addFreshEntity(dropped);
+        if (!serverLevel.addFreshEntity(dropped)) return false;
         inventory.setStackInSlot(0, ItemStack.EMPTY);
+        return true;
     }
 
     private void updateBlockState() {

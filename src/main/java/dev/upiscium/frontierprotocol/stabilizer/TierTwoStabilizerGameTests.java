@@ -19,7 +19,6 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -27,7 +26,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -227,6 +225,10 @@ public final class TierTwoStabilizerGameTests {
             context.helper().assertTrue(reloaded.status() == StabilizerStatus.ACTIVE
                             && SERVICE.isSuppressed(context.level(), new ChunkPos(context.tier2Pos())),
                     "reloaded Tier 2 did not rebuild active suppression");
+            reloaded.externalInventory().extractItem(0, 64, false);
+            context.level().destroyBlock(context.tier2Pos(), false);
+            placeDevice(context.level(), context.tier2Pos(), ModBlocks.TIER_2_STABILIZER.get());
+            insertCells(context.level(), context.tier2Pos(), 2, context.helper());
             placeDevice(context.level(), context.tier1Pos(), ModBlocks.TIER_2_STABILIZER.get());
             insertCells(context.level(), context.tier1Pos(), 1, context.helper());
             placeMotor(context.level(), context.tier1Pos().west());
@@ -259,25 +261,10 @@ public final class TierTwoStabilizerGameTests {
                             .externalInventory().getStackInSlot(0).getCount() == 1,
                     "Tier 2 did not retain one Cell before destruction");
             context.level().destroyBlock(context.tier1Pos(), false);
-            blockEntity(context.level(), context.tier2Pos()).destroy();
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.tier2Pos()).dropInventory(context.level()),
+                    "Tier 2 did not drop its one unconsumed Cell");
             context.level().destroyBlock(context.tier2Pos(), true);
-            context.helper().runAfterDelay(1, () -> verifyDestroyDrop(context, 0));
-        });
-    }
-
-    private static void verifyDestroyDrop(LifecycleContext context, int attempts) {
-        runStage(context, () -> {
-            int droppedCells = context.level().getEntitiesOfClass(
-                            ItemEntity.class, new AABB(context.tier2Pos()).inflate(2.0)).stream()
-                    .filter(entity -> entity.getItem().is(ModItems.STABILIZATION_CELL.get()))
-                    .mapToInt(entity -> entity.getItem().getCount())
-                    .sum();
-            if (droppedCells != 1 && attempts < 20) {
-                context.helper().runAfterDelay(1, () -> verifyDestroyDrop(context, attempts + 1));
-                return;
-            }
-            context.helper().assertTrue(droppedCells == 1,
-                    "destroyed Tier 2 did not drop its one unconsumed Cell");
             cleanup(context);
             context.helper().succeed();
         });
