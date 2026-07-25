@@ -29,38 +29,34 @@ Spore 2.2.0j is the artifact audited by SHA-256 in `docs/spore-integration-audit
 
 - The persisted initial Overworld spawn center supplies permanent suppression, using a configurable radius of two chunks by default.
 - Fresh-world spawn search publishes a provisional center before normal ore placement and replaces it with the final center when spawn selection completes.
-- The Tier 1 Stabilizer uses a real Create kinetic network and finished Stabilization Cells. It consumes one Cell when beginning an operating duration, suppresses its chunk while ACTIVE and during its configured grace period, then unregisters when OFFLINE, unloaded, removed, or destroyed.
-- While ACTIVE, Tier 1 incrementally removes audited removable Spore foliage from its loaded placement chunk under global and per-source budgets. Cleanup pauses during grace and resumes from its persisted cursor after power recovery or reload.
+- Tier 1, Tier 2, and Tier 3 use a real Create kinetic network and the same finished Stabilization Cell. Their default coverage is 1x1, 3x3, and 5x5 chunks. A machine consumes one Cell when beginning an ACTIVE duration, retains suppression during its configured grace period, then unregisters when OFFLINE, unloaded, removed, or destroyed.
+- All three Registry entries use one shared `StabilizerBlock`, one shared `StabilizerBlockEntity` class/type, and one state machine. Generic `STABILIZER` source IDs include tier and position as `stabilizer/<tier>/<x>_<y>_<z>`.
+- While ACTIVE, each source incrementally removes audited removable Spore foliage from loaded covered chunks under its tier cleanup profile and hard server-global caps. Cleanup pauses during grace and resumes from persisted progress after power recovery or reload.
 - Multiple sources can cover the same chunk without premature removal, and identical chunk coordinates remain independent across dimensions.
 - Audited Spore environmental spread, offset foliage and branch writes, configured conversion, falling wood conversion, HiveTumor/Proto CDU replacement, and Mound additions query the actual mutation target before writing.
-- Stabilization Compound is produced by heated Create Mixing and is only an intermediate. A Deployer seals it into a Cell, and Mechanical Crafters produce the Tier 1 Stabilizer.
+- Stabilization Compound is produced by heated Create Mixing and is only an intermediate. A Deployer seals it into the common Cell. Mechanical Crafters produce Tier 1 and perform staged Tier 1-to-2 and Tier 2-to-3 upgrades. These are exactly five recipes with no normal-crafting bypass; exact upgrade patterns are in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md).
+
+At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress, hold 8/32/64 Cells, run 6000/3000/2000 ticks per Cell, and retain grace for 6000/9000/12000 ticks. Their 1/9/25-chunk coverage yields 6000/27000/50000 protected chunk-ticks per Cell. Tier 2 and Tier 3 are more area-efficient but consume Cells at shorter machine intervals, so their supply logistics need faster delivery and adequate buffers. The complete cleanup values and recipes are documented in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md).
 
 ## Alpha boundaries
 
 - Existing infected terrain, structures, nests, active hazards, and Block Entities are not restored, removed, replaced, or frozen. Cleanup is an explicit allowlist of audited non-Block-Entity foliage and replaces it only with air or retained water.
-- Tier 1 and Stabilization Cells have Create production recipes. Compound cannot power Tier 1 directly; the bundled consumable tag accepts only Cells, while datapacks may explicitly extend that public tag.
-- Recipe quantities and processing requirements are provisional R6 balance and may change in R9.
-- Tier 1 block models, Compound, and Cell use explicit placeholder models and vanilla textures. They must be replaced before public distribution and are not an R6 completion blocker.
+- All tiers and Stabilization Cells have Create production recipes. Compound cannot power a Stabilizer directly; the bundled consumable tag accepts only Cells, while datapacks may explicitly extend that public tag. The common consumable decision is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), and the shared tier architecture in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md).
+- Recipe quantities and operating values are provisional and may change during R9 balancing.
+- All three Stabilizer tiers, Compound, and Cell use explicit placeholder models referencing exact vanilla texture families. No custom PNG or final art is included; see [Placeholder Assets](placeholder-assets.md).
 - Hostile mob movement, combat, block breaking, and explosions are not containment responsibilities.
 - Spore random ticks, scheduled ticks, and existing infected block-entity state continue normally.
 - World-generation features outside the selected runtime Spore spread paths are not globally intercepted.
-- Tier 2, Tier 3, terrain restoration, nest destruction, goggles information, containment UI, and Ponder scenes are not included.
+- R7 adds no GUI, Goggles information, Ponder scenes, particles, chunk-boundary visualization, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, TFMG integration, multiblock, moving-contraption suppression, chunk loading, terrain restoration, nest or mob handling, or final assets. R8 displays and R9 balancing are later work.
 - No Minecraft-wide `Level#setBlock` hook is used.
 
-## Release verification
+## Verification status
 
-The release candidate must pass:
+Automated verification already performed includes unit tests, the build, all 31 GameTests, RecipeManager validation, and datagen. RecipeManager checks cover the exact five serializers, ingredients, patterns, outputs, and absence of crafting bypasses. The GameTests cover all tier lifecycles, coverage, suppression, cleanup profiles/global caps, persistence, overlaps, and production contracts.
 
-```sh
-./gradlew clean build
-./gradlew runGameTestServer
-./gradlew runServer
-./gradlew runClient
-```
+Final verification launched the production dedicated server through readiness and confirmed shutdown with all dimensions saved. The graphical client reached the title screen and joined the existing creative smoke world; all three placeholder Stabilizers rendered without Frontier Protocol model errors, and JEI displayed all five Frontier Protocol recipes. Physical Mechanical Crafter execution for the Tier 2 and Tier 3 upgrades and continuous automated Cell-supply smoke testing remain unverified. The complete production line must not be described as fully automation-verified.
 
-The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. A production NeoForge dedicated server smoke test should load the built JAR with Create and Spore and reach the server-ready state without a Mixin application or client-class error.
-
-`runClient` requires a graphical display. A `glfwInit` failure when `DISPLAY` is unavailable is an environment limitation and does not constitute a successful client smoke test.
+The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. The dedicated-server smoke reached the server-ready state with Create and Spore without a Mixin application or client-class error. The client smoke used a graphical display; a `glfwInit` failure when `DISPLAY` is unavailable would not constitute a successful client smoke test.
 
 ## Future publication checklist
 
@@ -68,10 +64,13 @@ The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mix
 - Confirm the license and distribution terms.
 - Add any required `LICENSE` document before publication.
 - Confirm the release branch and default branch.
-- Run a clean build.
-- Run the complete GameTest suite.
-- Complete a dedicated-server smoke test.
-- Complete a client smoke test with a graphical display.
+- [x] Run a clean build.
+- [x] Run the complete GameTest suite.
+- [x] Complete a dedicated-server smoke test.
+- [x] Complete a client smoke test with a graphical display.
+- [x] Inspect all five recipes in JEI.
+- [ ] Execute the tier recipes in physical Mechanical Crafters.
+- [ ] Smoke-test continuous automated Cell supply at upper-tier consumption intervals.
 - Inspect the production JAR contents and generated metadata.
 - Set the actual release date.
 - Prepare an icon or screenshots only if required by the selected channel.
