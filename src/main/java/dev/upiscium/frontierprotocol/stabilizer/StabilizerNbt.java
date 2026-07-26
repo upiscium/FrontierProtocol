@@ -13,6 +13,7 @@ final class StabilizerNbt {
     private static final String STATUS = "status";
     private static final String GRACE_REMAINING_TICKS = "graceRemainingTicks";
     private static final String CELL_REMAINING_TICKS = "cellRemainingTicks";
+    private static final String REGISTERED_CHUNK_RADIUS = "registeredChunkRadius";
     private static final String INVENTORY = "inventory";
 
     private StabilizerNbt() {}
@@ -21,6 +22,7 @@ final class StabilizerNbt {
             CompoundTag tag,
             StabilizerTier tier,
             StabilizerStateMachine state,
+            int registeredChunkRadius,
             ItemStackHandler inventory,
             HolderLookup.Provider registries) {
         tag.putInt(SCHEMA_VERSION_KEY, SCHEMA_VERSION);
@@ -28,10 +30,11 @@ final class StabilizerNbt {
         tag.putString(STATUS, state.status().getSerializedName());
         tag.putInt(GRACE_REMAINING_TICKS, state.graceRemainingTicks());
         tag.putInt(CELL_REMAINING_TICKS, state.cellRemainingTicks());
+        tag.putInt(REGISTERED_CHUNK_RADIUS, registeredChunkRadius);
         tag.put(INVENTORY, inventory.serializeNBT(registries));
     }
 
-    static StabilizerStateMachine read(
+    static ReadResult read(
             CompoundTag tag,
             StabilizerTier expectedTier,
             ItemStackHandler inventory,
@@ -46,9 +49,22 @@ final class StabilizerNbt {
         if (tag.contains(INVENTORY, Tag.TAG_COMPOUND)) {
             inventory.deserializeNBT(registries, tag.getCompound(INVENTORY));
         }
-        return new StabilizerStateMachine(
+        StabilizerStateMachine machine = new StabilizerStateMachine(
                 StabilizerStatus.fromSerializedName(tag.getString(STATUS)),
                 Math.max(0, tag.getInt(GRACE_REMAINING_TICKS)),
                 Math.max(0, tag.getInt(CELL_REMAINING_TICKS)));
+        Integer registeredChunkRadius = null;
+        if (tag.contains(REGISTERED_CHUNK_RADIUS, Tag.TAG_INT)) {
+            int storedRadius = tag.getInt(REGISTERED_CHUNK_RADIUS);
+            if (storedRadius >= 0) {
+                registeredChunkRadius = storedRadius;
+            } else {
+                FrontierProtocolMod.LOGGER.warn(
+                        "Ignoring negative Stabilizer registered chunk radius {}", storedRadius);
+            }
+        }
+        return new ReadResult(machine, registeredChunkRadius);
     }
+
+    record ReadResult(StabilizerStateMachine machine, Integer registeredChunkRadius) {}
 }

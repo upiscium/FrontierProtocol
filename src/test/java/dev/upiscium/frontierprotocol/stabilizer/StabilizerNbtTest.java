@@ -1,6 +1,7 @@
 package dev.upiscium.frontierprotocol.stabilizer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -20,16 +21,17 @@ class StabilizerNbtTest {
         originalInventory.setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 3));
         CompoundTag tag = new CompoundTag();
 
-        StabilizerNbt.write(tag, StabilizerTier.TIER_1, original, originalInventory, registries);
+        StabilizerNbt.write(tag, StabilizerTier.TIER_1, original, 2, originalInventory, registries);
         ItemStackHandler restoredInventory = new ItemStackHandler(1);
-        StabilizerStateMachine restored =
+        StabilizerNbt.ReadResult restored =
                 StabilizerNbt.read(tag, StabilizerTier.TIER_1, restoredInventory, registries);
 
         assertEquals(StabilizerNbt.SCHEMA_VERSION, tag.getInt("schemaVersion"));
         assertEquals("tier_1", tag.getString("tier"));
-        assertEquals(StabilizerStatus.GRACE_PERIOD, restored.status());
-        assertEquals(77, restored.graceRemainingTicks());
-        assertEquals(123, restored.cellRemainingTicks());
+        assertEquals(StabilizerStatus.GRACE_PERIOD, restored.machine().status());
+        assertEquals(77, restored.machine().graceRemainingTicks());
+        assertEquals(123, restored.machine().cellRemainingTicks());
+        assertEquals(2, restored.registeredChunkRadius());
         assertEquals(3, restoredInventory.getStackInSlot(0).getCount());
         assertEquals(Items.IRON_INGOT, restoredInventory.getStackInSlot(0).getItem());
     }
@@ -43,12 +45,13 @@ class StabilizerNbtTest {
         tag.putInt("graceRemainingTicks", -7);
         tag.putInt("cellRemainingTicks", -11);
 
-        StabilizerStateMachine restored = StabilizerNbt.read(
+        StabilizerNbt.ReadResult restored = StabilizerNbt.read(
                 tag, StabilizerTier.TIER_1, new ItemStackHandler(1), registries);
 
-        assertEquals(StabilizerStatus.OFFLINE, restored.status());
-        assertEquals(0, restored.graceRemainingTicks());
-        assertEquals(0, restored.cellRemainingTicks());
+        assertEquals(StabilizerStatus.OFFLINE, restored.machine().status());
+        assertEquals(0, restored.machine().graceRemainingTicks());
+        assertEquals(0, restored.machine().cellRemainingTicks());
+        assertNull(restored.registeredChunkRadius());
     }
 
     @Test
@@ -60,12 +63,12 @@ class StabilizerNbtTest {
         tag.putInt("graceRemainingTicks", 9);
         tag.putInt("cellRemainingTicks", 17);
 
-        StabilizerStateMachine restored = StabilizerNbt.read(
+        StabilizerNbt.ReadResult restored = StabilizerNbt.read(
                 tag, StabilizerTier.TIER_1, new ItemStackHandler(1), registries);
 
-        assertEquals(StabilizerStatus.ACTIVE, restored.status());
-        assertEquals(9, restored.graceRemainingTicks());
-        assertEquals(17, restored.cellRemainingTicks());
+        assertEquals(StabilizerStatus.ACTIVE, restored.machine().status());
+        assertEquals(9, restored.machine().graceRemainingTicks());
+        assertEquals(17, restored.machine().cellRemainingTicks());
     }
 
     @Test
@@ -76,15 +79,16 @@ class StabilizerNbtTest {
         inventory.setStackInSlot(0, new ItemStack(Items.COPPER_INGOT, 12));
         CompoundTag tag = new CompoundTag();
 
-        StabilizerNbt.write(tag, StabilizerTier.TIER_2, original, inventory, registries);
+        StabilizerNbt.write(tag, StabilizerTier.TIER_2, original, 1, inventory, registries);
         ItemStackHandler restoredInventory = new ItemStackHandler(1);
-        StabilizerStateMachine restored = StabilizerNbt.read(
+        StabilizerNbt.ReadResult restored = StabilizerNbt.read(
                 tag, StabilizerTier.TIER_2, restoredInventory, registries);
 
         assertEquals("tier_2", tag.getString("tier"));
-        assertEquals(StabilizerStatus.ACTIVE, restored.status());
-        assertEquals(90, restored.graceRemainingTicks());
-        assertEquals(211, restored.cellRemainingTicks());
+        assertEquals(StabilizerStatus.ACTIVE, restored.machine().status());
+        assertEquals(90, restored.machine().graceRemainingTicks());
+        assertEquals(211, restored.machine().cellRemainingTicks());
+        assertEquals(1, restored.registeredChunkRadius());
         assertEquals(12, restoredInventory.getStackInSlot(0).getCount());
     }
 
@@ -96,15 +100,30 @@ class StabilizerNbtTest {
         inventory.setStackInSlot(0, new ItemStack(Items.NETHERITE_INGOT, 64));
         CompoundTag tag = new CompoundTag();
 
-        StabilizerNbt.write(tag, StabilizerTier.TIER_3, original, inventory, registries);
+        StabilizerNbt.write(tag, StabilizerTier.TIER_3, original, 2, inventory, registries);
         ItemStackHandler restoredInventory = new ItemStackHandler(1);
-        StabilizerStateMachine restored = StabilizerNbt.read(
+        StabilizerNbt.ReadResult restored = StabilizerNbt.read(
                 tag, StabilizerTier.TIER_3, restoredInventory, registries);
 
         assertEquals("tier_3", tag.getString("tier"));
-        assertEquals(StabilizerStatus.GRACE_PERIOD, restored.status());
-        assertEquals(240, restored.graceRemainingTicks());
-        assertEquals(511, restored.cellRemainingTicks());
+        assertEquals(StabilizerStatus.GRACE_PERIOD, restored.machine().status());
+        assertEquals(240, restored.machine().graceRemainingTicks());
+        assertEquals(511, restored.machine().cellRemainingTicks());
+        assertEquals(2, restored.registeredChunkRadius());
         assertEquals(64, restoredInventory.getStackInSlot(0).getCount());
+    }
+
+    @Test
+    void negativeRegisteredChunkRadiusIsIgnored() {
+        RegistryAccess registries = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
+        CompoundTag tag = new CompoundTag();
+        tag.putString("tier", StabilizerTier.TIER_1.serializedName());
+        tag.putString("status", StabilizerStatus.GRACE_PERIOD.getSerializedName());
+        tag.putInt("registeredChunkRadius", -1);
+
+        StabilizerNbt.ReadResult restored = StabilizerNbt.read(
+                tag, StabilizerTier.TIER_1, new ItemStackHandler(1), registries);
+
+        assertNull(restored.registeredChunkRadius());
     }
 }

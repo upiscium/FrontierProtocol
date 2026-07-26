@@ -67,7 +67,13 @@ final class DimensionCleanupIndex {
         noLongerRegistered.removeIf(this::hasRegistrationCoveringInternal);
         Set<Long> newPassChunks = Set.of();
         if (activationMode == CleanupActivationMode.NEW_PASS) {
-            newPassChunks = previous == null || !previousWasActive ? nextKeys : Set.copyOf(newlyCovered);
+            if (previous == null) {
+                newPassChunks = nextKeys;
+            } else if (active && !previousWasActive) {
+                newPassChunks = nextKeys;
+            } else {
+                newPassChunks = Set.copyOf(newlyCovered);
+            }
         }
         return new ActivationChanges(
                 Set.copyOf(globallyNewlyActive), Set.copyOf(newPassChunks), Set.copyOf(noLongerRegistered));
@@ -208,7 +214,7 @@ final class DimensionCleanupIndex {
 
     /**
      * @param globallyNewlyActive chunks whose active-source set changed from empty to non-empty
-     * @param newPassChunks all coverage for an absent/paused NEW_PASS source, or newly added ACTIVE coverage
+     * @param newPassChunks all coverage for a new or freshly activated source, or newly added coverage
      * @param noLongerRegistered removed coverage that no remaining active or paused source registration covers
      */
     record ActivationChanges(

@@ -4,8 +4,11 @@ import com.Harbinger.Spore.core.Sblocks;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.content.kinetics.motor.CreativeMotorBlock;
 import dev.upiscium.frontierprotocol.FrontierProtocolMod;
+import dev.upiscium.frontierprotocol.api.suppression.SuppressionSourceId;
+import dev.upiscium.frontierprotocol.cleanup.CleanupActivationMode;
 import dev.upiscium.frontierprotocol.cleanup.CleanupCursor;
 import dev.upiscium.frontierprotocol.cleanup.CleanupProgress;
+import dev.upiscium.frontierprotocol.cleanup.CleanupSourceProfile;
 import dev.upiscium.frontierprotocol.cleanup.InfectionCleanupSavedData;
 import dev.upiscium.frontierprotocol.cleanup.ServerInfectionCleanupService;
 import dev.upiscium.frontierprotocol.config.FrontierProtocolServerConfig;
@@ -13,11 +16,13 @@ import dev.upiscium.frontierprotocol.registry.ModBlocks;
 import dev.upiscium.frontierprotocol.registry.ModItems;
 import dev.upiscium.frontierprotocol.suppression.ServerInfectionSuppressionService;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
@@ -147,6 +152,199 @@ public final class StabilizerCleanupGameTests {
             placeMotor(level, device.west());
             helper.runAfterDelay(10, () -> updateActiveProfile(context, center, expanded));
         });
+    }
+
+    @GameTest(template = "empty", batch = "stabilizer_grace_coverage_expansion", timeoutTicks = 240)
+    public static void graceExpansionStartsOnlyNewCoverageAndPreservesOverlap(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel().getServer().overworld();
+        BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        ChunkPos center = new ChunkPos(origin);
+        ChunkPos expanded = new ChunkPos(center.x + 1, center.z);
+        BlockPos device = new BlockPos(center.getMinBlockX() + 8, origin.getY() + 1, center.getMinBlockZ() + 8);
+        BlockPos target = new BlockPos(expanded.getMinBlockX(), level.getMinBuildHeight() + 1, expanded.getMinBlockZ());
+        TestContext context = new TestContext(helper, level, device, null, target, ConfigSnapshot.capture());
+
+        runStage(context, () -> {
+            configureCleanupTest();
+            FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(0);
+            FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(60);
+            ServerInfectionCleanupService.INSTANCE.clearRuntime(level.getServer());
+            placeDevice(level, device);
+            insertCell(level, device, 2, helper);
+            placeMotor(level, device.west());
+            helper.runAfterDelay(10, () -> enterGraceBeforeExpansion(context, center, expanded));
+        });
+    }
+
+    @GameTest(template = "empty", batch = "stabilizer_unload_coverage_expansion", timeoutTicks = 240)
+    public static void graceReloadDetectsCoverageExpandedWhileUnloaded(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel().getServer().overworld();
+        BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        ChunkPos center = new ChunkPos(origin);
+        ChunkPos expanded = new ChunkPos(center.x + 1, center.z);
+        BlockPos device = new BlockPos(center.getMinBlockX() + 8, origin.getY() + 1, center.getMinBlockZ() + 8);
+        BlockPos target = new BlockPos(expanded.getMinBlockX(), level.getMinBuildHeight() + 1, expanded.getMinBlockZ());
+        TestContext context = new TestContext(helper, level, device, null, target, ConfigSnapshot.capture());
+
+        runStage(context, () -> {
+            configureCleanupTest();
+            FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(0);
+            FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(60);
+            ServerInfectionCleanupService.INSTANCE.clearRuntime(level.getServer());
+            placeDevice(level, device);
+            insertCell(level, device, 2, helper);
+            placeMotor(level, device.west());
+            helper.runAfterDelay(10, () -> enterGraceBeforeUnload(context, center, expanded));
+        });
+    }
+
+    private static void enterGraceBeforeExpansion(TestContext context, ChunkPos center, ChunkPos expanded) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE,
+                    "coverage-expansion Tier 1 was not ACTIVE");
+            setCursor(
+                    context.level(), center, new BlockPos(center.getMinBlockX() + 4, 64, center.getMinBlockZ() + 4));
+            setCompleted(context.level(), expanded);
+            placeRemovable(context.level(), context.target());
+            ServerInfectionCleanupService.INSTANCE.registerPausedSource(
+                    context.level(),
+                    graceOverlapSource(),
+                    Set.of(expanded),
+                    CleanupActivationMode.RESUME,
+                    new CleanupSourceProfile(20, 1, 1));
+            context.level().setBlock(context.first().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            context.helper().runAfterDelay(3, () -> expandGraceCoverage(context, center, expanded));
+        });
+    }
+
+    private static void expandGraceCoverage(TestContext context, ChunkPos center, ChunkPos expanded) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.GRACE_PERIOD,
+                    "coverage-expansion Tier 1 did not enter GRACE");
+            CleanupProgress retained =
+                    InfectionCleanupSavedData.get(context.level()).snapshot().get(center.toLong());
+            FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(1);
+            context.helper().runAfterDelay(3, () -> verifyGraceExpansion(context, center, expanded, retained));
+        });
+    }
+
+    private static void verifyGraceExpansion(
+            TestContext context, ChunkPos center, ChunkPos expanded, CleanupProgress retained) {
+        runStage(context, () -> {
+            Map<Long, CleanupProgress> progress = InfectionCleanupSavedData.get(context.level()).snapshot();
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.GRACE_PERIOD,
+                    "coverage expansion activated cleanup during GRACE");
+            context.helper().assertTrue(
+                    progress.get(center.toLong()).equals(retained),
+                    "GRACE expansion reset retained coverage");
+            context.helper().assertTrue(
+                    progress.get(expanded.toLong()).cursor().equals(CleanupCursor.start()),
+                    "GRACE expansion did not NEW_PASS newly covered overlap");
+            context.helper().assertTrue(
+                    context.level().getBlockState(context.target()).is(Sblocks.GROWTHS_BIG.get()),
+                    "GRACE expansion ran paused cleanup");
+            context.helper().assertTrue(
+                    ServerInfectionSuppressionService.INSTANCE.isSuppressed(context.level(), expanded),
+                    "GRACE expansion did not extend suppression");
+            placeMotor(context.level(), context.first().west());
+            context.helper().runAfterDelay(5, () -> verifyGraceExpansionResumed(context));
+        });
+    }
+
+    private static void verifyGraceExpansionResumed(TestContext context) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE,
+                    "expanded GRACE source did not return to ACTIVE");
+            context.helper().assertTrue(
+                    context.level().getBlockState(context.target()).isAir(),
+                    "newly covered chunk did not clean after ACTIVE recovery");
+            context.helper().assertTrue(
+                    !progress(context).cursor().equals(CleanupCursor.start()),
+                    "ACTIVE recovery reset retained coverage");
+            ServerInfectionCleanupService.INSTANCE.deactivateSource(context.level(), graceOverlapSource());
+            cleanup(context);
+            context.helper().succeed();
+        });
+    }
+
+    private static void enterGraceBeforeUnload(TestContext context, ChunkPos center, ChunkPos expanded) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE,
+                    "unload-expansion Tier 1 was not ACTIVE");
+            setCursor(
+                    context.level(), center, new BlockPos(center.getMinBlockX() + 4, 64, center.getMinBlockZ() + 4));
+            setCompleted(context.level(), expanded);
+            placeRemovable(context.level(), context.target());
+            context.level().setBlock(context.first().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            context.helper().runAfterDelay(3, () -> unloadBeforeExpansion(context, center, expanded));
+        });
+    }
+
+    private static void unloadBeforeExpansion(TestContext context, ChunkPos center, ChunkPos expanded) {
+        runStage(context, () -> {
+            StabilizerBlockEntity blockEntity = blockEntity(context.level(), context.first());
+            context.helper().assertTrue(
+                    blockEntity.status() == StabilizerStatus.GRACE_PERIOD,
+                    "unload-expansion Tier 1 did not enter GRACE");
+            CleanupProgress retained =
+                    InfectionCleanupSavedData.get(context.level()).snapshot().get(center.toLong());
+            blockEntity.onChunkUnloaded();
+            CompoundTag saved = blockEntity.saveWithFullMetadata(context.level().registryAccess());
+            ServerInfectionCleanupService.INSTANCE.clearRuntime(context.level().getServer());
+            FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(1);
+            reloadBlockEntity(context.level(), context.first(), saved);
+            context.helper().runAfterDelay(3, () -> verifyUnloadedExpansion(context, center, expanded, retained));
+        });
+    }
+
+    private static void verifyUnloadedExpansion(
+            TestContext context, ChunkPos center, ChunkPos expanded, CleanupProgress retained) {
+        runStage(context, () -> {
+            Map<Long, CleanupProgress> progress = InfectionCleanupSavedData.get(context.level()).snapshot();
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.GRACE_PERIOD,
+                    "reloaded expanded Tier 1 changed GRACE status");
+            context.helper().assertTrue(
+                    progress.get(center.toLong()).equals(retained),
+                    "reload expansion reset retained coverage");
+            context.helper().assertTrue(
+                    progress.get(expanded.toLong()).cursor().equals(CleanupCursor.start()),
+                    "reload expansion did not NEW_PASS newly covered chunk");
+            context.helper().assertTrue(
+                    context.level().getBlockState(context.target()).is(Sblocks.GROWTHS_BIG.get()),
+                    "reloaded GRACE expansion ran cleanup");
+            context.helper().assertTrue(
+                    ServerInfectionSuppressionService.INSTANCE.isSuppressed(context.level(), expanded),
+                    "reloaded GRACE expansion did not restore expanded suppression");
+            placeMotor(context.level(), context.first().west());
+            context.helper().runAfterDelay(5, () -> verifyUnloadedExpansionResumed(context));
+        });
+    }
+
+    private static void verifyUnloadedExpansionResumed(TestContext context) {
+        runStage(context, () -> {
+            context.helper().assertTrue(
+                    blockEntity(context.level(), context.first()).status() == StabilizerStatus.ACTIVE,
+                    "reloaded expanded Tier 1 did not return to ACTIVE");
+            context.helper().assertTrue(
+                    context.level().getBlockState(context.target()).isAir(),
+                    "reloaded expanded chunk did not clean after ACTIVE recovery");
+            context.helper().assertTrue(
+                    !progress(context).cursor().equals(CleanupCursor.start()),
+                    "reloaded ACTIVE recovery reset retained coverage");
+            cleanup(context);
+            context.helper().succeed();
+        });
+    }
+
+    private static SuppressionSourceId graceOverlapSource() {
+        return new SuppressionSourceId(ResourceLocation.fromNamespaceAndPath(
+                FrontierProtocolMod.MOD_ID, "stabilizer_test/grace_expansion_overlap"));
     }
 
     private static void updateActiveProfile(TestContext context, ChunkPos center, ChunkPos expanded) {

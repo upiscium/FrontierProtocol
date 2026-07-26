@@ -11,6 +11,7 @@ R7 implements the common three-tier architecture accepted by [ADR 0002](adr/0002
 - Every machine registers the generic `STABILIZER` source type. Its source ID has tier and position in the exact shape `stabilizer/<tier>/<x>_<y>_<z>`; dimension-local services keep equal positions in different dimensions independent.
 - Each source contributes its tier's cleanup interval, inspection budget, and mutation budget. Server-global caps of 512 inspections and 16 mutations per tick remain hard aggregate limits across sources and dimensions.
 - Coverage is a square centered on the placement chunk and never loads chunks. Cleanup touches only loaded chunks and only audited removable non-Block-Entity Spore foliage.
+- Coverage changes while ACTIVE, GRACE_PERIOD, or unloaded preserve existing chunk cursors while starting a fresh pass only for newly covered chunks.
 
 ## Default definitions
 
@@ -83,6 +84,6 @@ R7 does not add a GUI, Goggles information, Ponder scenes, particles, chunk-boun
 
 ## Verification status
 
-Automated verification already performed covers the unit tests, build, all 31 GameTests, RecipeManager assertions for exact serializers/ingredients/patterns/results and no bypasses, and datagen output. These checks cover shared registration and lifecycle, all tier definitions, coverage, suppression IDs, overlap behavior, per-source cleanup profiles/global caps, staged recipes, and generated resources.
+Automated verification already performed covers the unit tests, build, all 33 GameTests, RecipeManager assertions for exact serializers/ingredients/patterns/results and no bypasses, and datagen output. These checks cover shared registration and lifecycle, all tier definitions, coverage, suppression IDs, overlap behavior, per-source cleanup profiles/global caps, staged recipes, and generated resources.
 
 Final smoke testing launched the production dedicated server through readiness and confirmed shutdown with all dimensions saved. The graphical client reached the title screen, joined the existing creative smoke world, rendered all three placeholder Stabilizers without Frontier Protocol model errors, and displayed Mixing, Deploying, and all three Mechanical Crafting recipes in JEI. Physical Mechanical Crafter execution for the Tier 2 and Tier 3 upgrades and continuous automated Cell-supply smoke testing remain unverified. The physical R6 Mixing GameTest does not satisfy those remaining R7 checks, so the complete line must not be described as fully automation-verified.

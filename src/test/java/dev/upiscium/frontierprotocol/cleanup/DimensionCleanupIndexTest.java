@@ -187,6 +187,94 @@ class DimensionCleanupIndexTest {
     }
 
     @Test
+    void pausedExpansionStartsOnlyNewCoverageWithoutQueueingWork() {
+        DimensionCleanupIndex index = new DimensionCleanupIndex();
+        InfectionCleanupSavedData data = new InfectionCleanupSavedData();
+        SuppressionSourceId source = source("paused_expansion");
+        ChunkPos added = new ChunkPos(OVERLAP.x + 1, OVERLAP.z);
+        long retainedKey = OVERLAP.toLong();
+        long addedKey = added.toLong();
+        CleanupProgress partial = new CleanupProgress(new CleanupCursor(1, 80, false), false, -4, 8);
+        data.update(retainedKey, partial);
+        data.update(addedKey, new CleanupProgress(new CleanupCursor(7, 4095, true), false, -4, 8));
+        index.registerPaused(source, Set.of(OVERLAP), CleanupActivationMode.RESUME, PROFILE);
+
+        DimensionCleanupIndex.ActivationChanges changes = index.registerPaused(
+                source, Set.of(OVERLAP, added), CleanupActivationMode.NEW_PASS, PROFILE);
+        for (long newPassChunk : changes.newPassChunks()) {
+            data.activate(newPassChunk, -4, 8, CleanupActivationMode.NEW_PASS);
+            index.resumeIncomplete(newPassChunk);
+        }
+
+        assertEquals(Set.of(addedKey), changes.newPassChunks());
+        assertTrue(changes.noLongerRegistered().isEmpty());
+        assertEquals(partial, data.snapshot().get(retainedKey));
+        assertEquals(CleanupCursor.start(), data.snapshot().get(addedKey).cursor());
+        assertEquals(0, index.activeTaskCount());
+        assertTrue(index.hasRegistrationCovering(retainedKey));
+        assertTrue(index.hasRegistrationCovering(addedKey));
+    }
+
+    @Test
+    void activeToPausedExpansionStartsOnlyNewCoverageWithoutQueueingWork() {
+        DimensionCleanupIndex index = new DimensionCleanupIndex();
+        SuppressionSourceId source = source("active_to_paused_expansion");
+        ChunkPos added = new ChunkPos(OVERLAP.x, OVERLAP.z + 1);
+        index.registerActive(source, Set.of(OVERLAP), CleanupActivationMode.NEW_PASS, PROFILE);
+
+        DimensionCleanupIndex.ActivationChanges changes = index.registerPaused(
+                source, Set.of(OVERLAP, added), CleanupActivationMode.NEW_PASS, PROFILE);
+
+        assertEquals(Set.of(added.toLong()), changes.newPassChunks());
+        assertTrue(changes.noLongerRegistered().isEmpty());
+        assertEquals(0, index.activeTaskCount());
+        assertTrue(index.hasRegistrationCovering(OVERLAP.toLong()));
+        assertTrue(index.hasRegistrationCovering(added.toLong()));
+    }
+
+    @Test
+    void duplicatePausedNewPassRegistrationDoesNotRestartCoverage() {
+        DimensionCleanupIndex index = new DimensionCleanupIndex();
+        SuppressionSourceId source = source("duplicate_paused");
+        Set<ChunkPos> coverage = Set.of(OVERLAP, new ChunkPos(OVERLAP.x + 1, OVERLAP.z));
+        index.registerPaused(source, coverage, CleanupActivationMode.NEW_PASS, PROFILE);
+
+        DimensionCleanupIndex.ActivationChanges duplicate =
+                index.registerPaused(source, coverage, CleanupActivationMode.NEW_PASS, PROFILE);
+
+        assertTrue(duplicate.globallyNewlyActive().isEmpty());
+        assertTrue(duplicate.newPassChunks().isEmpty());
+        assertTrue(duplicate.noLongerRegistered().isEmpty());
+        assertEquals(0, index.activeTaskCount());
+    }
+
+    @Test
+    void pausedExpansionRetainsOverlappingRegistrationAndOneSharedCursor() {
+        DimensionCleanupIndex index = new DimensionCleanupIndex();
+        InfectionCleanupSavedData data = new InfectionCleanupSavedData();
+        SuppressionSourceId expanding = source("paused_overlap_expanding");
+        SuppressionSourceId overlap = source("paused_overlap_existing");
+        ChunkPos added = new ChunkPos(OVERLAP.x + 1, OVERLAP.z);
+        long addedKey = added.toLong();
+        data.update(addedKey, new CleanupProgress(new CleanupCursor(7, 4095, true), false, -4, 8));
+        index.registerPaused(expanding, Set.of(OVERLAP), CleanupActivationMode.RESUME, PROFILE);
+        index.registerPaused(overlap, Set.of(added), CleanupActivationMode.RESUME, PROFILE);
+
+        DimensionCleanupIndex.ActivationChanges changes = index.registerPaused(
+                expanding, Set.of(OVERLAP, added), CleanupActivationMode.NEW_PASS, PROFILE);
+        for (long newPassChunk : changes.newPassChunks()) {
+            data.activate(newPassChunk, -4, 8, CleanupActivationMode.NEW_PASS);
+        }
+
+        assertEquals(Set.of(addedKey), changes.newPassChunks());
+        assertEquals(CleanupCursor.start(), data.snapshot().get(addedKey).cursor());
+        assertEquals(1, data.snapshot().size());
+        assertEquals(0, index.activeTaskCount());
+        assertEquals(Set.of(OVERLAP.toLong()), index.deactivate(expanding));
+        assertTrue(index.hasRegistrationCovering(addedKey));
+    }
+
+    @Test
     void pausedCoverageChangeReportsUnregisteredChunkAndPreservesResumeCursor() {
         DimensionCleanupIndex index = new DimensionCleanupIndex();
         InfectionCleanupSavedData data = new InfectionCleanupSavedData();
