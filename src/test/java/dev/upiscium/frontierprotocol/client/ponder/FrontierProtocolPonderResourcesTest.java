@@ -48,18 +48,20 @@ class FrontierProtocolPonderResourcesTest {
     void operationComponentsUseTheirTierAndCellUsesTierOne() {
         List<FrontierProtocolPonderScenes.OperationSceneDefinition> definitions =
                 FrontierProtocolPonderScenes.operationSceneDefinitions();
-        assertDefinition(definitions.get(0), ModItems.TIER_1_STABILIZER.getId(), ModBlocks.TIER_1_STABILIZER);
-        assertDefinition(definitions.get(1), ModItems.TIER_2_STABILIZER.getId(), ModBlocks.TIER_2_STABILIZER);
-        assertDefinition(definitions.get(2), ModItems.TIER_3_STABILIZER.getId(), ModBlocks.TIER_3_STABILIZER);
-        assertDefinition(definitions.get(3), ModItems.STABILIZATION_CELL.getId(), ModBlocks.TIER_1_STABILIZER);
+        assertDefinition(definitions.get(0), ModItems.TIER_1_STABILIZER.getId(), ModBlocks.TIER_1_STABILIZER, 32.0F);
+        assertDefinition(definitions.get(1), ModItems.TIER_2_STABILIZER.getId(), ModBlocks.TIER_2_STABILIZER, 64.0F);
+        assertDefinition(definitions.get(2), ModItems.TIER_3_STABILIZER.getId(), ModBlocks.TIER_3_STABILIZER, 128.0F);
+        assertDefinition(definitions.get(3), ModItems.STABILIZATION_CELL.getId(), ModBlocks.TIER_1_STABILIZER, 32.0F);
     }
 
     private static void assertDefinition(
             FrontierProtocolPonderScenes.OperationSceneDefinition definition,
             net.minecraft.resources.ResourceLocation component,
-            net.neoforged.neoforge.registries.DeferredBlock<?> block) {
+            net.neoforged.neoforge.registries.DeferredBlock<?> block,
+            float kineticSpeed) {
         assertSame(component, definition.component());
         assertSame(block, definition.block());
+        org.junit.jupiter.api.Assertions.assertEquals(kineticSpeed, definition.kineticSpeed());
     }
 
     private JsonObject language(String locale) throws Exception {

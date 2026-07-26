@@ -28,7 +28,7 @@ public final class FrontierProtocolPonderScenes {
             helper.addStoryBoard(
                     definition.component(),
                     "stabilizer/operation",
-                    (scene, util) -> operation(scene, util, definition.block().get()),
+                    (scene, util) -> operation(scene, util, definition),
                     FrontierProtocolPonderTags.CONTAINMENT);
         }
         for (ResourceLocation component : new ResourceLocation[] {
@@ -53,29 +53,30 @@ public final class FrontierProtocolPonderScenes {
 
     static List<OperationSceneDefinition> operationSceneDefinitions() {
         return List.of(
-                new OperationSceneDefinition(ModItems.TIER_1_STABILIZER.getId(), ModBlocks.TIER_1_STABILIZER),
-                new OperationSceneDefinition(ModItems.TIER_2_STABILIZER.getId(), ModBlocks.TIER_2_STABILIZER),
-                new OperationSceneDefinition(ModItems.TIER_3_STABILIZER.getId(), ModBlocks.TIER_3_STABILIZER),
-                new OperationSceneDefinition(ModItems.STABILIZATION_CELL.getId(), ModBlocks.TIER_1_STABILIZER));
+                new OperationSceneDefinition(ModItems.TIER_1_STABILIZER.getId(), ModBlocks.TIER_1_STABILIZER, 32.0F),
+                new OperationSceneDefinition(ModItems.TIER_2_STABILIZER.getId(), ModBlocks.TIER_2_STABILIZER, 64.0F),
+                new OperationSceneDefinition(ModItems.TIER_3_STABILIZER.getId(), ModBlocks.TIER_3_STABILIZER, 128.0F),
+                new OperationSceneDefinition(ModItems.STABILIZATION_CELL.getId(), ModBlocks.TIER_1_STABILIZER, 32.0F));
     }
 
     private static void operation(
-            SceneBuilder scene, SceneBuildingUtil util, StabilizerBlock stabilizerBlock) {
+            SceneBuilder scene, SceneBuildingUtil util, OperationSceneDefinition definition) {
+        StabilizerBlock stabilizerBlock = definition.block().get();
         scene.title("stabilizer_operation", "Operating a Stabilizer");
         scene.configureBasePlate(0, 0, 5);
         Selection plate = util.select().fromTo(0, 0, 0, 4, 0, 4);
         BlockPos stabilizerPos = util.grid().at(2, 1, 2);
         BlockPos shaftPos = util.grid().at(1, 1, 2);
-        BlockPos funnelPos = util.grid().at(2, 2, 2);
-        BlockPos depotPos = util.grid().at(2, 2, 3);
+        BlockPos chutePos = util.grid().at(2, 2, 2);
+        BlockPos depotPos = util.grid().at(2, 3, 2);
         Selection stabilizer = util.select().position(stabilizerPos);
         Selection shaft = util.select().position(shaftPos);
-        Selection logistics = util.select().fromTo(funnelPos, depotPos);
+        Selection logistics = util.select().fromTo(chutePos, depotPos);
         scene.world().setBlocks(plate, Blocks.SMOOTH_STONE.defaultBlockState(), false);
         scene.showBasePlate();
         scene.world().setBlock(stabilizerPos, state(stabilizerBlock, StabilizerStatus.OFFLINE), false);
         scene.world().setBlock(shaftPos, AllBlocks.SHAFT.getDefaultState(), false);
-        scene.world().setBlock(funnelPos, AllBlocks.ANDESITE_FUNNEL.getDefaultState(), false);
+        scene.world().setBlock(chutePos, AllBlocks.CHUTE.getDefaultState(), false);
         scene.world().setBlock(depotPos, AllBlocks.DEPOT.getDefaultState(), false);
         scene.world().showSection(stabilizer, Direction.DOWN);
         scene.world().showSection(shaft, Direction.EAST);
@@ -93,13 +94,16 @@ public final class FrontierProtocolPonderScenes {
         scene.overlay()
                 .showText(60)
                 .text("Use Funnels, Chutes, Belts, or other Create logistics to insert Stabilization Cells into the machine.")
-                .pointAt(util.vector().topOf(funnelPos))
+                .pointAt(util.vector().topOf(chutePos))
                 .placeNearTarget();
         scene.idle(70);
+        scene.overlay()
+                .showControls(util.vector().topOf(chutePos), Pointing.DOWN, 35)
+                .withItem(new ItemStack(ModItems.STABILIZATION_CELL.get()));
         scene.world().setBlock(stabilizerPos, state(stabilizerBlock, StabilizerStatus.ACTIVE), false);
         CreateSceneBuilder createScene = new CreateSceneBuilder(scene);
-        createScene.world().setKineticSpeed(stabilizer, 64.0F);
-        createScene.world().setKineticSpeed(shaft, 64.0F);
+        createScene.world().setKineticSpeed(stabilizer, definition.kineticSpeed());
+        createScene.world().setKineticSpeed(shaft, definition.kineticSpeed());
         scene.overlay()
                 .showText(70)
                 .text("At the configured RPM, a Cell starts an ACTIVE operating duration with suppression and progressive cleanup.")
@@ -220,5 +224,7 @@ public final class FrontierProtocolPonderScenes {
     }
 
     record OperationSceneDefinition(
-            ResourceLocation component, DeferredBlock<StabilizerBlock> block) {}
+            ResourceLocation component,
+            DeferredBlock<StabilizerBlock> block,
+            float kineticSpeed) {}
 }
