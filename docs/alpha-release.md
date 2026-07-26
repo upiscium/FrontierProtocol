@@ -55,7 +55,7 @@ At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress,
 
 Automated verification includes unit tests and all 34 GameTests, including the R8 display snapshot, client-packet boundary, all tier lifecycles, coverage, suppression, cleanup profiles/global caps, persistence, overlaps, and production contracts. RecipeManager validation continues to cover the exact five serializers, ingredients, patterns, outputs, and absence of crafting bypasses. Final clean build and datagen results are recorded after the complete R8 verification pass.
 
-Final verification launched the production dedicated server through readiness and confirmed shutdown with all dimensions saved. The graphical client reached the title screen and joined the existing creative smoke world; all three placeholder Stabilizers rendered without Frontier Protocol model errors, and JEI displayed all five Frontier Protocol recipes. Physical Mechanical Crafter execution for the Tier 2 and Tier 3 upgrades and continuous automated Cell-supply smoke testing remain unverified. The complete production line must not be described as fully automation-verified.
+Final R8 verification launched the production dedicated server through readiness without Frontier Protocol client-class errors and confirmed shutdown-hook saving for all dimensions. The direct graphical client command could not initialize GLFW because this environment had no display. A supplemental Xvfb run reached resource reload and registered the Ponder scenes and tags without a Frontier Protocol missing-resource error, but it did not complete in-world R8 interaction checks or a normal automated shutdown. Earlier pre-R8 graphical testing reached the title screen and creative smoke world, rendered all three placeholder Stabilizers, and showed all five recipes in JEI. R8 Goggles, range overlay, item tooltips, Ponder playback, and Japanese visual checks remain unverified. Physical Mechanical Crafter execution for the Tier 2 and Tier 3 upgrades and continuous automated Cell-supply smoke testing also remain unverified.
 
 The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. The dedicated-server smoke reached the server-ready state with Create and Spore without a Mixin application or client-class error. The client smoke used a graphical display; a `glfwInit` failure when `DISPLAY` is unavailable would not constitute a successful client smoke test.
 
@@ -68,7 +68,8 @@ The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mix
 - [x] Run a clean build.
 - [x] Run the complete GameTest suite.
 - [x] Complete a dedicated-server smoke test.
-- [x] Complete a client smoke test with a graphical display.
+- [x] Complete the pre-R8 title-screen, world, model, and JEI client smoke.
+- [ ] Complete the R8 Goggles, range, tooltip, Ponder playback, and Japanese client smoke.
 - [x] Inspect all five recipes in JEI.
 - [ ] Execute the tier recipes in physical Mechanical Crafters.
 - [ ] Smoke-test continuous automated Cell supply at upper-tier consumption intervals.

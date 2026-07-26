@@ -29,4 +29,8 @@ Initial Overworld spawn suppression is a permanent field centered on the persist
 
 ## Verification status
 
-Unit tests cover snapshot validation, malformed display NBT, sync cadence, diagnostics, duration formatting, static tooltip keys, and range geometry. The `stabilizer_display_sync` GameTest covers all three tiers, OFFLINE/ACTIVE/GRACE_PERIOD, Cell insertion and consumption, live config refresh, persistent NBT, and display-only packet boundaries. Manual graphical checks are recorded separately in [Alpha Release](alpha-release.md). Physical upper-tier Mechanical Crafting and continuous automated Cell supply remain separate, previously unverified production smoke checks.
+Unit tests cover snapshot validation, malformed display NBT, sync cadence, diagnostics, duration formatting, Goggle and static tooltip keys, Ponder resource/localization parity, and range geometry. The `stabilizer_display_sync` GameTest covers all three tiers, OFFLINE/ACTIVE/GRACE_PERIOD, Cell insertion and consumption, live config refresh, persistent NBT, and display-only packet boundaries. All 34 GameTests pass.
+
+The dedicated server reached ready without loading Frontier Protocol client classes and saved all dimensions through its shutdown hook. The Gradle task still returned exit 143 because the smoke harness sent SIGTERM. A normal display was unavailable. The required direct client command failed at `glfwInit`; a supplemental Xvfb run reached client resource reload and registered Ponder scenes and tags without a Frontier Protocol missing-resource error, but automated window shutdown did not complete normally. In-world Goggle, range, item-tooltip, Ponder playback, and Japanese visual checks therefore remain unverified, so R8 is not yet considered complete.
+
+Physical upper-tier Mechanical Crafting and continuous automated Cell supply remain separate, previously unverified production smoke checks.

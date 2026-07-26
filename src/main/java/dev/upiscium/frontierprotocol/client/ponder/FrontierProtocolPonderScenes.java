@@ -128,7 +128,7 @@ public final class FrontierProtocolPonderScenes {
         scene.overlay().showOutline(PonderPalette.RED, "tier_3", grid, 55);
         scene.overlay()
                 .showText(70)
-                .text("Coverage spans the full dimension height. Overlapping Stabilizers safely share covered chunks.")
+                .text("Coverage spans the full dimension height. If one overlapping Stabilizer stops, another source keeps shared chunks suppressed.")
                 .pointAt(util.vector().centerOf(3, 0, 3))
                 .placeNearTarget();
         scene.idle(80);
@@ -141,7 +141,7 @@ public final class FrontierProtocolPonderScenes {
         scene.idle(80);
         scene.overlay()
                 .showText(90)
-                .text("Initial Overworld spawn has separate permanent 5x5 suppression by default. It needs no Cell or rotation, performs no cleanup, and does not stop mobs.")
+                .text("Initial Overworld spawn is a separate permanent 5x5 suppression source by default. It needs no Cell or rotation, performs no cleanup, and does not stop mobs.")
                 .colored(PonderPalette.MEDIUM)
                 .pointAt(util.vector().centerOf(3, 0, 3))
                 .placeNearTarget();
