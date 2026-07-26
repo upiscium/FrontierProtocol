@@ -1,10 +1,13 @@
 package dev.upiscium.frontierprotocol.client.ponder;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import dev.upiscium.frontierprotocol.registry.ModBlocks;
+import dev.upiscium.frontierprotocol.registry.ModItems;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -39,6 +42,24 @@ class FrontierProtocolPonderResourcesTest {
                 assertTrue(english.has(key), "English translation missing " + key);
             }
         }
+    }
+
+    @Test
+    void operationComponentsUseTheirTierAndCellUsesTierOne() {
+        List<FrontierProtocolPonderScenes.OperationSceneDefinition> definitions =
+                FrontierProtocolPonderScenes.operationSceneDefinitions();
+        assertDefinition(definitions.get(0), ModItems.TIER_1_STABILIZER.getId(), ModBlocks.TIER_1_STABILIZER);
+        assertDefinition(definitions.get(1), ModItems.TIER_2_STABILIZER.getId(), ModBlocks.TIER_2_STABILIZER);
+        assertDefinition(definitions.get(2), ModItems.TIER_3_STABILIZER.getId(), ModBlocks.TIER_3_STABILIZER);
+        assertDefinition(definitions.get(3), ModItems.STABILIZATION_CELL.getId(), ModBlocks.TIER_1_STABILIZER);
+    }
+
+    private static void assertDefinition(
+            FrontierProtocolPonderScenes.OperationSceneDefinition definition,
+            net.minecraft.resources.ResourceLocation component,
+            net.neoforged.neoforge.registries.DeferredBlock<?> block) {
+        assertSame(component, definition.component());
+        assertSame(block, definition.block());
     }
 
     private JsonObject language(String locale) throws Exception {

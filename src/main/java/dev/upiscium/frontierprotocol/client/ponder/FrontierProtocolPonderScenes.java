@@ -1,10 +1,12 @@
 package dev.upiscium.frontierprotocol.client.ponder;
 
+import com.simibubi.create.AllBlocks;
 import com.simibubi.create.foundation.ponder.CreateSceneBuilder;
 import dev.upiscium.frontierprotocol.registry.ModBlocks;
 import dev.upiscium.frontierprotocol.registry.ModItems;
 import dev.upiscium.frontierprotocol.stabilizer.StabilizerBlock;
 import dev.upiscium.frontierprotocol.stabilizer.StabilizerStatus;
+import java.util.List;
 import net.createmod.catnip.math.Pointing;
 import net.createmod.ponder.api.PonderPalette;
 import net.createmod.ponder.api.registration.PonderSceneRegistrationHelper;
@@ -16,19 +18,18 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
+import net.neoforged.neoforge.registries.DeferredBlock;
 
 public final class FrontierProtocolPonderScenes {
     private FrontierProtocolPonderScenes() {}
 
     public static void register(PonderSceneRegistrationHelper<ResourceLocation> helper) {
-        for (ResourceLocation component : new ResourceLocation[] {
-            ModItems.TIER_1_STABILIZER.getId(),
-            ModItems.TIER_2_STABILIZER.getId(),
-            ModItems.TIER_3_STABILIZER.getId(),
-            ModItems.STABILIZATION_CELL.getId()
-        }) {
+        for (OperationSceneDefinition definition : operationSceneDefinitions()) {
             helper.addStoryBoard(
-                    component, "stabilizer/operation", FrontierProtocolPonderScenes::operation, FrontierProtocolPonderTags.CONTAINMENT);
+                    definition.component(),
+                    "stabilizer/operation",
+                    (scene, util) -> operation(scene, util, definition.block().get()),
+                    FrontierProtocolPonderTags.CONTAINMENT);
         }
         for (ResourceLocation component : new ResourceLocation[] {
             ModItems.TIER_1_STABILIZER.getId(),
@@ -50,16 +51,35 @@ public final class FrontierProtocolPonderScenes {
         }
     }
 
-    public static void operation(SceneBuilder scene, SceneBuildingUtil util) {
+    static List<OperationSceneDefinition> operationSceneDefinitions() {
+        return List.of(
+                new OperationSceneDefinition(ModItems.TIER_1_STABILIZER.getId(), ModBlocks.TIER_1_STABILIZER),
+                new OperationSceneDefinition(ModItems.TIER_2_STABILIZER.getId(), ModBlocks.TIER_2_STABILIZER),
+                new OperationSceneDefinition(ModItems.TIER_3_STABILIZER.getId(), ModBlocks.TIER_3_STABILIZER),
+                new OperationSceneDefinition(ModItems.STABILIZATION_CELL.getId(), ModBlocks.TIER_1_STABILIZER));
+    }
+
+    private static void operation(
+            SceneBuilder scene, SceneBuildingUtil util, StabilizerBlock stabilizerBlock) {
         scene.title("stabilizer_operation", "Operating a Stabilizer");
         scene.configureBasePlate(0, 0, 5);
         Selection plate = util.select().fromTo(0, 0, 0, 4, 0, 4);
         BlockPos stabilizerPos = util.grid().at(2, 1, 2);
+        BlockPos shaftPos = util.grid().at(1, 1, 2);
+        BlockPos funnelPos = util.grid().at(2, 2, 2);
+        BlockPos depotPos = util.grid().at(2, 2, 3);
         Selection stabilizer = util.select().position(stabilizerPos);
+        Selection shaft = util.select().position(shaftPos);
+        Selection logistics = util.select().fromTo(funnelPos, depotPos);
         scene.world().setBlocks(plate, Blocks.SMOOTH_STONE.defaultBlockState(), false);
         scene.showBasePlate();
-        scene.world().setBlock(stabilizerPos, state(StabilizerStatus.OFFLINE), false);
+        scene.world().setBlock(stabilizerPos, state(stabilizerBlock, StabilizerStatus.OFFLINE), false);
+        scene.world().setBlock(shaftPos, AllBlocks.SHAFT.getDefaultState(), false);
+        scene.world().setBlock(funnelPos, AllBlocks.ANDESITE_FUNNEL.getDefaultState(), false);
+        scene.world().setBlock(depotPos, AllBlocks.DEPOT.getDefaultState(), false);
         scene.world().showSection(stabilizer, Direction.DOWN);
+        scene.world().showSection(shaft, Direction.EAST);
+        scene.world().showSection(logistics, Direction.DOWN);
         scene.overlay()
                 .showText(60)
                 .text("Connect Create rotational power to the Stabilizer shaft.")
@@ -67,37 +87,40 @@ public final class FrontierProtocolPonderScenes {
                 .placeNearTarget();
         scene.idle(70);
         scene.overlay()
-                .showControls(util.vector().blockSurface(stabilizerPos, Direction.UP), Pointing.DOWN, 50)
-                .withItem(new ItemStack(ModItems.STABILIZATION_CELL.get()))
-                .rightClick();
+                .showControls(util.vector().topOf(depotPos), Pointing.DOWN, 50)
+                .withItem(new ItemStack(ModItems.STABILIZATION_CELL.get()));
+        scene.overlay().showOutline(PonderPalette.BLUE, "cell_logistics", logistics, 60);
         scene.overlay()
                 .showText(60)
-                .text("Supply Stabilization Cells continuously with Create logistics.")
-                .pointAt(util.vector().topOf(stabilizerPos))
+                .text("Use Funnels, Chutes, Belts, or other Create logistics to insert Stabilization Cells into the machine.")
+                .pointAt(util.vector().topOf(funnelPos))
                 .placeNearTarget();
         scene.idle(70);
-        scene.world().setBlock(stabilizerPos, state(StabilizerStatus.ACTIVE), false);
-        new CreateSceneBuilder(scene).world().setKineticSpeed(stabilizer, 128.0F);
+        scene.world().setBlock(stabilizerPos, state(stabilizerBlock, StabilizerStatus.ACTIVE), false);
+        CreateSceneBuilder createScene = new CreateSceneBuilder(scene);
+        createScene.world().setKineticSpeed(stabilizer, 64.0F);
+        createScene.world().setKineticSpeed(shaft, 64.0F);
         scene.overlay()
                 .showText(70)
-                .text("At the required RPM, ACTIVE suppression and progressive cleanup begin.")
+                .text("At the configured RPM, a Cell starts an ACTIVE operating duration with suppression and progressive cleanup.")
                 .colored(PonderPalette.GREEN)
                 .pointAt(util.vector().topOf(stabilizerPos))
                 .placeNearTarget();
         scene.idle(80);
-        scene.world().setBlock(stabilizerPos, state(StabilizerStatus.GRACE_PERIOD), false);
-        new CreateSceneBuilder(scene).world().setKineticSpeed(stabilizer, 0.0F);
+        scene.world().setBlock(stabilizerPos, state(stabilizerBlock, StabilizerStatus.GRACE_PERIOD), false);
+        createScene.world().setKineticSpeed(stabilizer, 0.0F);
+        createScene.world().setKineticSpeed(shaft, 0.0F);
         scene.overlay()
                 .showText(70)
-                .text("Lost power or supply enters GRACE_PERIOD: suppression remains, but cleanup pauses.")
+                .text("If rotation is lost, the machine enters GRACE_PERIOD. Suppression remains, but cleanup pauses.")
                 .colored(PonderPalette.MEDIUM)
                 .pointAt(util.vector().topOf(stabilizerPos))
                 .placeNearTarget();
         scene.idle(80);
-        scene.world().setBlock(stabilizerPos, state(StabilizerStatus.OFFLINE), false);
+        scene.world().setBlock(stabilizerPos, state(stabilizerBlock, StabilizerStatus.OFFLINE), false);
         scene.overlay()
                 .showText(60)
-                .text("When grace expires the machine is OFFLINE. Restore power and stored Cell time to resume.")
+                .text("When grace expires the machine becomes OFFLINE. Restore rotation while stored Cell time remains, or supply another Cell.")
                 .colored(PonderPalette.RED)
                 .pointAt(util.vector().topOf(stabilizerPos))
                 .placeNearTarget();
@@ -191,10 +214,11 @@ public final class FrontierProtocolPonderScenes {
         scene.idle(80);
     }
 
-    private static net.minecraft.world.level.block.state.BlockState state(StabilizerStatus status) {
-        return ModBlocks.TIER_3_STABILIZER
-                .get()
-                .defaultBlockState()
-                .setValue(StabilizerBlock.STATUS, status);
+    private static net.minecraft.world.level.block.state.BlockState state(
+            StabilizerBlock block, StabilizerStatus status) {
+        return block.defaultBlockState().setValue(StabilizerBlock.STATUS, status);
     }
+
+    record OperationSceneDefinition(
+            ResourceLocation component, DeferredBlock<StabilizerBlock> block) {}
 }

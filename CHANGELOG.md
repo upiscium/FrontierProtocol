@@ -25,6 +25,7 @@ All notable changes to Frontier Protocol are documented in this file.
 - Added contextual tooltips for Stabilizers, Cells, and Compound.
 - Added modpack quest-integration guidance without a quest-mod dependency.
 - Stabilizer diagnostics retain and report actual stored Cells when configured capacity is reduced below the existing inventory.
+- Corrected Ponder operation guidance to show the selected Tier and Create-logistics Cell insertion instead of direct Stabilizer interaction.
 
 ### Compatibility
 
