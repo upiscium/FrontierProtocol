@@ -37,6 +37,18 @@ class StabilizerDisplaySnapshotTest {
     }
 
     @Test
+    void acceptsConfiguredChunkRadiusBounds() {
+        StabilizerDisplaySnapshot minimum =
+                new StabilizerDisplaySnapshot(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, 0, 1, 0, 0);
+        StabilizerDisplaySnapshot maximum =
+                new StabilizerDisplaySnapshot(StabilizerTier.TIER_3, StabilizerStatus.ACTIVE, 1, 0.0, 0, 1, 1, 1, 0, 16);
+        assertEquals(0, minimum.chunkRadius());
+        assertEquals(16, maximum.chunkRadius());
+        assertEquals(33, maximum.coverageWidth());
+        assertEquals(1089, maximum.coverageChunkCount());
+    }
+
+    @Test
     void rejectsInvalidValues() {
         assertInvalid(null, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, 0, 1, 0, 0);
         assertInvalid(StabilizerTier.TIER_1, null, 1, 0.0, 0, 1, 0, 1, 0, 0);
@@ -61,6 +73,18 @@ class StabilizerDisplaySnapshotTest {
         assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, 0, 0, 0, 0);
         assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, 0, 1, -1, 0);
         assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, 0, 1, 0, -1);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, 0, 1, 0, 17);
+        assertInvalid(
+                StabilizerTier.TIER_1,
+                StabilizerStatus.OFFLINE,
+                1,
+                0.0,
+                0,
+                1,
+                0,
+                1,
+                0,
+                Integer.MAX_VALUE);
     }
 
     private static StabilizerDisplaySnapshot snapshot(

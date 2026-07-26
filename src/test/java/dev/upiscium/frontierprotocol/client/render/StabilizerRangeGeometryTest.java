@@ -17,6 +17,14 @@ class StabilizerRangeGeometryTest {
     }
 
     @Test
+    void acceptsMaximumConfiguredRadius() {
+        StabilizerRangeGeometry.RangeBounds bounds =
+                StabilizerRangeGeometry.from(new ChunkPos(0, 0), 16, -64, 320);
+        assertEquals(33, bounds.width());
+        assertEquals(68, bounds.horizontalLines(64).size());
+    }
+
+    @Test
     void computesNegativeChunksAndExclusiveUpperBoundsWithoutShiftOverflow() {
         StabilizerRangeGeometry.RangeBounds negative =
                 StabilizerRangeGeometry.from(new ChunkPos(-2, -3), 1, -64, 320);
@@ -53,6 +61,12 @@ class StabilizerRangeGeometryTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> StabilizerRangeGeometry.from(new ChunkPos(0, 0), -1, -64, 320));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> StabilizerRangeGeometry.from(new ChunkPos(0, 0), 17, -64, 320));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> StabilizerRangeGeometry.from(new ChunkPos(0, 0), Integer.MAX_VALUE, -64, 320));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> StabilizerRangeGeometry.from(new ChunkPos(0, 0), 0, 10, 10));

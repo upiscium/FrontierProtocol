@@ -1,5 +1,6 @@
 package dev.upiscium.frontierprotocol.client.render;
 
+import dev.upiscium.frontierprotocol.stabilizer.StabilizerLimits;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.world.level.ChunkPos;
@@ -12,7 +13,10 @@ public final class StabilizerRangeGeometry {
     public static RangeBounds from(
             ChunkPos center, int radius, int minBuildHeight, int maxBuildHeight) {
         if (center == null) throw new IllegalArgumentException("center must not be null");
-        if (radius < 0) throw new IllegalArgumentException("radius must not be negative");
+        if (radius < StabilizerLimits.MIN_CHUNK_RADIUS
+                || radius > StabilizerLimits.MAX_CHUNK_RADIUS) {
+            throw new IllegalArgumentException("radius must be between 0 and 16");
+        }
         if (maxBuildHeight <= minBuildHeight) {
             throw new IllegalArgumentException("maxBuildHeight must be above minBuildHeight");
         }

@@ -44,11 +44,16 @@ public final class StabilizerRangeRenderer {
         StabilizerDisplaySnapshot snapshot = stabilizer.displaySnapshot();
         if (snapshot == null) return;
 
-        StabilizerRangeGeometry.RangeBounds bounds = StabilizerRangeGeometry.from(
-                new ChunkPos(hit.getBlockPos()),
-                snapshot.chunkRadius(),
-                minecraft.level.getMinBuildHeight(),
-                minecraft.level.getMaxBuildHeight());
+        StabilizerRangeGeometry.RangeBounds bounds;
+        try {
+            bounds = StabilizerRangeGeometry.from(
+                    new ChunkPos(hit.getBlockPos()),
+                    snapshot.chunkRadius(),
+                    minecraft.level.getMinBuildHeight(),
+                    minecraft.level.getMaxBuildHeight());
+        } catch (IllegalArgumentException | ArithmeticException exception) {
+            return;
+        }
         double horizontalY = Mth.clamp(
                         minecraft.player.getY(), bounds.minBuildHeight(), bounds.maxBuildHeight() - 1)
                 + 0.02;

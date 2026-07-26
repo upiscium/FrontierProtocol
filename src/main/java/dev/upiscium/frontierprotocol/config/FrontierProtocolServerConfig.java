@@ -1,5 +1,6 @@
 package dev.upiscium.frontierprotocol.config;
 
+import dev.upiscium.frontierprotocol.stabilizer.StabilizerLimits;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class FrontierProtocolServerConfig {
@@ -19,7 +20,11 @@ public final class FrontierProtocolServerConfig {
             .defineInRange("initialSpawnOreSuppressionRadiusChunks", 2, 0, 16);
     public static final ModConfigSpec.IntValue TIER1_CHUNK_RADIUS = BUILDER
             .comment("Tier 1 Stabilizer coverage radius in chunks.")
-            .defineInRange("tier1ChunkRadius", 0, 0, 16);
+            .defineInRange(
+                    "tier1ChunkRadius",
+                    0,
+                    StabilizerLimits.MIN_CHUNK_RADIUS,
+                    StabilizerLimits.MAX_CHUNK_RADIUS);
     public static final ModConfigSpec.IntValue TIER1_MINIMUM_RPM = BUILDER
             .comment("Minimum absolute rotational speed required by the Tier 1 Stabilizer.")
             .defineInRange("tier1MinimumRpm", 32, 1, 256);
@@ -28,7 +33,11 @@ public final class FrontierProtocolServerConfig {
             .defineInRange("tier1StressImpact", 16.0, 0.0, 1024.0);
     public static final ModConfigSpec.IntValue TIER1_CELL_CAPACITY = BUILDER
             .comment("Maximum Stabilization Cells held by the Tier 1 Stabilizer.")
-            .defineInRange("tier1CellCapacity", 8, 1, 64);
+            .defineInRange(
+                    "tier1CellCapacity",
+                    8,
+                    StabilizerLimits.MIN_CELL_CAPACITY,
+                    StabilizerLimits.MAX_CELL_CAPACITY);
     public static final ModConfigSpec.IntValue TIER1_CELL_DURATION_TICKS = BUILDER
             .comment("Active ticks supplied by one Tier 1 Stabilization Cell.")
             .defineInRange("tier1CellDurationTicks", 6000, 1, 72000);
@@ -46,7 +55,11 @@ public final class FrontierProtocolServerConfig {
             .defineInRange("tier1CleanupMutationBudgetPerCycle", 4, 1, 512);
     public static final ModConfigSpec.IntValue TIER2_CHUNK_RADIUS = BUILDER
             .comment("Tier 2 Stabilizer coverage radius in chunks.")
-            .defineInRange("tier2ChunkRadius", 1, 0, 16);
+            .defineInRange(
+                    "tier2ChunkRadius",
+                    1,
+                    StabilizerLimits.MIN_CHUNK_RADIUS,
+                    StabilizerLimits.MAX_CHUNK_RADIUS);
     public static final ModConfigSpec.IntValue TIER2_MINIMUM_RPM = BUILDER
             .comment("Minimum absolute rotational speed required by the Tier 2 Stabilizer.")
             .defineInRange("tier2MinimumRpm", 64, 1, 256);
@@ -55,7 +68,11 @@ public final class FrontierProtocolServerConfig {
             .defineInRange("tier2StressImpact", 64.0, 0.0, 1024.0);
     public static final ModConfigSpec.IntValue TIER2_CELL_CAPACITY = BUILDER
             .comment("Maximum Stabilization Cells held by the Tier 2 Stabilizer.")
-            .defineInRange("tier2CellCapacity", 32, 1, 64);
+            .defineInRange(
+                    "tier2CellCapacity",
+                    32,
+                    StabilizerLimits.MIN_CELL_CAPACITY,
+                    StabilizerLimits.MAX_CELL_CAPACITY);
     public static final ModConfigSpec.IntValue TIER2_CELL_DURATION_TICKS = BUILDER
             .comment("Active ticks supplied by one Tier 2 Stabilization Cell.")
             .defineInRange("tier2CellDurationTicks", 3000, 1, 72000);
@@ -73,7 +90,11 @@ public final class FrontierProtocolServerConfig {
             .defineInRange("tier2CleanupMutationBudgetPerCycle", 64, 1, 512);
     public static final ModConfigSpec.IntValue TIER3_CHUNK_RADIUS = BUILDER
             .comment("Tier 3 Stabilizer coverage radius in chunks.")
-            .defineInRange("tier3ChunkRadius", 2, 0, 16);
+            .defineInRange(
+                    "tier3ChunkRadius",
+                    2,
+                    StabilizerLimits.MIN_CHUNK_RADIUS,
+                    StabilizerLimits.MAX_CHUNK_RADIUS);
     public static final ModConfigSpec.IntValue TIER3_MINIMUM_RPM = BUILDER
             .comment("Minimum absolute rotational speed required by the Tier 3 Stabilizer.")
             .defineInRange("tier3MinimumRpm", 128, 1, 256);
@@ -82,7 +103,11 @@ public final class FrontierProtocolServerConfig {
             .defineInRange("tier3StressImpact", 256.0, 0.0, 1024.0);
     public static final ModConfigSpec.IntValue TIER3_CELL_CAPACITY = BUILDER
             .comment("Maximum Stabilization Cells held by the Tier 3 Stabilizer.")
-            .defineInRange("tier3CellCapacity", 64, 1, 64);
+            .defineInRange(
+                    "tier3CellCapacity",
+                    64,
+                    StabilizerLimits.MIN_CELL_CAPACITY,
+                    StabilizerLimits.MAX_CELL_CAPACITY);
     public static final ModConfigSpec.IntValue TIER3_CELL_DURATION_TICKS = BUILDER
             .comment("Active ticks supplied by one Tier 3 Stabilization Cell.")
             .defineInRange("tier3CellDurationTicks", 2000, 1, 72000);

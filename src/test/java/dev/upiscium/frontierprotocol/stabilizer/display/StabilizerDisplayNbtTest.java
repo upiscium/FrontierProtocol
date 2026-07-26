@@ -84,6 +84,23 @@ class StabilizerDisplayNbtTest {
         assertEquals(expected, StabilizerDisplayNbt.readOrRetain(root, StabilizerTier.TIER_2, snapshot()));
     }
 
+    @Test
+    void validatesPacketRadiusAndRetainsPreviousSnapshot() {
+        CompoundTag maximum = written();
+        maximum.getCompound(StabilizerDisplayNbt.DISPLAY_KEY).putInt("chunkRadius", 16);
+        assertEquals(16, StabilizerDisplayNbt.read(maximum).orElseThrow().chunkRadius());
+
+        StabilizerDisplaySnapshot previous = snapshot();
+        for (int invalidRadius : new int[] {17, Integer.MAX_VALUE}) {
+            CompoundTag invalid = written();
+            invalid.getCompound(StabilizerDisplayNbt.DISPLAY_KEY).putInt("chunkRadius", invalidRadius);
+            assertTrue(StabilizerDisplayNbt.read(invalid).isEmpty());
+            assertEquals(
+                    previous,
+                    StabilizerDisplayNbt.readOrRetain(invalid, StabilizerTier.TIER_2, previous));
+        }
+    }
+
     private static CompoundTag written() {
         CompoundTag root = new CompoundTag();
         StabilizerDisplayNbt.write(root, snapshot());

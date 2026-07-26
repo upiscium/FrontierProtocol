@@ -127,7 +127,7 @@ public final class StabilizerDisplayGameTests {
                 assertSnapshot(helper, grace, device.tier(), StabilizerStatus.GRACE_PERIOD, expectedCells);
                 helper.assertTrue(grace.graceRemainingTicks() > 0, device.tier() + " omitted grace time");
             }
-            FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(3);
+            FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(16);
             FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.set(40);
             FrontierProtocolServerConfig.TIER1_STRESS_IMPACT.set(20.0);
             FrontierProtocolServerConfig.TIER1_CELL_CAPACITY.set(16);
@@ -142,7 +142,9 @@ public final class StabilizerDisplayGameTests {
             GameTestHelper helper, ServerLevel level, List<Device> devices, ConfigSnapshot original) {
         try {
             StabilizerDisplaySnapshot refreshed = blockEntity(level, devices.getFirst().pos()).displaySnapshot();
-            helper.assertTrue(refreshed.chunkRadius() == 3, "display snapshot did not refresh radius");
+            helper.assertTrue(refreshed.chunkRadius() == 16, "display snapshot did not refresh radius");
+            helper.assertTrue(refreshed.coverageWidth() == 33, "radius 16 display width was not 33");
+            helper.assertTrue(refreshed.coverageChunkCount() == 1089, "radius 16 display coverage was not 1089");
             helper.assertTrue(refreshed.minimumRpm() == 40, "display snapshot did not refresh minimum RPM");
             helper.assertTrue(refreshed.stressImpact() == 20.0, "display snapshot did not refresh Stress impact");
             helper.assertTrue(refreshed.cellCapacity() == 16, "display snapshot did not refresh Cell capacity");

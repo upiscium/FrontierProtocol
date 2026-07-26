@@ -13,12 +13,16 @@ public record StabilizerTierDefinition(
         CleanupSourceProfile cleanupProfile) {
     public StabilizerTierDefinition {
         if (tier == null) throw new IllegalArgumentException("tier must not be null");
-        if (chunkRadius < 0) throw new IllegalArgumentException("chunkRadius must not be negative");
+        if (chunkRadius < StabilizerLimits.MIN_CHUNK_RADIUS
+                || chunkRadius > StabilizerLimits.MAX_CHUNK_RADIUS) {
+            throw new IllegalArgumentException("chunkRadius must be between 0 and 16");
+        }
         if (minimumRpm < 1) throw new IllegalArgumentException("minimumRpm must be at least 1");
         if (!Double.isFinite(stressImpact) || stressImpact < 0.0) {
             throw new IllegalArgumentException("stressImpact must be finite and non-negative");
         }
-        if (cellCapacity < 1 || cellCapacity > 64) {
+        if (cellCapacity < StabilizerLimits.MIN_CELL_CAPACITY
+                || cellCapacity > StabilizerLimits.MAX_CELL_CAPACITY) {
             throw new IllegalArgumentException("cellCapacity must be between 1 and 64");
         }
         if (cellDurationTicks < 1) throw new IllegalArgumentException("cellDurationTicks must be at least 1");

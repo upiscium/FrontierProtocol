@@ -114,6 +114,8 @@ class StabilizerTierDefinitionTest {
     void constructorRejectsInvalidValues() {
         assertInvalid(null, 0, 1, 0.0, 1, 1, 0, VALID_CLEANUP);
         assertInvalid(StabilizerTier.TIER_1, -1, 1, 0.0, 1, 1, 0, VALID_CLEANUP);
+        assertInvalid(StabilizerTier.TIER_1, 17, 1, 0.0, 1, 1, 0, VALID_CLEANUP);
+        assertInvalid(StabilizerTier.TIER_1, Integer.MAX_VALUE, 1, 0.0, 1, 1, 0, VALID_CLEANUP);
         assertInvalid(StabilizerTier.TIER_1, 0, 0, 0.0, 1, 1, 0, VALID_CLEANUP);
         assertInvalid(StabilizerTier.TIER_1, 0, 1, -1.0, 1, 1, 0, VALID_CLEANUP);
         assertInvalid(StabilizerTier.TIER_1, 0, 1, Double.NaN, 1, 1, 0, VALID_CLEANUP);
@@ -137,6 +139,34 @@ class StabilizerTierDefinitionTest {
                 new StabilizerTierDefinition(
                                 StabilizerTier.TIER_3, 0, 1, 0.0, 64, 1, 0, VALID_CLEANUP)
                         .cellCapacity());
+    }
+
+    @Test
+    void constructorAcceptsChunkRadiusBounds() {
+        assertEquals(
+                StabilizerLimits.MIN_CHUNK_RADIUS,
+                new StabilizerTierDefinition(
+                                StabilizerTier.TIER_1,
+                                StabilizerLimits.MIN_CHUNK_RADIUS,
+                                1,
+                                0.0,
+                                1,
+                                1,
+                                0,
+                                VALID_CLEANUP)
+                        .chunkRadius());
+        assertEquals(
+                StabilizerLimits.MAX_CHUNK_RADIUS,
+                new StabilizerTierDefinition(
+                                StabilizerTier.TIER_3,
+                                StabilizerLimits.MAX_CHUNK_RADIUS,
+                                1,
+                                0.0,
+                                1,
+                                1,
+                                0,
+                                VALID_CLEANUP)
+                        .chunkRadius());
     }
 
     private static void assertInvalid(
