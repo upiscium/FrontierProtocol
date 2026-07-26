@@ -29,6 +29,7 @@ public final class StabilizerRangeRenderer {
                 || !FrontierProtocolClientConfig.SHOW_STABILIZER_RANGE_OVERLAY.get()) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.options.hideGui
+                || minecraft.screen != null
                 || minecraft.player == null
                 || minecraft.player.isSpectator()
                 || minecraft.level == null

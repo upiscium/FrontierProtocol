@@ -51,8 +51,15 @@ class StabilizerDisplayNbtTest {
     @Test
     void invalidPacketCanPreserveLastValidSnapshot() {
         StabilizerDisplaySnapshot previous = snapshot();
-        StabilizerDisplaySnapshot retained = StabilizerDisplayNbt.read(new CompoundTag()).orElse(previous);
+        StabilizerDisplaySnapshot retained = StabilizerDisplayNbt.readOrRetain(
+                new CompoundTag(), StabilizerTier.TIER_2, previous);
         assertEquals(previous, retained);
+
+        CompoundTag wrongTier = written();
+        wrongTier.getCompound(StabilizerDisplayNbt.DISPLAY_KEY).putString("tier", "tier_3");
+        assertEquals(
+                previous,
+                StabilizerDisplayNbt.readOrRetain(wrongTier, StabilizerTier.TIER_2, previous));
     }
 
     private static CompoundTag written() {

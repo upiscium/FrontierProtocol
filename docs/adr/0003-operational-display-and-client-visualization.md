@@ -18,7 +18,7 @@ R8 must explain live Stabilizer operation without changing containment gameplay 
 - Range visualization uses depth-tested lines, not filled faces or particles. R8 adds no persistent particles.
 - Ponder scenes are explanatory virtual scenes. They manipulate scene state and never invoke suppression, cleanup, SavedData, or server configuration.
 - FTB Quests, Heracles, Better Questing, Jade, WAILA, and WTHIT remain optional external integrations. Quest support is documentation and stable Registry IDs.
-- Initial Overworld spawn protection is explained without changing its behavior.
+- Initial Overworld spawn suppression is explained without changing its behavior.
 - Client bootstrap, rendering, tooltip events, and Ponder registration remain in client-only classes. Common code contains only side-safe display data, NBT, diagnostics, and formatting contracts.
 
 ## Rejected Alternatives

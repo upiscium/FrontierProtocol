@@ -65,6 +65,11 @@ public final class StabilizerDisplayNbt {
         }
     }
 
+    public static StabilizerDisplaySnapshot readOrRetain(
+            CompoundTag root, StabilizerTier expectedTier, StabilizerDisplaySnapshot previous) {
+        return read(root).filter(snapshot -> snapshot.tier() == expectedTier).orElse(previous);
+    }
+
     private static StabilizerStatus parseStatus(String value) {
         for (StabilizerStatus status : StabilizerStatus.values()) {
             if (status.getSerializedName().equals(value)) return status;

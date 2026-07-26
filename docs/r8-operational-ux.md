@@ -25,7 +25,7 @@ Static item tooltips explain tier roles, Cell and Compound production roles, pro
 
 Ponder schematics are committed at `assets/frontier_protocol/ponder/stabilizer/{operation,coverage,production}.nbt`. They are gzip-compressed copies of the generated one-block empty GameTest structure; storyboards construct all explanatory blocks, grids, state changes, and item prompts through scene APIs. They are not generated into the build directory only.
 
-Initial Overworld spawn protection is a permanent suppression field centered on the persisted initial spawn. Its default radius is two chunks, covering 5x5 chunks. It needs no Cell or rotation, does not move when world spawn later changes, performs no progressive cleanup, does not remove existing nests, and does not prevent hostile mobs. It is an initial refuge, not a complete safe zone.
+Initial Overworld spawn suppression is a permanent field centered on the persisted initial spawn. Its default radius is two chunks, covering 5x5 chunks. It needs no Cell or rotation, does not move when world spawn later changes, performs no progressive cleanup, does not remove existing nests, and does not prevent hostile mobs. It is an initial refuge, not a complete safe zone.
 
 ## Verification status
 

@@ -71,6 +71,7 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     private final StabilizerDisplaySyncPolicy displaySyncPolicy = new StabilizerDisplaySyncPolicy();
     private StabilizerDisplaySnapshot lastObservedDisplaySnapshot;
     private StabilizerDisplaySnapshot clientDisplaySnapshot;
+    private boolean displaySnapshotInvalid;
 
     public StabilizerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STABILIZER.get(), pos, state);
@@ -145,7 +146,10 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     }
 
     public StabilizerDisplaySnapshot displaySnapshot() {
-        if (level instanceof ServerLevel) return createDisplaySnapshot(definition());
+        if (level instanceof ServerLevel) {
+            StabilizerDisplaySnapshot current = createDisplaySnapshot(definition());
+            return current == null ? lastObservedDisplaySnapshot : current;
+        }
         return clientDisplaySnapshot;
     }
 
@@ -193,21 +197,35 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     }
 
     private StabilizerDisplaySnapshot createDisplaySnapshot(StabilizerTierDefinition definition) {
-        return new StabilizerDisplaySnapshot(
-                tier,
-                machine.status(),
-                definition.minimumRpm(),
-                definition.stressImpact(),
-                inventory.getStackInSlot(0).getCount(),
-                definition.cellCapacity(),
-                machine.cellRemainingTicks(),
-                definition.cellDurationTicks(),
-                machine.graceRemainingTicks(),
-                definition.chunkRadius());
+        try {
+            StabilizerDisplaySnapshot snapshot = new StabilizerDisplaySnapshot(
+                    tier,
+                    machine.status(),
+                    definition.minimumRpm(),
+                    definition.stressImpact(),
+                    inventory.getStackInSlot(0).getCount(),
+                    definition.cellCapacity(),
+                    machine.cellRemainingTicks(),
+                    definition.cellDurationTicks(),
+                    machine.graceRemainingTicks(),
+                    definition.chunkRadius());
+            displaySnapshotInvalid = false;
+            return snapshot;
+        } catch (IllegalArgumentException exception) {
+            if (!displaySnapshotInvalid) {
+                FrontierProtocolMod.LOGGER.warn(
+                        "Rejecting invalid Stabilizer display snapshot at {}: {}",
+                        worldPosition,
+                        exception.getMessage());
+                displaySnapshotInvalid = true;
+            }
+            return null;
+        }
     }
 
     private void syncDisplaySnapshot(ServerLevel serverLevel, StabilizerTierDefinition definition) {
         StabilizerDisplaySnapshot snapshot = createDisplaySnapshot(definition);
+        if (snapshot == null) return;
         if (!snapshot.operationallyEquals(lastObservedDisplaySnapshot)) displaySyncPolicy.markDirty();
         lastObservedDisplaySnapshot = snapshot;
         long gameTick = serverLevel.getGameTime();
@@ -445,7 +463,8 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     @Override
     protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         if (clientPacket) {
-            StabilizerDisplayNbt.write(tag, createDisplaySnapshot(definition()));
+            StabilizerDisplaySnapshot snapshot = createDisplaySnapshot(definition());
+            if (snapshot != null) StabilizerDisplayNbt.write(tag, snapshot);
         } else {
             int registeredChunkRadius = hasRegisteredChunkRadius
                     ? lastRegisteredChunkRadius
@@ -459,9 +478,7 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(tag, registries, clientPacket);
         if (clientPacket) {
-            StabilizerDisplayNbt.read(tag)
-                    .filter(snapshot -> snapshot.tier() == tier)
-                    .ifPresent(snapshot -> clientDisplaySnapshot = snapshot);
+            clientDisplaySnapshot = StabilizerDisplayNbt.readOrRetain(tag, tier, clientDisplaySnapshot);
             return;
         }
         StabilizerNbt.ReadResult restored = StabilizerNbt.read(tag, tier, inventory, registries);
