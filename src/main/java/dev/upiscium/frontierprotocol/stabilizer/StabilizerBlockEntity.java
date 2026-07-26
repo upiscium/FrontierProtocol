@@ -9,6 +9,9 @@ import dev.upiscium.frontierprotocol.cleanup.CleanupSourceProfile;
 import dev.upiscium.frontierprotocol.cleanup.ServerInfectionCleanupService;
 import dev.upiscium.frontierprotocol.registry.ModBlockEntities;
 import dev.upiscium.frontierprotocol.registry.ModItemTags;
+import dev.upiscium.frontierprotocol.stabilizer.display.StabilizerDisplayNbt;
+import dev.upiscium.frontierprotocol.stabilizer.display.StabilizerDisplaySnapshot;
+import dev.upiscium.frontierprotocol.stabilizer.display.StabilizerDisplaySyncPolicy;
 import dev.upiscium.frontierprotocol.suppression.ServerInfectionSuppressionService;
 import java.util.List;
 import java.util.Set;
@@ -50,6 +53,7 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         @Override
         protected void onContentsChanged(int slot) {
             StabilizerBlockEntity.this.setChanged();
+            displaySyncPolicy.markDirty();
         }
     };
     private StabilizerStateMachine machine = new StabilizerStateMachine();
@@ -61,6 +65,9 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     private CleanupSourceProfile registeredProfile;
     private int lastRegisteredChunkRadius;
     private boolean hasRegisteredChunkRadius;
+    private final StabilizerDisplaySyncPolicy displaySyncPolicy = new StabilizerDisplaySyncPolicy();
+    private StabilizerDisplaySnapshot lastObservedDisplaySnapshot;
+    private StabilizerDisplaySnapshot clientDisplaySnapshot;
 
     public StabilizerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STABILIZER.get(), pos, state);
@@ -114,6 +121,7 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
             lastRegisteredChunkRadius = currentRadius;
             hasRegisteredChunkRadius = true;
         }
+        syncDisplaySnapshot(serverLevel, definition);
         needsEvaluation = false;
     }
 
@@ -133,6 +141,11 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         return machine.cellRemainingTicks();
     }
 
+    public StabilizerDisplaySnapshot displaySnapshot() {
+        if (level instanceof ServerLevel) return createDisplaySnapshot(definition());
+        return clientDisplaySnapshot;
+    }
+
     private StabilizerTierDefinition definition() {
         return StabilizerTierDefinitions.resolve(tier);
     }
@@ -147,6 +160,30 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         if (stack.isEmpty() || !inventory.isItemValid(0, stack)) return;
         stack.shrink(1);
         inventory.setStackInSlot(0, stack);
+    }
+
+    private StabilizerDisplaySnapshot createDisplaySnapshot(StabilizerTierDefinition definition) {
+        return new StabilizerDisplaySnapshot(
+                tier,
+                machine.status(),
+                definition.minimumRpm(),
+                definition.stressImpact(),
+                inventory.getStackInSlot(0).getCount(),
+                definition.cellCapacity(),
+                machine.cellRemainingTicks(),
+                definition.cellDurationTicks(),
+                machine.graceRemainingTicks(),
+                definition.chunkRadius());
+    }
+
+    private void syncDisplaySnapshot(ServerLevel serverLevel, StabilizerTierDefinition definition) {
+        StabilizerDisplaySnapshot snapshot = createDisplaySnapshot(definition);
+        if (!snapshot.operationallyEquals(lastObservedDisplaySnapshot)) displaySyncPolicy.markDirty();
+        lastObservedDisplaySnapshot = snapshot;
+        long gameTick = serverLevel.getGameTime();
+        if (!displaySyncPolicy.shouldSync(gameTick, snapshot)) return;
+        sendData();
+        displaySyncPolicy.recordSync(gameTick, snapshot);
     }
 
     boolean dropInventory(ServerLevel serverLevel) {
@@ -334,6 +371,8 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         registeredCoverage = null;
         registeredProfile = null;
         needsEvaluation = true;
+        displaySyncPolicy.markDirty();
+        lastObservedDisplaySnapshot = null;
     }
 
     @Override
@@ -375,16 +414,26 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
 
     @Override
     protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
-        int registeredChunkRadius = hasRegisteredChunkRadius
-                ? lastRegisteredChunkRadius
-                : definition().chunkRadius();
-        StabilizerNbt.write(tag, tier, machine, registeredChunkRadius, inventory, registries);
+        if (clientPacket) {
+            StabilizerDisplayNbt.write(tag, createDisplaySnapshot(definition()));
+        } else {
+            int registeredChunkRadius = hasRegisteredChunkRadius
+                    ? lastRegisteredChunkRadius
+                    : definition().chunkRadius();
+            StabilizerNbt.write(tag, tier, machine, registeredChunkRadius, inventory, registries);
+        }
         super.write(tag, registries, clientPacket);
     }
 
     @Override
     protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(tag, registries, clientPacket);
+        if (clientPacket) {
+            StabilizerDisplayNbt.read(tag)
+                    .filter(snapshot -> snapshot.tier() == tier)
+                    .ifPresent(snapshot -> clientDisplaySnapshot = snapshot);
+            return;
+        }
         StabilizerNbt.ReadResult restored = StabilizerNbt.read(tag, tier, inventory, registries);
         machine = restored.machine();
         if (restored.registeredChunkRadius() != null) {

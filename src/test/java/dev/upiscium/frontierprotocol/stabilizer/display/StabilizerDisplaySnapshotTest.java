@@ -1,0 +1,78 @@
+package dev.upiscium.frontierprotocol.stabilizer.display;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import dev.upiscium.frontierprotocol.stabilizer.StabilizerStatus;
+import dev.upiscium.frontierprotocol.stabilizer.StabilizerTier;
+import org.junit.jupiter.api.Test;
+
+class StabilizerDisplaySnapshotTest {
+    @Test
+    void acceptsAllTiersStatusesAndCapacityBounds() {
+        for (StabilizerTier tier : StabilizerTier.values()) {
+            for (StabilizerStatus status : StabilizerStatus.values()) {
+                assertEquals(tier, snapshot(tier, status, 0, 1).tier());
+            }
+        }
+        assertEquals(64, snapshot(StabilizerTier.TIER_3, StabilizerStatus.ACTIVE, 64, 64).cellCount());
+    }
+
+    @Test
+    void rejectsInvalidValues() {
+        assertInvalid(null, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, 0, 1, 0, 0);
+        assertInvalid(StabilizerTier.TIER_1, null, 1, 0.0, 0, 1, 0, 1, 0, 0);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 0, 0.0, 0, 1, 0, 1, 0, 0);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, Double.NaN, 0, 1, 0, 1, 0, 0);
+        assertInvalid(
+                StabilizerTier.TIER_1,
+                StabilizerStatus.OFFLINE,
+                1,
+                Double.POSITIVE_INFINITY,
+                0,
+                1,
+                0,
+                1,
+                0,
+                0);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, -1, 1, 0, 1, 0, 0);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 2, 1, 0, 1, 0, 0);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 0, 0, 1, 0, 0);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 65, 0, 1, 0, 0);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, -1, 1, 0, 0);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, 0, 0, 0, 0);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, 0, 1, -1, 0);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, 0, 1, 0, -1);
+    }
+
+    private static StabilizerDisplaySnapshot snapshot(
+            StabilizerTier tier, StabilizerStatus status, int count, int capacity) {
+        return new StabilizerDisplaySnapshot(tier, status, 32, 16.0, count, capacity, 0, 6000, 0, 0);
+    }
+
+    private static void assertInvalid(
+            StabilizerTier tier,
+            StabilizerStatus status,
+            int minimumRpm,
+            double stressImpact,
+            int cellCount,
+            int cellCapacity,
+            int cellRemainingTicks,
+            int cellDurationTicks,
+            int graceRemainingTicks,
+            int chunkRadius) {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new StabilizerDisplaySnapshot(
+                        tier,
+                        status,
+                        minimumRpm,
+                        stressImpact,
+                        cellCount,
+                        cellCapacity,
+                        cellRemainingTicks,
+                        cellDurationTicks,
+                        graceRemainingTicks,
+                        chunkRadius));
+    }
+}
