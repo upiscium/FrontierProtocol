@@ -74,7 +74,7 @@ class StabilizerTierDefinitionTest {
             FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(3);
             FrontierProtocolServerConfig.TIER2_MINIMUM_RPM.set(70);
             FrontierProtocolServerConfig.TIER3_STRESS_IMPACT.set(300.0);
-            FrontierProtocolServerConfig.TIER3_CELL_CAPACITY.set(80);
+            FrontierProtocolServerConfig.TIER3_CELL_CAPACITY.set(48);
             FrontierProtocolServerConfig.TIER2_CELL_DURATION_TICKS.set(13000);
             FrontierProtocolServerConfig.TIER1_GRACE_PERIOD_TICKS.set(7000);
             FrontierProtocolServerConfig.TIER2_CLEANUP_INTERVAL_TICKS.set(11);
@@ -91,7 +91,7 @@ class StabilizerTierDefinitionTest {
             assertEquals(13000, tier2.cellDurationTicks());
             assertEquals(new CleanupSourceProfile(11, 600, 20), tier2.cleanupProfile());
             assertEquals(300.0, tier3.stressImpact());
-            assertEquals(80, tier3.cellCapacity());
+            assertEquals(48, tier3.cellCapacity());
 
             FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(4);
             StabilizerTierDefinition refreshed = StabilizerTierDefinitions.resolve(StabilizerTier.TIER_1);
@@ -119,9 +119,24 @@ class StabilizerTierDefinitionTest {
         assertInvalid(StabilizerTier.TIER_1, 0, 1, Double.NaN, 1, 1, 0, VALID_CLEANUP);
         assertInvalid(StabilizerTier.TIER_1, 0, 1, Double.POSITIVE_INFINITY, 1, 1, 0, VALID_CLEANUP);
         assertInvalid(StabilizerTier.TIER_1, 0, 1, 0.0, 0, 1, 0, VALID_CLEANUP);
+        assertInvalid(StabilizerTier.TIER_1, 0, 1, 0.0, 65, 1, 0, VALID_CLEANUP);
         assertInvalid(StabilizerTier.TIER_1, 0, 1, 0.0, 1, 0, 0, VALID_CLEANUP);
         assertInvalid(StabilizerTier.TIER_1, 0, 1, 0.0, 1, 1, -1, VALID_CLEANUP);
         assertInvalid(StabilizerTier.TIER_1, 0, 1, 0.0, 1, 1, 0, null);
+    }
+
+    @Test
+    void constructorAcceptsCellCapacityBounds() {
+        assertEquals(
+                1,
+                new StabilizerTierDefinition(
+                                StabilizerTier.TIER_1, 0, 1, 0.0, 1, 1, 0, VALID_CLEANUP)
+                        .cellCapacity());
+        assertEquals(
+                64,
+                new StabilizerTierDefinition(
+                                StabilizerTier.TIER_3, 0, 1, 0.0, 64, 1, 0, VALID_CLEANUP)
+                        .cellCapacity());
     }
 
     private static void assertInvalid(
