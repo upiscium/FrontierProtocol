@@ -13,6 +13,8 @@ The normal Goggle section contains tier, state, current/theoretical and required
 
 Client options are `showStabilizerGoggleDetails`, `showStabilizerRangeOverlay`, `rangeOverlayRequiresSneaking`, and `showRangeVerticalCorners`. They affect display only.
 
+If configured Cell capacity is reduced below existing inventory, stored Cells are retained and displayed at their actual count over the new capacity, such as `32 / 8`, until normal consumption reduces the buffer. Display synchronization does not clamp, delete, or drop those Cells.
+
 ## Range overlay
 
 The overlay requires its client option, Engineer's Goggles, a targeted non-virtual Stabilizer, a valid snapshot, normal world rendering, and Shift by default. It draws one depth-tested chunk grid with an outer perimeter, internal chunk boundaries, and optional vertical corner lines. It does not fill faces, create particles, scan nearby machines, or display through walls.

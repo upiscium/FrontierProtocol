@@ -27,7 +27,6 @@ public record StabilizerDisplaySnapshot(
         if (cellCapacity < 1 || cellCapacity > 64) {
             throw new IllegalArgumentException("cellCapacity must be between 1 and 64");
         }
-        if (cellCount > cellCapacity) throw new IllegalArgumentException("cellCount must not exceed cellCapacity");
         if (cellRemainingTicks < 0) throw new IllegalArgumentException("cellRemainingTicks must not be negative");
         if (cellDurationTicks < 1) throw new IllegalArgumentException("cellDurationTicks must be at least 1");
         if (graceRemainingTicks < 0) throw new IllegalArgumentException("graceRemainingTicks must not be negative");

@@ -62,6 +62,28 @@ class StabilizerDisplayNbtTest {
                 StabilizerDisplayNbt.readOrRetain(wrongTier, StabilizerTier.TIER_2, previous));
     }
 
+    @Test
+    void roundTripAcceptsInventoryAboveCurrentConfiguredCapacity() {
+        StabilizerDisplaySnapshot expected = new StabilizerDisplaySnapshot(
+                StabilizerTier.TIER_2,
+                StabilizerStatus.OFFLINE,
+                64,
+                64.0,
+                32,
+                8,
+                0,
+                3000,
+                0,
+                1);
+        CompoundTag root = new CompoundTag();
+        StabilizerDisplayNbt.write(root, expected);
+
+        StabilizerDisplaySnapshot restored = StabilizerDisplayNbt.read(root).orElseThrow();
+        assertEquals(32, restored.cellCount());
+        assertEquals(8, restored.cellCapacity());
+        assertEquals(expected, StabilizerDisplayNbt.readOrRetain(root, StabilizerTier.TIER_2, snapshot()));
+    }
+
     private static CompoundTag written() {
         CompoundTag root = new CompoundTag();
         StabilizerDisplayNbt.write(root, snapshot());

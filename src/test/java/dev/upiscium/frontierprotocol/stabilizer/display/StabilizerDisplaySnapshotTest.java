@@ -19,6 +19,24 @@ class StabilizerDisplaySnapshotTest {
     }
 
     @Test
+    void acceptsInventoryAboveCurrentConfiguredCapacity() {
+        StabilizerDisplaySnapshot snapshot = new StabilizerDisplaySnapshot(
+                StabilizerTier.TIER_2,
+                StabilizerStatus.OFFLINE,
+                64,
+                64.0,
+                32,
+                8,
+                0,
+                3000,
+                0,
+                1);
+
+        assertEquals(32, snapshot.cellCount());
+        assertEquals(8, snapshot.cellCapacity());
+    }
+
+    @Test
     void rejectsInvalidValues() {
         assertInvalid(null, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, 0, 1, 0, 0);
         assertInvalid(StabilizerTier.TIER_1, null, 1, 0.0, 0, 1, 0, 1, 0, 0);
@@ -36,7 +54,7 @@ class StabilizerDisplaySnapshotTest {
                 0,
                 0);
         assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, -1, 1, 0, 1, 0, 0);
-        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 2, 1, 0, 1, 0, 0);
+        assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 65, 64, 0, 1, 0, 0);
         assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 0, 0, 1, 0, 0);
         assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 65, 0, 1, 0, 0);
         assertInvalid(StabilizerTier.TIER_1, StabilizerStatus.OFFLINE, 1, 0.0, 0, 1, -1, 1, 0, 0);

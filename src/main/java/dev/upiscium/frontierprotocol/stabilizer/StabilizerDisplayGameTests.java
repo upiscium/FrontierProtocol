@@ -49,16 +49,51 @@ public final class StabilizerDisplayGameTests {
                         Block.UPDATE_ALL);
                 StabilizerDisplaySnapshot offline = blockEntity(level, device.pos()).displaySnapshot();
                 assertSnapshot(helper, offline, device.tier(), StabilizerStatus.OFFLINE, 0);
-                insertCells(level, device.pos(), helper);
+                int insertedCells = device.tier() == StabilizerTier.TIER_2 ? 32 : 2;
+                insertCells(level, device.pos(), insertedCells, helper);
                 assertSnapshot(
                         helper,
                         blockEntity(level, device.pos()).displaySnapshot(),
                         device.tier(),
                         StabilizerStatus.OFFLINE,
-                        2);
+                        insertedCells);
                 assertNbtBoundaries(helper, level, blockEntity(level, device.pos()));
-                placeMotor(level, device.pos().west());
             }
+            FrontierProtocolServerConfig.TIER2_CELL_CAPACITY.set(8);
+            helper.runAfterDelay(2, () -> verifyOverCapacity(helper, level, devices, original));
+        } catch (RuntimeException error) {
+            cleanup(level, devices, original);
+            throw error;
+        }
+    }
+
+    private static void verifyOverCapacity(
+            GameTestHelper helper, ServerLevel level, List<Device> devices, ConfigSnapshot original) {
+        try {
+            Device tierTwo = devices.get(1);
+            StabilizerBlockEntity blockEntity = blockEntity(level, tierTwo.pos());
+            StabilizerDisplaySnapshot snapshot = blockEntity.displaySnapshot();
+            helper.assertTrue(snapshot != null, "over-capacity display snapshot was null");
+            helper.assertTrue(snapshot.cellCount() == 32, "over-capacity snapshot clamped the Cell count");
+            helper.assertTrue(snapshot.cellCapacity() == 8, "over-capacity snapshot did not refresh capacity");
+
+            IItemHandler inventory = level.getCapability(Capabilities.ItemHandler.BLOCK, tierTwo.pos(), Direction.UP);
+            helper.assertTrue(inventory != null, "over-capacity item capability unavailable");
+            helper.assertTrue(inventory.getStackInSlot(0).getCount() == 32, "capacity shrink removed stored Cells");
+
+            CompoundTag client = new CompoundTag();
+            blockEntity.write(client, level.registryAccess(), true);
+            helper.assertTrue(
+                    client.contains(StabilizerDisplayNbt.DISPLAY_KEY, Tag.TAG_COMPOUND),
+                    "over-capacity client packet omitted display NBT");
+            StabilizerDisplaySnapshot packetSnapshot = StabilizerDisplayNbt.read(client).orElse(null);
+            helper.assertTrue(packetSnapshot != null, "over-capacity client display NBT was invalid");
+            helper.assertTrue(
+                    packetSnapshot.cellCount() == 32 && packetSnapshot.cellCapacity() == 8,
+                    "over-capacity client display NBT did not preserve 32 / 8");
+
+            FrontierProtocolServerConfig.TIER2_CELL_CAPACITY.set(original.tier2Capacity());
+            for (Device device : devices) placeMotor(level, device.pos().west());
             helper.runAfterDelay(10, () -> verifyActive(helper, level, devices, original));
         } catch (RuntimeException error) {
             cleanup(level, devices, original);
@@ -71,7 +106,8 @@ public final class StabilizerDisplayGameTests {
         try {
             for (Device device : devices) {
                 StabilizerDisplaySnapshot active = blockEntity(level, device.pos()).displaySnapshot();
-                assertSnapshot(helper, active, device.tier(), StabilizerStatus.ACTIVE, 1);
+                int expectedCells = device.tier() == StabilizerTier.TIER_2 ? 31 : 1;
+                assertSnapshot(helper, active, device.tier(), StabilizerStatus.ACTIVE, expectedCells);
                 helper.assertTrue(active.cellRemainingTicks() > 0, device.tier() + " omitted active Cell time");
                 level.setBlock(device.pos().west(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             }
@@ -87,7 +123,8 @@ public final class StabilizerDisplayGameTests {
         try {
             for (Device device : devices) {
                 StabilizerDisplaySnapshot grace = blockEntity(level, device.pos()).displaySnapshot();
-                assertSnapshot(helper, grace, device.tier(), StabilizerStatus.GRACE_PERIOD, 1);
+                int expectedCells = device.tier() == StabilizerTier.TIER_2 ? 31 : 1;
+                assertSnapshot(helper, grace, device.tier(), StabilizerStatus.GRACE_PERIOD, expectedCells);
                 helper.assertTrue(grace.graceRemainingTicks() > 0, device.tier() + " omitted grace time");
             }
             FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(3);
@@ -149,10 +186,10 @@ public final class StabilizerDisplayGameTests {
         helper.assertTrue(persistent.contains("registeredChunkRadius", Tag.TAG_INT), "full persistence NBT lost radius");
     }
 
-    private static void insertCells(ServerLevel level, BlockPos pos, GameTestHelper helper) {
+    private static void insertCells(ServerLevel level, BlockPos pos, int count, GameTestHelper helper) {
         IItemHandler inventory = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, Direction.UP);
         helper.assertTrue(inventory != null, "display test item capability unavailable");
-        ItemStack remainder = inventory.insertItem(0, new ItemStack(ModItems.STABILIZATION_CELL.get(), 2), false);
+        ItemStack remainder = inventory.insertItem(0, new ItemStack(ModItems.STABILIZATION_CELL.get(), count), false);
         helper.assertTrue(remainder.isEmpty(), "display test Stabilizer rejected Cells");
     }
 
@@ -206,7 +243,8 @@ public final class StabilizerDisplayGameTests {
             int tier3Grace,
             int tier1Radius,
             double tier1Stress,
-            int tier1Capacity) {
+            int tier1Capacity,
+            int tier2Capacity) {
         private static ConfigSnapshot capture() {
             return new ConfigSnapshot(
                     FrontierProtocolServerConfig.TIER1_MINIMUM_RPM.get(),
@@ -217,7 +255,8 @@ public final class StabilizerDisplayGameTests {
                     FrontierProtocolServerConfig.TIER3_GRACE_PERIOD_TICKS.get(),
                     FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.get(),
                     FrontierProtocolServerConfig.TIER1_STRESS_IMPACT.get(),
-                    FrontierProtocolServerConfig.TIER1_CELL_CAPACITY.get());
+                    FrontierProtocolServerConfig.TIER1_CELL_CAPACITY.get(),
+                    FrontierProtocolServerConfig.TIER2_CELL_CAPACITY.get());
         }
 
         private void restore() {
@@ -230,6 +269,7 @@ public final class StabilizerDisplayGameTests {
             FrontierProtocolServerConfig.TIER1_CHUNK_RADIUS.set(tier1Radius);
             FrontierProtocolServerConfig.TIER1_STRESS_IMPACT.set(tier1Stress);
             FrontierProtocolServerConfig.TIER1_CELL_CAPACITY.set(tier1Capacity);
+            FrontierProtocolServerConfig.TIER2_CELL_CAPACITY.set(tier2Capacity);
         }
     }
 }
