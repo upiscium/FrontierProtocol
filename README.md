@@ -42,6 +42,8 @@ containment integration preview:
   coordinates.
 - Five Create recipes for Stabilization Compound, common Stabilization Cells,
   Tier 1, and staged Tier 1-to-2 and Tier 2-to-3 Stabilizer upgrades.
+- Engineer's Goggles diagnostics, targeted chunk-range visualization, static
+  item guidance, and localized Ponder scenes for operation, coverage, and production.
 
 Suppression prevents selected new Spore mutations. One shared `StabilizerBlock`
 class, one shared `StabilizerBlockEntity` class/type, and one state machine serve
@@ -56,6 +58,16 @@ Create-oriented production; Compound cannot power a Stabilizer. See
 [ADR 0002](docs/adr/0002-common-stabilizer-tier-architecture.md), and
 [ADR 0001](docs/adr/0001-stabilizer-consumable-and-production-model.md).
 
+## Inspecting a Stabilizer
+
+1. Equip Engineer's Goggles.
+2. Look directly at a Stabilizer to inspect its live server-authoritative operation.
+3. Hold Shift for exact chunk bounds, configured operating details, and the targeted range overlay.
+
+The overlay is shown only for the targeted Stabilizer and does not indicate protection from hostile mobs. Use Create's configured Ponder key while hovering a Stabilizer, Stabilization Cell, or Stabilization Compound to open the Operation, Coverage, and Production explanations.
+
+The initial Overworld spawn center is persisted and has permanent infection suppression with a default radius of two chunks, covering 5x5 chunks. Changing world spawn later does not move it. It needs no Cell or rotation and performs no progressive cleanup. It does not remove existing nests or stop hostile mobs; it is an initial refuge, not a complete safe zone. See [R8 Operational UX](docs/r8-operational-ux.md), [ADR 0003](docs/adr/0003-operational-display-and-client-visualization.md), and [Quest Integration](docs/quest-integration.md).
+
 現在の開発versionは **0.1.0-alpha.1** です。このbuildは内部Alphaリリース候補で、
 一般公開は延期されており、まだ公開配布されていません。テスト前にワールドを
 バックアップしてください。本候補は初期スポーン周辺の永久抑制、初期地形の
@@ -65,6 +77,8 @@ Create-oriented production; Compound cannot power a Stabilizer. See
 OFFLINE中は浄化を停止します。感染地形の復元、巣の自動破壊、Mob侵入防止、
 チャンクロードは行いません。全Tierと運転用の共通安定化セルはCreate加工で製造し、
 安定化化合物は中間素材であり、Stabilizerへ直接投入できません。
+
+Engineer's Gogglesを装着してStabilizerを見ると、server同期された運転情報を確認できます。Shiftを押すと正確なチャンク範囲と対象1台だけのrange overlayを表示します。この範囲は敵対Mobからの保護を示すものではありません。
 
 ## Requirements
 

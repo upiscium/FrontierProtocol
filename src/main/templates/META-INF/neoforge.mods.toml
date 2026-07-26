@@ -51,7 +51,9 @@ protection, and optional initial-spawn ore-generation suppression. Integrates wi
 exactly Fungal Infection: Spore 2.2.0j and incrementally removes audited removable
 infection foliage while a Stabilizer is active. It does not restore infected
 terrain, destroy nests, or affect hostile mob movement or combat. All three tiers
-use common Stabilization Cells made through a Create production chain.
+use common Stabilization Cells made through a Create production chain. Engineer's
+Goggles, targeted range lines, item guidance, and Ponder explain operation without
+adding a machine GUI or changing containment behavior.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.

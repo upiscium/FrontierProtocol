@@ -80,7 +80,7 @@ All tier state models are explicit placeholders using only vanilla texture refer
 
 ## Non-goals
 
-R7 does not add a GUI, Goggles information, Ponder scenes, particles, chunk-boundary visualization, a custom creative tab, tier-specific Cells, Empty or Spent Cells, container returns, new custom materials, TFMG integration, a multiblock tier, suppression from moving/virtual Create contraptions, chunk loading, terrain restoration, nest handling, mob handling, or final assets. Operational displays are deferred to R8. Balance changes are deferred to R9.
+R7 does not add a GUI, Goggles information, Ponder scenes, particles, chunk-boundary visualization, a custom creative tab, tier-specific Cells, Empty or Spent Cells, container returns, new custom materials, TFMG integration, a multiblock tier, suppression from moving/virtual Create contraptions, chunk loading, terrain restoration, nest handling, mob handling, or final assets. R8 adds informational operational displays without changing these R7 gameplay contracts. Balance changes remain deferred to R9.
 
 ## Verification status
 

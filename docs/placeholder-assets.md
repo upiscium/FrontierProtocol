@@ -17,3 +17,5 @@
 These placeholders are for the internal alpha only. Registry IDs and recipes are independent of final art. The repository contains no custom PNG for these assets, and none of these models is final art. Final assets are outside R7 and remain required before public distribution.
 
 R6 established the Compound, Cell, and Tier 1 placeholders. R7 retains those models and adds Tier 2 and Tier 3 placeholders from the exact vanilla copper, deepslate, obsidian, netherite, and blackstone texture families listed above; it does not replace R6 assets with final art.
+
+R8 retains every placeholder block and item model. Goggle text, line-based range rendering, and Ponder storyboards add no final model, custom texture, icon PNG, particle texture, or emissive asset.

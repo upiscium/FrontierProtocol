@@ -11,7 +11,7 @@ The candidate artifact produced by the build is `frontier_protocol-0.1.0-alpha.1
 Public distribution of 0.1.0-alpha.1 has been deferred.
 This version is currently used for internal testing and integration validation only.
 
-The accepted Stabilizer consumable and production model is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md). The accepted common tier architecture is recorded in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md), with current implementation boundaries documented in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md).
+The accepted Stabilizer consumable and production model is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md). The accepted common tier architecture is recorded in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md). Operational display architecture is recorded in [ADR 0003](adr/0003-operational-display-and-client-visualization.md), with current behavior documented in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md) and [R8 Operational UX](r8-operational-ux.md).
 
 ## Compatibility matrix
 
@@ -35,6 +35,7 @@ Spore 2.2.0j is the artifact audited by SHA-256 in `docs/spore-integration-audit
 - Multiple sources can cover the same chunk without premature removal, and identical chunk coordinates remain independent across dimensions.
 - Audited Spore environmental spread, offset foliage and branch writes, configured conversion, falling wood conversion, HiveTumor/Proto CDU replacement, and Mound additions query the actual mutation target before writing.
 - Stabilization Compound is produced by heated Create Mixing and is only an intermediate. A Deployer seals it into the common Cell. Mechanical Crafters produce Tier 1 and perform staged Tier 1-to-2 and Tier 2-to-3 upgrades. These are exactly five recipes with no normal-crafting bypass; exact upgrade patterns are in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md).
+- Engineer's Goggles expose server-authoritative Stabilizer operation, Shift details, and a targeted chunk-range overlay. Static item tooltips and localized Ponder scenes explain operation, coverage, production, physical-defense limits, and initial-spawn protection.
 
 At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress, hold 8/32/64 Cells, run 6000/3000/2000 ticks per Cell, and retain grace for 6000/9000/12000 ticks. Their 1/9/25-chunk coverage yields 6000/27000/50000 protected chunk-ticks per Cell. Tier 2 and Tier 3 are more area-efficient but consume Cells at shorter machine intervals, so their supply logistics need faster delivery and adequate buffers. The complete cleanup values and recipes are documented in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md).
 
@@ -47,12 +48,12 @@ At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress,
 - Hostile mob movement, combat, block breaking, and explosions are not containment responsibilities.
 - Spore random ticks, scheduled ticks, and existing infected block-entity state continue normally.
 - World-generation features outside the selected runtime Spore spread paths are not globally intercepted.
-- R7 adds no GUI, Goggles information, Ponder scenes, particles, chunk-boundary visualization, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, TFMG integration, multiblock, moving-contraption suppression, chunk loading, terrain restoration, nest or mob handling, or final assets. R8 displays and R9 balancing are later work.
+- R8 adds no Block Entity GUI, persistent HUD, particles, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, TFMG integration, multiblock, moving-contraption suppression, chunk loading, terrain restoration, nest or mob handling, or final assets. R9 balancing remains later work.
 - No Minecraft-wide `Level#setBlock` hook is used.
 
 ## Verification status
 
-Automated verification already performed includes unit tests, the build, all 31 GameTests, RecipeManager validation, and datagen. RecipeManager checks cover the exact five serializers, ingredients, patterns, outputs, and absence of crafting bypasses. The GameTests cover all tier lifecycles, coverage, suppression, cleanup profiles/global caps, persistence, overlaps, and production contracts.
+Automated verification includes unit tests and all 34 GameTests, including the R8 display snapshot, client-packet boundary, all tier lifecycles, coverage, suppression, cleanup profiles/global caps, persistence, overlaps, and production contracts. RecipeManager validation continues to cover the exact five serializers, ingredients, patterns, outputs, and absence of crafting bypasses. Final clean build and datagen results are recorded after the complete R8 verification pass.
 
 Final verification launched the production dedicated server through readiness and confirmed shutdown with all dimensions saved. The graphical client reached the title screen and joined the existing creative smoke world; all three placeholder Stabilizers rendered without Frontier Protocol model errors, and JEI displayed all five Frontier Protocol recipes. Physical Mechanical Crafter execution for the Tier 2 and Tier 3 upgrades and continuous automated Cell-supply smoke testing remain unverified. The complete production line must not be described as fully automation-verified.
 
