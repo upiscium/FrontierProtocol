@@ -9,9 +9,12 @@ import dev.upiscium.frontierprotocol.cleanup.CleanupSourceProfile;
 import dev.upiscium.frontierprotocol.cleanup.ServerInfectionCleanupService;
 import dev.upiscium.frontierprotocol.registry.ModBlockEntities;
 import dev.upiscium.frontierprotocol.registry.ModItemTags;
+import dev.upiscium.frontierprotocol.registry.ModItems;
+import dev.upiscium.frontierprotocol.config.FrontierProtocolClientConfig;
 import dev.upiscium.frontierprotocol.stabilizer.display.StabilizerDisplayNbt;
 import dev.upiscium.frontierprotocol.stabilizer.display.StabilizerDisplaySnapshot;
 import dev.upiscium.frontierprotocol.stabilizer.display.StabilizerDisplaySyncPolicy;
+import dev.upiscium.frontierprotocol.stabilizer.display.StabilizerGoggleTooltip;
 import dev.upiscium.frontierprotocol.suppression.ServerInfectionSuppressionService;
 import java.util.List;
 import java.util.Set;
@@ -144,6 +147,33 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     public StabilizerDisplaySnapshot displaySnapshot() {
         if (level instanceof ServerLevel) return createDisplaySnapshot(definition());
         return clientDisplaySnapshot;
+    }
+
+    @Override
+    public boolean addToGoggleTooltip(List<net.minecraft.network.chat.Component> tooltip, boolean isPlayerSneaking) {
+        boolean customAdded = false;
+        if (FrontierProtocolClientConfig.SHOW_STABILIZER_GOGGLE_DETAILS.get()) {
+            StabilizerDisplaySnapshot snapshot = displaySnapshot();
+            customAdded = snapshot == null
+                    ? StabilizerGoggleTooltip.addSynchronizing(tooltip)
+                    : StabilizerGoggleTooltip.add(
+                            tooltip,
+                            isPlayerSneaking,
+                            snapshot,
+                            new ChunkPos(worldPosition),
+                            getTheoreticalSpeed(),
+                            isOverStressed());
+        }
+        return super.addToGoggleTooltip(tooltip, isPlayerSneaking) || customAdded;
+    }
+
+    @Override
+    public ItemStack getIcon(boolean isPlayerSneaking) {
+        return new ItemStack(switch (tier) {
+            case TIER_1 -> ModItems.TIER_1_STABILIZER.get();
+            case TIER_2 -> ModItems.TIER_2_STABILIZER.get();
+            case TIER_3 -> ModItems.TIER_3_STABILIZER.get();
+        });
     }
 
     private StabilizerTierDefinition definition() {
