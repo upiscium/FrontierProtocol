@@ -111,8 +111,8 @@ config="${mod_id}.mixins.json"
 
 [[dependencies.${mod_id}]]
     modId="tfmg"
-    type="optional"
-    versionRange="[1.2.0,)"
+    type="required"
+    versionRange="[${tfmg_version},)"
     ordering="AFTER"
     side="BOTH"
 

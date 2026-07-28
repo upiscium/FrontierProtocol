@@ -1,5 +1,9 @@
 # R6 Production Material Audit
 
+Status: Superseded
+
+Superseded by: [R9 TFMG Production Material Audit](r9-tfmg-production-material-audit.md)
+
 R6 audits Fungal Infection: Spore `2.2.0j` for Minecraft `1.21.1` and NeoForge from CurseForge file ID `8342823`.
 
 ## Audited artifact

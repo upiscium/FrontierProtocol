@@ -1,6 +1,6 @@
 package dev.upiscium.frontierprotocol.production;
 
-import com.Harbinger.Spore.core.Sitems;
+import com.drmangotea.tfmg.registry.TFMGFluids;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.content.processing.recipe.HeatCondition;
@@ -16,7 +16,6 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Recipe;
@@ -25,7 +24,6 @@ import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.level.ItemLike;
-import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -53,18 +51,32 @@ public final class ProductionRecipeGameTests {
         Recipe<?> mixingRecipe = requireRecipe(helper, recipes, MIXING, "create:mixing");
         helper.assertTrue(mixingRecipe instanceof ProcessingRecipe<?, ?>, "mixing recipe is not a Create processing recipe");
         ProcessingRecipe<?, ?> mixing = (ProcessingRecipe<?, ?>) mixingRecipe;
-        assertResult(helper, level, mixing, ModItems.STABILIZATION_COMPOUND.get(), 4, "mixing");
-        helper.assertTrue(mixing.getIngredients().size() == 3, "mixing recipe does not have exactly three item inputs");
-        assertExactIngredient(helper, mixing.getIngredients().get(0), Sitems.BIOMASS_BLOCK.get(), "audited Spore biomass block");
-        assertExactIngredient(helper, mixing.getIngredients().get(1), Items.REDSTONE, "redstone");
-        assertExactIngredient(helper, mixing.getIngredients().get(2), Items.CHARCOAL, "charcoal");
+        assertResult(helper, level, mixing, ModItems.STABILIZATION_COMPOUND.get(), 1, "mixing");
+        helper.assertTrue(mixing.getIngredients().size() == 10, "mixing recipe does not have exactly ten item inputs");
+        assertExactIngredient(helper, mixing.getIngredients().get(0), Items.SAND, "sand");
+        assertExactIngredient(helper, mixing.getIngredients().get(1), Items.BLUE_ICE, "blue ice");
+        for (int index = 2; index < 10; index++) {
+            assertExactIngredient(helper, mixing.getIngredients().get(index), Items.IRON_NUGGET, "iron nugget " + (index - 1));
+        }
         helper.assertTrue(mixing.getFluidIngredients().size() == 1, "mixing recipe fluid input count changed");
         helper.assertTrue(
-                mixing.getFluidIngredients().getFirst().amount() == 250
-                        && mixing.getFluidIngredients().getFirst().test(new FluidStack(Fluids.WATER, 250)),
-                "mixing recipe does not require exactly 250 mB water");
-        helper.assertTrue(mixing.getRequiredHeat() == HeatCondition.HEATED,
-                "mixing recipe is not heated or became superheated");
+                mixing.getFluidIngredients().getFirst().amount() == 100
+                        && mixing.getFluidIngredients().getFirst().test(new FluidStack(
+                                (net.minecraft.world.level.material.Fluid) TFMGFluids.MOLTEN_PLASTIC.getSource(), 100)),
+                "mixing recipe does not require exactly 100 mB TFMG molten plastic");
+        helper.assertTrue(mixing.getRequiredHeat() == HeatCondition.NONE,
+                "mixing recipe unexpectedly requires heat");
+        helper.assertTrue(
+                mixing.getIngredients().stream().noneMatch(ingredient -> ingredient.test(new ItemStack(
+                        BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath("spore", "biomass_block"))))),
+                "mixing recipe still accepts Spore biomass");
+        helper.assertTrue(mixing.getIngredients().stream().noneMatch(ingredient -> ingredient.test(new ItemStack(Items.REDSTONE))),
+                "mixing recipe still accepts redstone");
+        helper.assertTrue(mixing.getIngredients().stream().noneMatch(ingredient -> ingredient.test(new ItemStack(Items.CHARCOAL))),
+                "mixing recipe still accepts charcoal");
+        helper.assertTrue(
+                !mixing.getFluidIngredients().getFirst().test(new FluidStack(net.minecraft.world.level.material.Fluids.WATER, 100)),
+                "mixing recipe still accepts water");
 
         Recipe<?> deploying = requireRecipe(helper, recipes, DEPLOYING, "create:deploying");
         helper.assertTrue(deploying instanceof ProcessingRecipe<?, ?>,
@@ -126,12 +138,10 @@ public final class ProductionRecipeGameTests {
                         '2', ModItems.TIER_2_STABILIZER.get()),
                 "Tier 3");
 
-        helper.assertTrue(Sitems.BIOMASS_BLOCK.get() instanceof BlockItem,
-                "audited spore:biomass_block is not registered as a BlockItem");
         helper.assertTrue(
-                BuiltInRegistries.ITEM.getKey(Sitems.BIOMASS_BLOCK.get())
-                        .equals(ResourceLocation.fromNamespaceAndPath("spore", "biomass_block")),
-                "audited Spore input has an unexpected registry ID");
+                BuiltInRegistries.FLUID.getKey(TFMGFluids.MOLTEN_PLASTIC.getSource())
+                        .equals(ResourceLocation.fromNamespaceAndPath("tfmg", "molten_plastic")),
+                "TFMG Liquid Plastic has an unexpected registry ID");
         assertNoProductionBypasses(helper, level, recipes);
         helper.succeed();
     }
@@ -145,18 +155,20 @@ public final class ProductionRecipeGameTests {
         BlockPos basin = findBlock(helper, AllBlocks.BASIN.get());
         IItemHandler items = helper.itemStorageAt(basin);
         helper.assertTrue(items != null, "physical Basin item storage is unavailable");
-        insert(helper, items, new ItemStack(Sitems.BIOMASS_BLOCK.get()));
-        insert(helper, items, new ItemStack(Items.REDSTONE));
-        insert(helper, items, new ItemStack(Items.CHARCOAL));
+        insert(helper, items, new ItemStack(Items.SAND));
+        insert(helper, items, new ItemStack(Items.BLUE_ICE));
+        insert(helper, items, new ItemStack(Items.IRON_NUGGET, 8));
 
         IFluidHandler fluids = helper.fluidStorageAt(basin);
         helper.assertTrue(fluids != null, "physical Basin fluid storage is unavailable");
-        int filled = fluids.fill(new FluidStack(Fluids.WATER, 250), IFluidHandler.FluidAction.EXECUTE);
-        helper.assertTrue(filled == 250, "physical Basin did not accept exactly 250 mB water");
+        int filled = fluids.fill(
+                new FluidStack((net.minecraft.world.level.material.Fluid) TFMGFluids.MOLTEN_PLASTIC.getSource(), 100),
+                IFluidHandler.FluidAction.EXECUTE);
+        helper.assertTrue(filled == 100, "physical Basin did not accept exactly 100 mB TFMG Liquid Plastic");
 
         helper.pullLever(new BlockPos(2, 3, 2));
         helper.succeedWhen(() -> helper.assertContainerContains(
-                new BlockPos(7, 3, 1), new ItemStack(ModItems.STABILIZATION_COMPOUND.get(), 4)));
+                new BlockPos(7, 3, 1), new ItemStack(ModItems.STABILIZATION_COMPOUND.get())));
     }
 
     private static BlockPos findBlock(CreateGameTestHelper helper, net.minecraft.world.level.block.Block block) {

@@ -1,13 +1,12 @@
 package dev.upiscium.frontierprotocol.datagen;
 
-import com.Harbinger.Spore.core.Sitems;
+import com.drmangotea.tfmg.registry.TFMGFluids;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.api.data.recipe.DeployingRecipeGen;
 import com.simibubi.create.api.data.recipe.MechanicalCraftingRecipeBuilder;
 import com.simibubi.create.api.data.recipe.MechanicalCraftingRecipeGen;
 import com.simibubi.create.api.data.recipe.MixingRecipeGen;
-import com.simibubi.create.content.processing.recipe.HeatCondition;
 import dev.upiscium.frontierprotocol.FrontierProtocolMod;
 import dev.upiscium.frontierprotocol.registry.ModItems;
 import java.util.concurrent.CompletableFuture;
@@ -15,7 +14,6 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.material.Fluids;
 
 public final class FrontierProtocolRecipeProvider {
     private FrontierProtocolRecipeProvider() {}
@@ -24,12 +22,18 @@ public final class FrontierProtocolRecipeProvider {
         public Mixing(PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
             super(output, registries, FrontierProtocolMod.MOD_ID);
             create("stabilization_compound", builder -> builder
-                    .require(Sitems.BIOMASS_BLOCK.get())
-                    .require(Items.REDSTONE)
-                    .require(Items.CHARCOAL)
-                    .require(Fluids.WATER, 250)
-                    .requiresHeat(HeatCondition.HEATED)
-                    .output(ModItems.STABILIZATION_COMPOUND.get(), 4));
+                    .require(TFMGFluids.MOLTEN_PLASTIC.get(), 100)
+                    .require(Items.SAND)
+                    .require(Items.BLUE_ICE)
+                    .require(Items.IRON_NUGGET)
+                    .require(Items.IRON_NUGGET)
+                    .require(Items.IRON_NUGGET)
+                    .require(Items.IRON_NUGGET)
+                    .require(Items.IRON_NUGGET)
+                    .require(Items.IRON_NUGGET)
+                    .require(Items.IRON_NUGGET)
+                    .require(Items.IRON_NUGGET)
+                    .output(ModItems.STABILIZATION_COMPOUND.get()));
         }
     }
 

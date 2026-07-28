@@ -177,9 +177,9 @@ configurations {
 dependencies {
     implementation "com.simibubi.create:create-${minecraft_version}:${create_version}"
     implementation "curse.maven:fungal-infection-spore-678295:${spore_file_id}"
+    implementation "maven.modrinth:create-tfmg:${tfmg_version}"
 
     if (project.hasProperty('enableOptionalCompatRuntime')) {
-        localRuntime "maven.modrinth:create-tfmg:${tfmg_version}"
         localRuntime "maven.modrinth:sable:${sable_version}"
         localRuntime "maven.modrinth:create-aeronautics:${aeronautics_version}"
     }
@@ -233,6 +233,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             create_version         : create_version,
             create_mod_version     : create_mod_version,
             spore_version          : spore_version,
+            tfmg_version           : tfmg_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties
