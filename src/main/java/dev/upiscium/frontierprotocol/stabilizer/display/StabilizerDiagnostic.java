@@ -28,11 +28,11 @@ public enum StabilizerDiagnostic {
             int cellRemainingTicks,
             StabilizerStatus status) {
         if (overStressed) return OVERSTRESSED;
+        if (status == StabilizerStatus.GRACE_PERIOD) return GRACE;
         float absoluteRpm = Math.abs(theoreticalRpm);
         if (absoluteRpm == 0.0F) return NO_ROTATION;
         if (absoluteRpm < minimumRpm) return INSUFFICIENT_RPM;
         if (cellCount == 0 && cellRemainingTicks == 0) return NO_CELL;
-        if (status == StabilizerStatus.GRACE_PERIOD) return GRACE;
         return OPERATIONAL;
     }
 }

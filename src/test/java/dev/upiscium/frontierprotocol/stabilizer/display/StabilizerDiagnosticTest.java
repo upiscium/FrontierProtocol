@@ -9,10 +9,13 @@ class StabilizerDiagnosticTest {
     @Test
     void evaluatesReasonsInPriorityOrder() {
         assertEquals(StabilizerDiagnostic.OVERSTRESSED, evaluate(true, 0, 0, 0, StabilizerStatus.GRACE_PERIOD));
-        assertEquals(StabilizerDiagnostic.NO_ROTATION, evaluate(false, 0, 0, 0, StabilizerStatus.GRACE_PERIOD));
-        assertEquals(StabilizerDiagnostic.INSUFFICIENT_RPM, evaluate(false, 31, 1, 1, StabilizerStatus.GRACE_PERIOD));
-        assertEquals(StabilizerDiagnostic.NO_CELL, evaluate(false, 32, 0, 0, StabilizerStatus.GRACE_PERIOD));
+        assertEquals(StabilizerDiagnostic.GRACE, evaluate(false, 0, 0, 0, StabilizerStatus.GRACE_PERIOD));
+        assertEquals(StabilizerDiagnostic.GRACE, evaluate(false, 31, 1, 1, StabilizerStatus.GRACE_PERIOD));
+        assertEquals(StabilizerDiagnostic.GRACE, evaluate(false, 32, 0, 0, StabilizerStatus.GRACE_PERIOD));
         assertEquals(StabilizerDiagnostic.GRACE, evaluate(false, 32, 0, 1, StabilizerStatus.GRACE_PERIOD));
+        assertEquals(StabilizerDiagnostic.NO_ROTATION, evaluate(false, 0, 0, 0, StabilizerStatus.OFFLINE));
+        assertEquals(StabilizerDiagnostic.INSUFFICIENT_RPM, evaluate(false, 31, 1, 1, StabilizerStatus.OFFLINE));
+        assertEquals(StabilizerDiagnostic.NO_CELL, evaluate(false, 32, 0, 0, StabilizerStatus.OFFLINE));
         assertEquals(StabilizerDiagnostic.OPERATIONAL, evaluate(false, 32, 0, 1, StabilizerStatus.ACTIVE));
     }
 
