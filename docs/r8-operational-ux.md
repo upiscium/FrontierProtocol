@@ -29,6 +29,8 @@ Ponder schematics are committed at `assets/frontier_protocol/ponder/stabilizer/{
 
 The Operation storyboard selects the matching Stabilizer block and representative kinetic speed for each Tier; the Cell uses Tier 1 as its representative operation scene. It demonstrates downward Cell insertion through a Depot and Chute representing Create logistics. Direct right-click insertion into a Stabilizer is not supported or depicted.
 
+The Production storyboard sequentially displays a Fluid Tank and Pipe feeding a Basin and Mechanical Mixer, a Depot and Deployer sealing the common Cell, and a representative 3x3 Mechanical Crafter array. Its Compound stage follows [ADR 0004](adr/0004-tfmg-compound-production.md): 100 mB TFMG Liquid Plastic, Sand, Blue Ice, and eight Iron Nuggets are mixed without heat.
+
 Initial Overworld spawn suppression is a permanent field centered on the persisted initial spawn. Its default radius is two chunks, covering 5x5 chunks. It needs no Cell or rotation, does not move when world spawn later changes, performs no progressive cleanup, does not remove existing nests, and does not prevent hostile mobs. It is an initial refuge, not a complete safe zone.
 
 ## Verification status

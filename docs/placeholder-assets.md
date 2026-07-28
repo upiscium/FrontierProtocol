@@ -19,3 +19,5 @@ These placeholders are for the internal alpha only. Registry IDs and recipes are
 R6 established the Compound, Cell, and Tier 1 placeholders. R7 retains those models and adds Tier 2 and Tier 3 placeholders from the exact vanilla copper, deepslate, obsidian, netherite, and blackstone texture families listed above; it does not replace R6 assets with final art.
 
 R8 retains every placeholder block and item model. Goggle text, line-based range rendering, and Ponder storyboards add no final model, custom texture, icon PNG, particle texture, or emissive asset.
+
+The TFMG Compound production revision retains the same Frontier Protocol placeholder models. Production Ponder uses Create equipment models and TFMG's own Liquid Plastic rendering from the required dependency; Frontier Protocol adds no TFMG-derived custom model or texture.

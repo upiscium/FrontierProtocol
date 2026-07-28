@@ -34,7 +34,7 @@ Explanation-only objective:
 
 ### 2. Stabilization Compound
 
-Obtain `frontier_protocol:stabilization_compound` through heated Create Mixing.
+Obtain `frontier_protocol:stabilization_compound` by Mixing 100 mB TFMG Liquid Plastic with Sand, Blue Ice, and eight Iron Nuggets without heat.
 
 ### 3. Seal the Cell
 

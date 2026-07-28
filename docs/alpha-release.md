@@ -11,7 +11,7 @@ The candidate artifact produced by the build is `frontier_protocol-0.1.0-alpha.1
 Public distribution of 0.1.0-alpha.1 has been deferred.
 This version is currently used for internal testing and integration validation only.
 
-The accepted Stabilizer consumable and production model is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md). The accepted common tier architecture is recorded in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md). Operational display architecture is recorded in [ADR 0003](adr/0003-operational-display-and-client-visualization.md), with current behavior documented in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md) and [R8 Operational UX](r8-operational-ux.md).
+The accepted Stabilizer consumable model is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), with the current TFMG Compound materials in [ADR 0004](adr/0004-tfmg-compound-production.md). The accepted common tier architecture is recorded in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md). Operational display architecture is recorded in [ADR 0003](adr/0003-operational-display-and-client-visualization.md), with current behavior documented in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md) and [R8 Operational UX](r8-operational-ux.md).
 
 ## Compatibility matrix
 
@@ -21,6 +21,7 @@ The accepted Stabilizer consumable and production model is recorded in [ADR 0001
 | Java | `21` |
 | NeoForge | `21.1.235` or newer for Minecraft 1.21.1 |
 | Create | `6.0.11` or newer |
+| Create: The Factory Must Grow | `1.2.0` or newer |
 | Fungal Infection: Spore | exactly `2.2.0j` |
 
 Spore 2.2.0j is the artifact audited by SHA-256 in `docs/spore-integration-audit.md`. The Mixins use complete descriptors and required call-site counts so an incompatible implementation fails at startup instead of silently bypassing suppression.
@@ -34,7 +35,7 @@ Spore 2.2.0j is the artifact audited by SHA-256 in `docs/spore-integration-audit
 - While ACTIVE, each source incrementally removes audited removable Spore foliage from loaded covered chunks under its tier cleanup profile and hard server-global caps. Cleanup pauses during grace and resumes from persisted progress after power recovery or reload.
 - Multiple sources can cover the same chunk without premature removal, and identical chunk coordinates remain independent across dimensions.
 - Audited Spore environmental spread, offset foliage and branch writes, configured conversion, falling wood conversion, HiveTumor/Proto CDU replacement, and Mound additions query the actual mutation target before writing.
-- Stabilization Compound is produced by heated Create Mixing and is only an intermediate. A Deployer seals it into the common Cell. Mechanical Crafters produce Tier 1 and perform staged Tier 1-to-2 and Tier 2-to-3 upgrades. These are exactly five recipes with no normal-crafting bypass; exact upgrade patterns are in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md).
+- Stabilization Compound is produced without heat by Mixing 100 mB TFMG Liquid Plastic, Sand, Blue Ice, and eight Iron Nuggets into one intermediate. A Deployer seals it into the common Cell. Mechanical Crafters produce Tier 1 and perform staged Tier 1-to-2 and Tier 2-to-3 upgrades. These are exactly five recipes with no normal-crafting bypass; exact upgrade patterns are in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md).
 - Engineer's Goggles expose server-authoritative Stabilizer operation, Shift details, and a targeted chunk-range overlay. Static item tooltips and localized Ponder scenes explain operation, coverage, production, physical-defense limits, and initial-spawn protection.
 - Reducing configured Cell capacity does not delete existing inventory. Operational snapshots continue to report the actual over-capacity buffer, such as `32 / 8`, until Cells are consumed normally.
 - Ponder Operation scenes show the selected Stabilizer Tier and represent Cell insertion through Create logistics. Stabilizers do not support direct right-click Cell insertion.
@@ -50,7 +51,7 @@ At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress,
 - Hostile mob movement, combat, block breaking, and explosions are not containment responsibilities.
 - Spore random ticks, scheduled ticks, and existing infected block-entity state continue normally.
 - World-generation features outside the selected runtime Spore spread paths are not globally intercepted.
-- R8 adds no Block Entity GUI, persistent HUD, particles, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, TFMG integration, multiblock, moving-contraption suppression, chunk loading, terrain restoration, nest or mob handling, or final assets. R9 balancing remains later work.
+- R8 adds no Block Entity GUI, persistent HUD, particles, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, multiblock, moving-contraption suppression, chunk loading, terrain restoration, nest or mob handling, or final assets. The later Compound production revision requires TFMG but does not add a Frontier Protocol machine. R9 balancing remains later work.
 - No Minecraft-wide `Level#setBlock` hook is used.
 
 ## Verification status
@@ -59,7 +60,7 @@ Automated verification includes passing unit tests and all 34 GameTests, includi
 
 Final R8 verification launched the production dedicated server through readiness without Frontier Protocol client-class errors and confirmed shutdown-hook saving for all dimensions. The server Gradle task did not receive a normal console `stop` through the smoke harness, so its clean task exit remains unverified.
 
-The production client command joined the creative smoke world under a 1920x1080 Xvfb display. English and Japanese interaction checks passed for live Tier displays and diagnostics, Shift details, over-capacity reporting, client-option toggles, Goggle removal and crosshair cleanup, range overlays at all three sizes and negative coordinates, item tooltips, and complete Operation/Coverage/Production Ponder playback. The Overstressed diagnostic remains unit-tested but was not reproduced with a graphical kinetic fixture. See [R8 Graphical Verification](r8-graphical-verification.md). Physical Mechanical Crafter execution for the Tier 2 and Tier 3 upgrades and continuous automated Cell-supply smoke testing also remain unverified.
+The production client command joined the creative smoke world under a 1920x1080 Xvfb display. English and Japanese interaction checks passed for live Tier displays and diagnostics, Shift details, over-capacity reporting, client-option toggles, Goggle removal and crosshair cleanup, range overlays at all three sizes and negative coordinates, item tooltips, and Ponder playback. Revised verification also confirmed the TFMG Compound Mixing and unchanged Cell Deploying recipes in JEI and visibly rendered the Production Ponder fluid supply, Mixer, Basin, Depot, Deployer, and 3x3 Mechanical Crafter stages in both languages. See [R8 Graphical Verification](r8-graphical-verification.md). Physical Mechanical Crafter execution for the Tier 2 and Tier 3 upgrades and continuous automated Cell-supply smoke testing remain unverified.
 
 The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. The dedicated-server smoke reached the server-ready state with Create and Spore without a Mixin application or client-class error. The client smoke used a graphical display; a `glfwInit` failure when `DISPLAY` is unavailable would not constitute a successful client smoke test.
 
@@ -74,7 +75,8 @@ The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mix
 - [x] Complete a dedicated-server smoke test.
 - [x] Complete the pre-R8 title-screen, world, model, and JEI client smoke.
 - [x] Complete the R8 Goggles, range, tooltip, Ponder playback, and Japanese client smoke.
-- [x] Inspect all five recipes in JEI.
+- [x] Re-inspect the revised Compound and unchanged Cell recipes in JEI.
+- [x] Verify revised Production Ponder equipment in English and Japanese.
 - [ ] Execute the tier recipes in physical Mechanical Crafters.
 - [ ] Smoke-test continuous automated Cell supply at upper-tier consumption intervals.
 - [x] Inspect the production JAR contents and generated metadata.

@@ -28,6 +28,9 @@ All notable changes to Frontier Protocol are documented in this file.
 - Corrected Ponder operation guidance to show the selected Tier and Create-logistics Cell insertion instead of direct Stabilizer interaction.
 - Corrected GRACE_PERIOD diagnostics so loss of rotation reports the active grace state instead of a misleading no-rotation failure.
 - Populated and reframed the committed Ponder schematics, corrected their 1-based localization keys, and aligned Japanese Tier and lifecycle wording.
+- Replaced the Spore-derived heated Compound recipe with unheated Mixing of 100 mB TFMG Liquid Plastic, Sand, Blue Ice, and eight Iron Nuggets for one Compound.
+- Made Create: The Factory Must Grow 1.2.0 or newer a required client and server dependency.
+- Added visible Mixer, Basin, fluid supply, Deployer, Depot, and Mechanical Crafter equipment to Production Ponder.
 
 ### Compatibility
 

@@ -1,6 +1,7 @@
 # Frontier Protocol
 
-Frontier Protocol is a NeoForge addon for Fungal Infection: Spore and Create.
+Frontier Protocol is a NeoForge addon for Fungal Infection: Spore, Create, and
+Create: The Factory Must Grow (TFMG).
 It introduces Create-powered containment infrastructure that suppresses Spore
 infection across entire chunks, from the bottom to the top of the dimension.
 Players can use Create production and logistics to make the common Stabilization
@@ -42,6 +43,8 @@ containment integration preview:
   coordinates.
 - Five Create recipes for Stabilization Compound, common Stabilization Cells,
   Tier 1, and staged Tier 1-to-2 and Tier 2-to-3 Stabilizer upgrades.
+- Unheated Compound Mixing with 100 mB of TFMG Liquid Plastic, Sand, Blue Ice,
+  and eight Iron Nuggets.
 - Engineer's Goggles diagnostics, targeted chunk-range visualization, static
   item guidance, and localized Ponder scenes for operation, coverage, and production.
 
@@ -56,7 +59,9 @@ is pinned to the exact audited release. All tiers consume the same Cell through
 Create-oriented production; Compound cannot power a Stabilizer. See
 [`docs/r7-stabilizer-tiers.md`](docs/r7-stabilizer-tiers.md),
 [ADR 0002](docs/adr/0002-common-stabilizer-tier-architecture.md), and
-[ADR 0001](docs/adr/0001-stabilizer-consumable-and-production-model.md).
+[ADR 0001](docs/adr/0001-stabilizer-consumable-and-production-model.md). The
+revised Compound material decision is recorded in
+[ADR 0004](docs/adr/0004-tfmg-compound-production.md).
 
 ## Inspecting a Stabilizer
 
@@ -86,12 +91,13 @@ Engineer's Gogglesを装着してStabilizerを見ると、server同期された�
 - Java 21
 - NeoForge 21.1.235 or newer for Minecraft 1.21.1
 - Create 6.0.11 or newer
+- Create: The Factory Must Grow 1.2.0 or newer
 - Fungal Infection: Spore 2.2.0j exactly
 
 ## Internal Testing
 
 For internal testing, build the candidate from source, install the matching
-NeoForge release, Create, and Spore, then place
+NeoForge release, Create, TFMG, and Spore, then place
 `frontier_protocol-0.1.0-alpha.1.jar` in the instance's `mods` directory. Do not
 use a different Spore version with this alpha build.
 
@@ -105,8 +111,8 @@ is included; see
 
 ## Development
 
-The project targets Minecraft 1.21.1 with Java 21 and NeoForge. Create and
-Fungal Infection: Spore are required dependencies.
+The project targets Minecraft 1.21.1 with Java 21 and NeoForge. Create, TFMG,
+and Fungal Infection: Spore are required dependencies.
 
 ```sh
 ./gradlew build
