@@ -45,6 +45,23 @@ class FrontierProtocolPonderResourcesTest {
     }
 
     @Test
+    void generatedOneBasedSceneTextKeysAreTranslated() throws Exception {
+        JsonObject english = language("en_us");
+        JsonObject japanese = language("ja_jp");
+        for (var scene : java.util.Map.of("stabilizer_operation", 5, "stabilizer_coverage", 5, "stabilizer_production", 4)
+                .entrySet()) {
+            String prefix = "frontier_protocol.ponder." + scene.getKey() + ".text_";
+            assertTrue(!english.has(prefix + "0"), "obsolete zero-based translation " + prefix + "0");
+            assertTrue(!japanese.has(prefix + "0"), "obsolete zero-based translation " + prefix + "0");
+            for (int index = 1; index <= scene.getValue(); index++) {
+                String key = prefix + index;
+                assertTrue(english.has(key), "English translation missing " + key);
+                assertTrue(japanese.has(key), "Japanese translation missing " + key);
+            }
+        }
+    }
+
+    @Test
     void operationComponentsUseTheirTierAndCellUsesTierOne() {
         List<FrontierProtocolPonderScenes.OperationSceneDefinition> definitions =
                 FrontierProtocolPonderScenes.operationSceneDefinitions();

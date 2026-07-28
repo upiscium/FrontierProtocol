@@ -64,6 +64,8 @@ public final class FrontierProtocolPonderScenes {
         StabilizerBlock stabilizerBlock = definition.block().get();
         scene.title("stabilizer_operation", "Operating a Stabilizer");
         scene.configureBasePlate(0, 0, 5);
+        scene.scaleSceneView(0.7F);
+        scene.setSceneOffsetY(-1.0F);
         Selection plate = util.select().fromTo(0, 0, 0, 4, 0, 4);
         BlockPos stabilizerPos = util.grid().at(2, 1, 2);
         BlockPos shaftPos = util.grid().at(1, 1, 2);
@@ -134,6 +136,8 @@ public final class FrontierProtocolPonderScenes {
     public static void coverage(SceneBuilder scene, SceneBuildingUtil util) {
         scene.title("stabilizer_coverage", "Containment Coverage");
         scene.configureBasePlate(0, 0, 7);
+        scene.scaleSceneView(0.8F);
+        scene.setSceneOffsetY(-1.0F);
         Selection grid = util.select().fromTo(1, 0, 1, 5, 0, 5);
         scene.world().setBlocks(grid, Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState(), false);
         scene.showBasePlate();
@@ -178,6 +182,8 @@ public final class FrontierProtocolPonderScenes {
     public static void production(SceneBuilder scene, SceneBuildingUtil util) {
         scene.title("stabilizer_production", "Stabilizer Production");
         scene.configureBasePlate(0, 0, 7);
+        scene.scaleSceneView(0.8F);
+        scene.setSceneOffsetY(-1.0F);
         Selection plate = util.select().fromTo(0, 0, 0, 6, 0, 6);
         scene.world().setBlocks(plate, Blocks.SMOOTH_STONE.defaultBlockState(), false);
         scene.showBasePlate();
