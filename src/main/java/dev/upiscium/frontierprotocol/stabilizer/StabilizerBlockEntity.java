@@ -481,7 +481,8 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
             clientDisplaySnapshot = StabilizerDisplayNbt.readOrRetain(tag, tier, clientDisplaySnapshot);
             return;
         }
-        StabilizerNbt.ReadResult restored = StabilizerNbt.read(tag, tier, inventory, registries);
+        StabilizerNbt.ReadResult restored = StabilizerNbt.read(
+                tag, tier, definition().gracePeriodTicks(), inventory, registries);
         machine = restored.machine();
         if (restored.registeredChunkRadius() != null) {
             lastRegisteredChunkRadius = restored.registeredChunkRadius();

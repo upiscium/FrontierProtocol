@@ -20,16 +20,18 @@ final class StabilizerStateMachine {
         int previousGrace = graceRemainingTicks;
         int previousCell = cellRemainingTicks;
         boolean consumeItem = false;
+        int graceDuration = Math.max(0, graceDurationTicks);
+        graceRemainingTicks = Math.min(graceRemainingTicks, graceDuration);
 
         if (powered) {
             if (cellRemainingTicks == 0 && cellAvailable) {
                 cellRemainingTicks = Math.max(1, cellDurationTicks);
+                graceRemainingTicks = graceDuration;
                 consumeItem = true;
             }
             if (cellRemainingTicks > 0) {
                 status = StabilizerStatus.ACTIVE;
                 cellRemainingTicks--;
-                graceRemainingTicks = Math.max(0, graceDurationTicks);
             } else {
                 loseActiveConditions();
             }
@@ -46,10 +48,15 @@ final class StabilizerStateMachine {
     private void loseActiveConditions() {
         if (status == StabilizerStatus.ACTIVE) {
             status = graceRemainingTicks > 0 ? StabilizerStatus.GRACE_PERIOD : StabilizerStatus.OFFLINE;
+            if (status == StabilizerStatus.GRACE_PERIOD) graceRemainingTicks--;
+            return;
         }
         if (status == StabilizerStatus.GRACE_PERIOD) {
-            if (graceRemainingTicks > 0) graceRemainingTicks--;
-            if (graceRemainingTicks == 0) status = StabilizerStatus.OFFLINE;
+            if (graceRemainingTicks > 0) {
+                graceRemainingTicks--;
+            } else {
+                status = StabilizerStatus.OFFLINE;
+            }
         } else if (status == StabilizerStatus.OFFLINE) {
             graceRemainingTicks = 0;
         }

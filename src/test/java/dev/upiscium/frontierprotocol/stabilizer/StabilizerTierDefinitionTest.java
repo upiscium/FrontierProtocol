@@ -31,7 +31,7 @@ class StabilizerTierDefinitionTest {
     void resolvesConfiguredDefaultsForEveryTier() {
         assertEquals(
                 new StabilizerTierDefinition(
-                        StabilizerTier.TIER_1, 0, 32, 16.0, 8, 6000, 6000, new CleanupSourceProfile(20, 128, 4)),
+                        StabilizerTier.TIER_1, 0, 32, 16.0, 8, 6000, 1200, new CleanupSourceProfile(20, 128, 4)),
                 StabilizerTierDefinitions.resolve(StabilizerTier.TIER_1));
         assertEquals(
                 new StabilizerTierDefinition(
@@ -41,7 +41,7 @@ class StabilizerTierDefinitionTest {
                         64.0,
                         32,
                         3000,
-                        9000,
+                        1800,
                         new CleanupSourceProfile(20, 2048, 64)),
                 StabilizerTierDefinitions.resolve(StabilizerTier.TIER_2));
         assertEquals(
@@ -52,7 +52,7 @@ class StabilizerTierDefinitionTest {
                         256.0,
                         64,
                         2000,
-                        12000,
+                        2400,
                         new CleanupSourceProfile(20, 8192, 256)),
                 StabilizerTierDefinitions.resolve(StabilizerTier.TIER_3));
     }
