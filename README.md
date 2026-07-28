@@ -64,7 +64,7 @@ Create-oriented production; Compound cannot power a Stabilizer. See
 2. Look directly at a Stabilizer to inspect its live server-authoritative operation.
 3. Hold Shift for exact chunk bounds, configured operating details, and the targeted range overlay.
 
-The overlay is shown only for the targeted Stabilizer and does not indicate protection from hostile mobs. Use Create's configured Ponder key while hovering a Stabilizer, Stabilization Cell, or Stabilization Compound to open the Operation, Coverage, and Production explanations.
+The overlay is shown only for the targeted Stabilizer and does not indicate protection from hostile mobs. Use Create's configured Ponder key while hovering a Stabilizer, Stabilization Cell, or Stabilization Compound to open the Operation, Coverage, and Production explanations. The completed English and Japanese client smoke is recorded in [R8 Graphical Verification](docs/r8-graphical-verification.md).
 
 The initial Overworld spawn center is persisted and has permanent infection suppression with a default radius of two chunks, covering 5x5 chunks. Changing world spawn later does not move it. It needs no Cell or rotation and performs no progressive cleanup. It does not remove existing nests or stop hostile mobs; it is an initial refuge, not a complete safe zone. See [R8 Operational UX](docs/r8-operational-ux.md), [ADR 0003](docs/adr/0003-operational-display-and-client-visualization.md), and [Quest Integration](docs/quest-integration.md).
 

@@ -9,7 +9,7 @@ R8 adds targeted operational explanation without changing Stabilizer suppression
 - Display snapshots use the existing Block Entity update channel. Immediate changes are coalesced within a server tick; ACTIVE and GRACE_PERIOD countdown corrections are limited to one update per 20 ticks.
 - Invalid or incomplete client NBT is rejected. Until the first valid snapshot arrives, Goggles show a synchronization message and the range overlay stays hidden.
 
-The normal Goggle section contains tier, state, current/theoretical and required RPM, Cell count/capacity, active or grace time, coverage, suppressed chunk count, and one prioritized diagnostic. Shift adds center chunk, exact X/Z ranges, full-dimension-height behavior, configured Stress impact, and configured Cell duration. Diagnostic priority is overstressed, no rotation, insufficient RPM, no Cell or stored time, grace, then operational.
+The normal Goggle section contains tier, state, current/theoretical and required RPM, Cell count/capacity, active or grace time, coverage, suppressed chunk count, and one prioritized diagnostic. Shift adds center chunk, exact X/Z ranges, full-dimension-height behavior, configured Stress impact, and configured Cell duration. Diagnostic priority is overstressed, grace while the lifecycle state is GRACE_PERIOD, no rotation, insufficient RPM, no Cell or stored time, then operational.
 
 Client options are `showStabilizerGoggleDetails`, `showStabilizerRangeOverlay`, `rangeOverlayRequiresSneaking`, and `showRangeVerticalCorners`. They affect display only.
 
@@ -25,7 +25,7 @@ Colors communicate but do not replace text: ACTIVE is teal-green, GRACE_PERIOD i
 
 Static item tooltips explain tier roles, Cell and Compound production roles, progressive cleanup, and the need for physical defenses without embedding mutable server settings. Ponder provides Operation, Coverage, and Production scenes. Quest integrations remain documentation-only and introduce no quest-mod dependency.
 
-Ponder schematics are committed at `assets/frontier_protocol/ponder/stabilizer/{operation,coverage,production}.nbt`. They are gzip-compressed copies of the generated one-block empty GameTest structure; storyboards construct all explanatory blocks, grids, state changes, and item prompts through scene APIs. They are not generated into the build directory only.
+Ponder schematics are committed at `assets/frontier_protocol/ponder/stabilizer/{operation,coverage,production}.nbt`. They provide populated bounds and base structures for the 5x5 Operation and 7x7 Coverage and Production scenes. Storyboards select the matching Tier block and construct the explanatory grids, state changes, and item prompts through scene APIs. The schematics are not generated into the build directory only.
 
 The Operation storyboard selects the matching Stabilizer block and representative kinetic speed for each Tier; the Cell uses Tier 1 as its representative operation scene. It demonstrates downward Cell insertion through a Depot and Chute representing Create logistics. Direct right-click insertion into a Stabilizer is not supported or depicted.
 
@@ -33,8 +33,10 @@ Initial Overworld spawn suppression is a permanent field centered on the persist
 
 ## Verification status
 
-Unit tests cover snapshot validation, malformed display NBT, sync cadence, diagnostics, duration formatting, Goggle and static tooltip keys, Ponder resource/localization parity, and range geometry. The `stabilizer_display_sync` GameTest covers all three tiers, OFFLINE/ACTIVE/GRACE_PERIOD, Cell insertion and consumption, live config refresh, persistent NBT, and display-only packet boundaries. All 34 GameTests pass.
+Unit tests cover snapshot validation, malformed display NBT, sync cadence, diagnostics, duration formatting, Goggle and static tooltip keys, 1-based Ponder resource/localization parity, and range geometry. The `stabilizer_display_sync` GameTest covers all three tiers, OFFLINE/ACTIVE/GRACE_PERIOD, Cell insertion and consumption, live config refresh, persistent NBT, and display-only packet boundaries. All 34 GameTests pass.
 
-The dedicated server reached ready without loading Frontier Protocol client classes and saved all dimensions through its shutdown hook. The Gradle task still returned exit 143 because the smoke harness sent SIGTERM. A normal display was unavailable. The required direct client command failed at `glfwInit`; a supplemental Xvfb run reached client resource reload and registered Ponder scenes and tags without a Frontier Protocol missing-resource error, but automated window shutdown did not complete normally. In-world Goggle, range, item-tooltip, Ponder playback, and Japanese visual checks therefore remain unverified, so R8 is not yet considered complete.
+The dedicated server reached ready without loading Frontier Protocol client classes and saved all dimensions through its shutdown hook. The Gradle task still returned exit 143 because the smoke harness sent SIGTERM, so a clean dedicated-server task exit remains unverified.
+
+The required client command joined an existing creative smoke world under a 1920x1080 Xvfb display. English and Japanese checks covered live Tier 1/2/3 and grace displays, Shift details, over-capacity reporting, client-option toggles, Goggle removal and crosshair cleanup, 1x1/3x3/5x5 and negative-coordinate range geometry, item tooltips, and complete Operation/Coverage/Production Ponder playback. The graphical pass and its remaining Overstressed-fixture limitation are recorded in [R8 Graphical Verification](r8-graphical-verification.md).
 
 Physical upper-tier Mechanical Crafting and continuous automated Cell supply remain separate, previously unverified production smoke checks.

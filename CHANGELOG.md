@@ -26,6 +26,8 @@ All notable changes to Frontier Protocol are documented in this file.
 - Added modpack quest-integration guidance without a quest-mod dependency.
 - Stabilizer diagnostics retain and report actual stored Cells when configured capacity is reduced below the existing inventory.
 - Corrected Ponder operation guidance to show the selected Tier and Create-logistics Cell insertion instead of direct Stabilizer interaction.
+- Corrected GRACE_PERIOD diagnostics so loss of rotation reports the active grace state instead of a misleading no-rotation failure.
+- Populated and reframed the committed Ponder schematics, corrected their 1-based localization keys, and aligned Japanese Tier and lifecycle wording.
 
 ### Compatibility
 
