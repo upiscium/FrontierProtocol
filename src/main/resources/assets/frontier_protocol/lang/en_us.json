@@ -19,7 +19,7 @@
   "frontier_protocol.goggles.required_rpm": "Required: %s",
   "frontier_protocol.goggles.cell_buffer": "Cell Buffer: %s / %s",
   "frontier_protocol.goggles.cell_time": "Cell Time Remaining: %s",
-  "frontier_protocol.goggles.grace_time": "Grace Time Remaining: %s",
+  "frontier_protocol.goggles.grace_time": "Per-Cell Grace Remaining: %s",
   "frontier_protocol.goggles.stored_time": "Stored Cell Time: %s",
   "frontier_protocol.goggles.coverage": "Coverage: %sx%s chunks",
   "frontier_protocol.goggles.suppressed": "Suppressed: %s / %s chunks",

@@ -49,6 +49,27 @@ class StabilizerGoggleTooltipTest {
         assertTrue(keys(detailed).contains("frontier_protocol.goggles.cell_duration"));
     }
 
+    @Test
+    void activeViewExposesThePreservedPerCellGraceBudget() {
+        StabilizerDisplaySnapshot snapshot = new StabilizerDisplaySnapshot(
+                StabilizerTier.TIER_1,
+                StabilizerStatus.ACTIVE,
+                32,
+                16.0,
+                1,
+                8,
+                4000,
+                6000,
+                800,
+                0);
+        List<Component> tooltip = new ArrayList<>();
+
+        StabilizerGoggleTooltip.add(tooltip, false, snapshot, new ChunkPos(0, 0), 32.0F, false);
+
+        assertTrue(keys(tooltip).contains("frontier_protocol.goggles.cell_time"));
+        assertTrue(keys(tooltip).contains("frontier_protocol.goggles.grace_time"));
+    }
+
     private static List<String> keys(List<Component> tooltip) {
         return tooltip.stream()
                 .filter(component -> component.getContents() instanceof TranslatableContents)

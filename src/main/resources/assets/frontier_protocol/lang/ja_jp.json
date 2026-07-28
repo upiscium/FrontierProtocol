@@ -19,7 +19,7 @@
   "frontier_protocol.goggles.required_rpm": "必要回転速度: %s",
   "frontier_protocol.goggles.cell_buffer": "セルバッファ: %s / %s",
   "frontier_protocol.goggles.cell_time": "セル残り時間: %s",
-  "frontier_protocol.goggles.grace_time": "猶予残り時間: %s",
+  "frontier_protocol.goggles.grace_time": "セル単位の猶予残量: %s",
   "frontier_protocol.goggles.stored_time": "保存済みセル時間: %s",
   "frontier_protocol.goggles.coverage": "効果範囲: %sx%sチャンク",
   "frontier_protocol.goggles.suppressed": "抑制中: %s / %sチャンク",

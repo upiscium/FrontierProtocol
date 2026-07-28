@@ -45,6 +45,12 @@ public final class StabilizerGoggleTooltip {
                         "frontier_protocol.goggles.cell_buffer", snapshot.cellCount(), snapshot.cellCapacity())
                 .withStyle(ChatFormatting.GRAY));
         addLine(tooltip, timeLabel(snapshot.status()), Component.literal(DisplayDurationFormatter.formatTicks(timeTicks(snapshot))));
+        if (snapshot.status() == StabilizerStatus.ACTIVE) {
+            addLine(
+                    tooltip,
+                    "frontier_protocol.goggles.grace_time",
+                    Component.literal(DisplayDurationFormatter.formatTicks(snapshot.graceRemainingTicks())));
+        }
         tooltip.add(Component.translatable(
                         "frontier_protocol.goggles.coverage", snapshot.coverageWidth(), snapshot.coverageWidth())
                 .withStyle(ChatFormatting.GRAY));
