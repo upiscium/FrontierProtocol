@@ -58,7 +58,23 @@ No normal crafting or alternate acquisition recipe exists for these outputs.
 
 - The dedicated server loaded Create, TFMG, Spore, and Frontier Protocol, loaded 3593 recipes, accepted the manually updated 1200/1800/2400 development config, and reached `Done`. The Gradle JavaExec process still required external termination after readiness, so a clean task exit is not claimed.
 - The R9 client reached the Japanese title screen and joined the existing creative smoke world under Xvfb without a startup, model, localization-key, or scene-load crash.
-- The focused Tier 1 Grace lifecycle passed in the creative smoke world. With Engineer's Goggles equipped, the machine reached ACTIVE, entered GRACE_PERIOD when rotation was removed, and displayed a decreasing Grace reserve. Restoring rotation returned the machine to ACTIVE without refilling the partially consumed reserve. Removing rotation again resumed from that preserved amount, exhaustion reached OFFLINE, and consuming the next Cell restored the reserve to the configured maximum. No raw translation key appeared during the sequence.
+
+### Manual lifecycle verification
+
+Manual client verification: **PASS**
+
+Dedicated-server persistence verification: **PASS**
+
+Physical client and dedicated-server verification confirmed:
+
+- Rotation loss pauses Cell time and consumes the current Cell's finite Grace reserve.
+- Rotation recovery resumes Cell time without restoring spent Grace.
+- Insufficient RPM and Overstressed operation follow the same Grace contract as rotation loss.
+- Exhausted Grace prevents another Grace period for the same Cell.
+- With a backup Cell available, rollover consumes exactly one Cell, replenishes Grace, and keeps the machine ACTIVE.
+- Without a backup Cell, the machine enters GRACE_PERIOD or OFFLINE according to the current Grace reserve.
+- Client reconnect restores the synchronized status, Cell time, and Grace reserve in the Goggle display without raw translation keys.
+- A normal dedicated-server restart preserves status, Cell time, and Grace reserve.
 
 ## Boundaries
 

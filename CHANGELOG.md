@@ -35,6 +35,7 @@ All notable changes to Frontier Protocol are documented in this file.
 - Changed Tier 1/2/3 Grace defaults from 6000/9000/12000 to 1200/1800/2400 ticks and clamp saved excess Grace to the configured limit.
 - Added physical unheated Mixing assertions and Tier 1/2/3 Mechanical Crafter execution tests, including exact output and upgrade-consumption checks.
 - Added the remaining per-Cell Grace reserve to the ACTIVE Engineer's Goggles display in English and Japanese.
+- Verified backup-Cell rollover, insufficient-RPM and Overstressed Grace behavior, client reconnect synchronization, and dedicated-server lifecycle persistence.
 
 ### Compatibility
 

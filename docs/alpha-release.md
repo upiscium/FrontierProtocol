@@ -62,6 +62,8 @@ R9 verification launched the production dedicated server with the manually updat
 
 The R8 production client command joined the creative smoke world under a 1920x1080 Xvfb display and completed the broad English/Japanese graphical checks in [R8 Graphical Verification](r8-graphical-verification.md). The focused R9 Tier 1 Grace lifecycle also passed there with Engineer's Goggles: ACTIVE entered GRACE_PERIOD after rotation loss, the displayed reserve decreased, rotation recovery preserved the partial reserve, a second outage resumed from that amount, exhaustion reached OFFLINE, and the next consumed Cell restored the configured maximum. No raw translation key appeared.
 
+Extended R9 manual verification also passed for insufficient RPM, Overstressed operation, exact single-Cell backup rollover without leaving ACTIVE, no-backup fallback according to the remaining Grace reserve, client reconnect synchronization, and normal dedicated-server restart persistence of status, Cell time, and Grace.
+
 The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. The dedicated-server smoke reached the server-ready state with Create and Spore without a Mixin application or client-class error. The client smoke used a graphical display; a `glfwInit` failure when `DISPLAY` is unavailable would not constitute a successful client smoke test.
 
 ## Future publication checklist
@@ -80,6 +82,7 @@ The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mix
 - [x] Execute the tier recipes in physical Mechanical Crafters.
 - [x] Smoke-test continuous automated Cell supply at upper-tier consumption intervals.
 - [x] Complete the focused R9 client Grace lifecycle smoke.
+- [x] Verify client reconnect and dedicated-server lifecycle persistence.
 - [x] Inspect the production JAR contents and generated metadata.
 - Set the actual release date.
 - Prepare an icon or screenshots only if required by the selected channel.
