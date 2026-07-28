@@ -54,7 +54,7 @@ tasks.register('generateGameTestStructure') {
         }
 
         def physicalMixing = generatedGameTestResources.get()
-                .file('data/frontier_protocol/structure/r6_physical_mixing.nbt').asFile
+                .file('data/frontier_protocol/structure/r9_unheated_mixing.nbt').asFile
         physicalMixing.parentFile.mkdirs()
         new java.util.zip.ZipFile(createGameTestJar.get()).withCloseable { zip ->
             def entry = zip.getEntry('data/create/structure/gametest/processing/brass_mixing.nbt')

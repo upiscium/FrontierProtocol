@@ -33,7 +33,7 @@ containment integration preview:
   initial Overworld spawn by default.
 - Initial-spawn ore-generation suppression for newly generated terrain.
 - Three Create-powered Stabilizer tiers covering 1x1, 3x3, or 5x5 chunks while
-  ACTIVE or in their configured grace period.
+  ACTIVE or spending the finite Grace budget granted by their current Cell.
 - Budgeted cleanup of audited removable Spore foliage in loaded chunks while
   a Stabilizer is ACTIVE, with tier-specific source profiles, hard global caps,
   and persisted progress across reloads.
@@ -47,6 +47,10 @@ containment integration preview:
   and eight Iron Nuggets.
 - Engineer's Goggles diagnostics, targeted chunk-range visualization, static
   item guidance, and localized Ponder scenes for operation, coverage, and production.
+- Per-Cell Grace budgets of 1200, 1800, and 2400 ticks for Tier 1, Tier 2, and
+  Tier 3. ACTIVE and power recovery do not refill spent Grace; only a new Cell does.
+- Physical Create GameTests for unheated Compound Mixing, all three Mechanical
+  Crafter recipes, and default-duration Tier 2/Tier 3 continuous Cell logistics.
 
 Suppression prevents selected new Spore mutations. One shared `StabilizerBlock`
 class, one shared `StabilizerBlockEntity` class/type, and one state machine serve
@@ -62,6 +66,9 @@ Create-oriented production; Compound cannot power a Stabilizer. See
 [ADR 0001](docs/adr/0001-stabilizer-consumable-and-production-model.md). The
 revised Compound material decision is recorded in
 [ADR 0004](docs/adr/0004-tfmg-compound-production.md).
+The finite Grace decision and final R9 values are recorded in
+[ADR 0005](docs/adr/0005-per-cell-grace-budget.md) and
+[R9 Balance Hardening](docs/r9-balance-hardening.md).
 
 ## Inspecting a Stabilizer
 
@@ -80,7 +87,8 @@ The initial Overworld spawn center is persisted and has permanent infection supp
 環境拡散経路との統合を提供します。ACTIVE中のStabilizerは、ロード済みチャンク内の
 監査済み非Block Entity感染植生だけを処理予算内で段階的に除去し、GRACE_PERIODと
 OFFLINE中は浄化を停止します。感染地形の復元、巣の自動破壊、Mob侵入防止、
-チャンクロードは行いません。全Tierと運転用の共通安定化セルはCreate加工で製造し、
+チャンクロードは行いません。猶予はCellごとに一度だけ付与される有限の障害耐性予算で、
+ACTIVE復帰や電源操作では回復せず、次のCell消費時だけ補充されます。全Tierと運転用の共通安定化セルはCreate加工で製造し、
 安定化化合物は中間素材であり、Stabilizerへ直接投入できません。
 
 Engineer's Gogglesを装着してStabilizerを見ると、server同期された運転情報を確認できます。Shiftを押すと正確なチャンク範囲と対象1台だけのrange overlayを表示します。この範囲は敵対Mobからの保護を示すものではありません。

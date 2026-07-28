@@ -11,7 +11,7 @@ The candidate artifact produced by the build is `frontier_protocol-0.1.0-alpha.1
 Public distribution of 0.1.0-alpha.1 has been deferred.
 This version is currently used for internal testing and integration validation only.
 
-The accepted Stabilizer consumable model is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), with the current TFMG Compound materials in [ADR 0004](adr/0004-tfmg-compound-production.md). The accepted common tier architecture is recorded in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md). Operational display architecture is recorded in [ADR 0003](adr/0003-operational-display-and-client-visualization.md), with current behavior documented in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md) and [R8 Operational UX](r8-operational-ux.md).
+The accepted Stabilizer consumable model is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), with the current TFMG Compound materials in [ADR 0004](adr/0004-tfmg-compound-production.md). The common tier architecture is recorded in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md), and the finite Grace contract in [ADR 0005](adr/0005-per-cell-grace-budget.md). Operational display architecture is recorded in [ADR 0003](adr/0003-operational-display-and-client-visualization.md), with current behavior documented in [R9 Balance Hardening](r9-balance-hardening.md).
 
 ## Compatibility matrix
 
@@ -30,7 +30,7 @@ Spore 2.2.0j is the artifact audited by SHA-256 in `docs/spore-integration-audit
 
 - The persisted initial Overworld spawn center supplies permanent suppression, using a configurable radius of two chunks by default.
 - Fresh-world spawn search publishes a provisional center before normal ore placement and replaces it with the final center when spawn selection completes.
-- Tier 1, Tier 2, and Tier 3 use a real Create kinetic network and the same finished Stabilization Cell. Their default coverage is 1x1, 3x3, and 5x5 chunks. A machine consumes one Cell when beginning an ACTIVE duration, retains suppression during its configured grace period, then unregisters when OFFLINE, unloaded, removed, or destroyed.
+- Tier 1, Tier 2, and Tier 3 use a real Create kinetic network and the same finished Stabilization Cell. Their default coverage is 1x1, 3x3, and 5x5 chunks. A machine consumes one Cell when beginning an ACTIVE duration and grants one finite Grace budget. ACTIVE and recovery do not refill spent Grace; only a new Cell does.
 - All three Registry entries use one shared `StabilizerBlock`, one shared `StabilizerBlockEntity` class/type, and one state machine. Generic `STABILIZER` source IDs include tier and position as `stabilizer/<tier>/<x>_<y>_<z>`.
 - While ACTIVE, each source incrementally removes audited removable Spore foliage from loaded covered chunks under its tier cleanup profile and hard server-global caps. Cleanup pauses during grace and resumes from persisted progress after power recovery or reload.
 - Multiple sources can cover the same chunk without premature removal, and identical chunk coordinates remain independent across dimensions.
@@ -40,27 +40,27 @@ Spore 2.2.0j is the artifact audited by SHA-256 in `docs/spore-integration-audit
 - Reducing configured Cell capacity does not delete existing inventory. Operational snapshots continue to report the actual over-capacity buffer, such as `32 / 8`, until Cells are consumed normally.
 - Ponder Operation scenes show the selected Stabilizer Tier and represent Cell insertion through Create logistics. Stabilizers do not support direct right-click Cell insertion.
 
-At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress, hold 8/32/64 Cells, run 6000/3000/2000 ticks per Cell, and retain grace for 6000/9000/12000 ticks. Their 1/9/25-chunk coverage yields 6000/27000/50000 protected chunk-ticks per Cell. Tier 2 and Tier 3 are more area-efficient but consume Cells at shorter machine intervals, so their supply logistics need faster delivery and adequate buffers. The complete cleanup values and recipes are documented in [R7 Stabilizer Tiers](r7-stabilizer-tiers.md).
+At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress, hold 8/32/64 Cells, run 6000/3000/2000 ticks per Cell, and receive per-Cell Grace budgets of 1200/1800/2400 ticks. Their 1/9/25-chunk coverage yields 6000/27000/50000 protected chunk-ticks per Cell. Full buffers provide 40 minutes, 80 minutes, and 106 minutes 40 seconds. Existing world serverconfig values remain unchanged until an operator updates the three Grace keys manually.
 
 ## Alpha boundaries
 
 - Existing infected terrain, structures, nests, active hazards, and Block Entities are not restored, removed, replaced, or frozen. Cleanup is an explicit allowlist of audited non-Block-Entity foliage and replaces it only with air or retained water.
 - All tiers and Stabilization Cells have Create production recipes. Compound cannot power a Stabilizer directly; the bundled consumable tag accepts only Cells, while datapacks may explicitly extend that public tag. The common consumable decision is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), and the shared tier architecture in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md).
-- Recipe quantities and operating values are provisional and may change during R9 balancing.
+- R9 fixes the current recipe quantities and operating values for this internal candidate. Future changes require a new balance decision.
 - All three Stabilizer tiers, Compound, and Cell use explicit placeholder models referencing exact vanilla texture families. No custom PNG or final art is included; see [Placeholder Assets](placeholder-assets.md).
 - Hostile mob movement, combat, block breaking, and explosions are not containment responsibilities.
 - Spore random ticks, scheduled ticks, and existing infected block-entity state continue normally.
 - World-generation features outside the selected runtime Spore spread paths are not globally intercepted.
-- R8 adds no Block Entity GUI, persistent HUD, particles, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, multiblock, moving-contraption suppression, chunk loading, terrain restoration, nest or mob handling, or final assets. The later Compound production revision requires TFMG but does not add a Frontier Protocol machine. R9 balancing remains later work.
+- R9 adds no Block Entity GUI, persistent HUD, particles, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, multiblock, moving-contraption suppression, chunk loading, terrain restoration, nest or mob handling, or final assets.
 - No Minecraft-wide `Level#setBlock` hook is used.
 
 ## Verification status
 
-Automated verification includes passing unit tests and all 34 GameTests, including the R8 display snapshot, client-packet boundary, all tier lifecycles, coverage, suppression, cleanup profiles/global caps, persistence, overlaps, and production contracts. RecipeManager validation continues to cover the exact five serializers, ingredients, patterns, outputs, and absence of crafting bypasses. `runData` produced no repository changes, and the final clean build produced `frontier_protocol-0.1.0-alpha.1.jar` with the required metadata, Mixins, Spore integration classes, and Ponder schematics.
+Current R9 automated verification includes passing unit tests and all 39 GameTests. RecipeManager validation covers the exact five serializers, ingredients, patterns, outputs, and absence of crafting bypasses. Physical tests additionally cover a Basin with no heat source and heat level `NONE`, Tier 1/2/3 Mechanical Crafter execution, prior-tier consumption, and two default-duration Tier 2/Tier 3 Cell rollovers through Chest/Chute logistics without ACTIVE or suppression interruption.
 
-Final R8 verification launched the production dedicated server through readiness without Frontier Protocol client-class errors and confirmed shutdown-hook saving for all dimensions. The server Gradle task did not receive a normal console `stop` through the smoke harness, so its clean task exit remains unverified.
+R9 verification launched the production dedicated server with the manually updated development Grace values. Create, TFMG, Spore, and Frontier Protocol loaded, 3593 recipes were accepted, and the server reached `Done` without config, Mixin, or client-class errors. The server Gradle task did not receive a normal console `stop`, so its clean task exit remains unverified.
 
-The production client command joined the creative smoke world under a 1920x1080 Xvfb display. English and Japanese interaction checks passed for live Tier displays and diagnostics, Shift details, over-capacity reporting, client-option toggles, Goggle removal and crosshair cleanup, range overlays at all three sizes and negative coordinates, item tooltips, and Ponder playback. Revised verification also confirmed the TFMG Compound Mixing and unchanged Cell Deploying recipes in JEI and visibly rendered the Production Ponder fluid supply, Mixer, Basin, Depot, Deployer, and 3x3 Mechanical Crafter stages in both languages. See [R8 Graphical Verification](r8-graphical-verification.md). Physical Mechanical Crafter execution for the Tier 2 and Tier 3 upgrades and continuous automated Cell-supply smoke testing remain unverified.
+The R8 production client command joined the creative smoke world under a 1920x1080 Xvfb display and completed the broad English/Japanese graphical checks in [R8 Graphical Verification](r8-graphical-verification.md). The focused R9 Tier 1 Grace lifecycle also passed there with Engineer's Goggles: ACTIVE entered GRACE_PERIOD after rotation loss, the displayed reserve decreased, rotation recovery preserved the partial reserve, a second outage resumed from that amount, exhaustion reached OFFLINE, and the next consumed Cell restored the configured maximum. No raw translation key appeared.
 
 The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. The dedicated-server smoke reached the server-ready state with Create and Spore without a Mixin application or client-class error. The client smoke used a graphical display; a `glfwInit` failure when `DISPLAY` is unavailable would not constitute a successful client smoke test.
 
@@ -77,8 +77,9 @@ The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mix
 - [x] Complete the R8 Goggles, range, tooltip, Ponder playback, and Japanese client smoke.
 - [x] Re-inspect the revised Compound and unchanged Cell recipes in JEI.
 - [x] Verify revised Production Ponder equipment in English and Japanese.
-- [ ] Execute the tier recipes in physical Mechanical Crafters.
-- [ ] Smoke-test continuous automated Cell supply at upper-tier consumption intervals.
+- [x] Execute the tier recipes in physical Mechanical Crafters.
+- [x] Smoke-test continuous automated Cell supply at upper-tier consumption intervals.
+- [x] Complete the focused R9 client Grace lifecycle smoke.
 - [x] Inspect the production JAR contents and generated metadata.
 - Set the actual release date.
 - Prepare an icon or screenshots only if required by the selected channel.

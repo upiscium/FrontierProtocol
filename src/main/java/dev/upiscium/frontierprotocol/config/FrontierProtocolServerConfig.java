@@ -42,8 +42,8 @@ public final class FrontierProtocolServerConfig {
             .comment("Active ticks supplied by one Tier 1 Stabilization Cell.")
             .defineInRange("tier1CellDurationTicks", 6000, 1, 72000);
     public static final ModConfigSpec.IntValue TIER1_GRACE_PERIOD_TICKS = BUILDER
-            .comment("Suppression time retained after the Tier 1 Stabilizer loses power or Cells.")
-            .defineInRange("tier1GracePeriodTicks", 6000, 0, 72000);
+            .comment("Per-Cell Tier 1 suppression continuity budget. Replenished only when a new Cell is consumed.")
+            .defineInRange("tier1GracePeriodTicks", 1200, 0, 72000);
     public static final ModConfigSpec.IntValue TIER1_CLEANUP_INTERVAL_TICKS = BUILDER
             .comment("Ticks between cleanup budget refreshes for each Tier 1 source.")
             .defineInRange("tier1CleanupIntervalTicks", 20, 1, 1200);
@@ -77,8 +77,8 @@ public final class FrontierProtocolServerConfig {
             .comment("Active ticks supplied by one Tier 2 Stabilization Cell.")
             .defineInRange("tier2CellDurationTicks", 3000, 1, 72000);
     public static final ModConfigSpec.IntValue TIER2_GRACE_PERIOD_TICKS = BUILDER
-            .comment("Suppression time retained after the Tier 2 Stabilizer loses power or Cells.")
-            .defineInRange("tier2GracePeriodTicks", 9000, 0, 72000);
+            .comment("Per-Cell Tier 2 suppression continuity budget. Replenished only when a new Cell is consumed.")
+            .defineInRange("tier2GracePeriodTicks", 1800, 0, 72000);
     public static final ModConfigSpec.IntValue TIER2_CLEANUP_INTERVAL_TICKS = BUILDER
             .comment("Ticks between cleanup budget refreshes for each Tier 2 source.")
             .defineInRange("tier2CleanupIntervalTicks", 20, 1, 1200);
@@ -112,8 +112,8 @@ public final class FrontierProtocolServerConfig {
             .comment("Active ticks supplied by one Tier 3 Stabilization Cell.")
             .defineInRange("tier3CellDurationTicks", 2000, 1, 72000);
     public static final ModConfigSpec.IntValue TIER3_GRACE_PERIOD_TICKS = BUILDER
-            .comment("Suppression time retained after the Tier 3 Stabilizer loses power or Cells.")
-            .defineInRange("tier3GracePeriodTicks", 12000, 0, 72000);
+            .comment("Per-Cell Tier 3 suppression continuity budget. Replenished only when a new Cell is consumed.")
+            .defineInRange("tier3GracePeriodTicks", 2400, 0, 72000);
     public static final ModConfigSpec.IntValue TIER3_CLEANUP_INTERVAL_TICKS = BUILDER
             .comment("Ticks between cleanup budget refreshes for each Tier 3 source.")
             .defineInRange("tier3CleanupIntervalTicks", 20, 1, 1200);

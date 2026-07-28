@@ -3,11 +3,15 @@ package dev.upiscium.frontierprotocol.production;
 import com.drmangotea.tfmg.registry.TFMGFluids;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.AllItems;
+import com.simibubi.create.content.processing.basin.BasinBlockEntity;
+import com.simibubi.create.content.processing.burner.BlazeBurnerBlock;
 import com.simibubi.create.content.processing.recipe.HeatCondition;
 import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
 import com.simibubi.create.infrastructure.gametest.CreateGameTestHelper;
 import dev.upiscium.frontierprotocol.FrontierProtocolMod;
 import dev.upiscium.frontierprotocol.registry.ModItems;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
@@ -24,6 +28,7 @@ import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -147,35 +152,63 @@ public final class ProductionRecipeGameTests {
     }
 
     @GameTest(
-            template = "r6_physical_mixing",
-            batch = "r6_create_equipment",
+            template = "r9_unheated_mixing",
+            batch = "r9_unheated_mixing",
             timeoutTicks = 400)
-    public static void compoundRunsThroughPhysicalMixerAndOutputLogistics(GameTestHelper gameTestHelper) {
+    public static void compoundRunsThroughUnheatedPhysicalMixerAndOutputLogistics(GameTestHelper gameTestHelper) {
         CreateGameTestHelper helper = CreateGameTestHelper.of(gameTestHelper);
         BlockPos basin = findBlock(helper, AllBlocks.BASIN.get());
-        IItemHandler items = helper.itemStorageAt(basin);
-        helper.assertTrue(items != null, "physical Basin item storage is unavailable");
-        insert(helper, items, new ItemStack(Items.SAND));
-        insert(helper, items, new ItemStack(Items.BLUE_ICE));
-        insert(helper, items, new ItemStack(Items.IRON_NUGGET, 8));
+        List<BlockPos> burners = findBlocks(helper, AllBlocks.BLAZE_BURNER.get());
+        helper.assertTrue(burners.size() == 1,
+                "physical mixing fixture must contain exactly one Blaze Burner before isolation");
+        burners.forEach(pos -> helper.setBlock(pos, Blocks.AIR));
 
-        IFluidHandler fluids = helper.fluidStorageAt(basin);
-        helper.assertTrue(fluids != null, "physical Basin fluid storage is unavailable");
-        int filled = fluids.fill(
-                new FluidStack((net.minecraft.world.level.material.Fluid) TFMGFluids.MOLTEN_PLASTIC.getSource(), 100),
-                IFluidHandler.FluidAction.EXECUTE);
-        helper.assertTrue(filled == 100, "physical Basin did not accept exactly 100 mB TFMG Liquid Plastic");
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(findBlocks(helper, AllBlocks.BLAZE_BURNER.get()).isEmpty(),
+                    "physical mixing fixture still contains a Blaze Burner");
+            helper.assertTrue(
+                    BasinBlockEntity.getHeatLevelOf(helper.getBlockState(basin.below()))
+                            == BlazeBurnerBlock.HeatLevel.NONE,
+                    "physical Basin heat level is not NONE");
 
-        helper.pullLever(new BlockPos(2, 3, 2));
-        helper.succeedWhen(() -> helper.assertContainerContains(
-                new BlockPos(7, 3, 1), new ItemStack(ModItems.STABILIZATION_COMPOUND.get())));
+            IItemHandler items = helper.itemStorageAt(basin);
+            insert(helper, items, new ItemStack(Items.SAND));
+            insert(helper, items, new ItemStack(Items.BLUE_ICE));
+            insert(helper, items, new ItemStack(Items.IRON_NUGGET, 8));
+
+            IFluidHandler fluids = helper.fluidStorageAt(basin);
+            int filled = fluids.fill(
+                    new FluidStack(
+                            (net.minecraft.world.level.material.Fluid) TFMGFluids.MOLTEN_PLASTIC.getSource(), 100),
+                    IFluidHandler.FluidAction.EXECUTE);
+            helper.assertTrue(filled == 100,
+                    "physical Basin did not accept exactly 100 mB TFMG Liquid Plastic");
+
+            BlockPos output = new BlockPos(7, 3, 1);
+            helper.pullLever(new BlockPos(2, 3, 2));
+            helper.succeedWhen(() -> {
+                helper.assertContainerContains(output, new ItemStack(ModItems.STABILIZATION_COMPOUND.get()));
+                helper.assertTrue(helper.getTotalItems(output) == 1,
+                        "physical mixing did not produce exactly one Compound");
+            });
+        });
     }
 
     private static BlockPos findBlock(CreateGameTestHelper helper, net.minecraft.world.level.block.Block block) {
-        for (BlockPos pos : BlockPos.betweenClosed(0, 0, 0, 10, 10, 10)) {
-            if (helper.getBlockState(pos).is(block)) return pos.immutable();
+        List<BlockPos> matches = findBlocks(helper, block);
+        if (matches.size() != 1) {
+            throw new IllegalStateException("expected one physical Create block " + block + ", found " + matches.size());
         }
-        throw new IllegalStateException("missing physical Create block " + block);
+        return matches.getFirst();
+    }
+
+    private static List<BlockPos> findBlocks(
+            CreateGameTestHelper helper, net.minecraft.world.level.block.Block block) {
+        List<BlockPos> matches = new ArrayList<>();
+        helper.forEveryBlockInStructure(pos -> {
+            if (helper.getBlockState(pos).is(block)) matches.add(pos.immutable());
+        });
+        return matches;
     }
 
     private static void insert(GameTestHelper helper, IItemHandler handler, ItemStack stack) {

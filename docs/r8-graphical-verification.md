@@ -57,7 +57,7 @@ The initial user verification confirmed the Overstressed diagnostic in addition 
 - The final 1-based localization entries render translated text rather than raw keys.
 - Returning to the world after Ponder left the live Stabilizer fixture operational.
 
-Physical Mechanical Crafter execution and continuous automated Cell delivery remain separate production smoke checks and were not verified here.
+Physical Mechanical Crafter execution and continuous automated Cell delivery were not part of this R8 graphical pass; R9 later verifies them in dedicated physical GameTests.
 
 ### Production Ponder Correction
 
@@ -74,4 +74,4 @@ JEI displayed one unheated Mixing recipe with TFMG's `tfmg:molten_plastic` fluid
 
 ## Result
 
-The R8 in-world client smoke for Goggles, range visualization, item tooltips, JEI recipes, Ponder playback, and Japanese localization passed. The client returned through Save and Quit, accepted a normal Quit request, and its Gradle and game processes exited. The graphical passes found and corrected GRACE diagnostic priority, Ponder localization indexing, Japanese state naming, empty schematic bounds, scene framing, and missing Production equipment positions. Automated verification and dedicated-server results are recorded separately in [R8 Operational UX](r8-operational-ux.md) and [Alpha Release](alpha-release.md).
+The R8 in-world client smoke for Goggles, range visualization, item tooltips, JEI recipes, Ponder playback, and Japanese localization passed. The client returned through Save and Quit, accepted a normal Quit request, and its Gradle and game processes exited. R9 changes the Grace values and adds an ACTIVE Grace-reserve line, so its focused lifecycle regression is recorded separately in [R9 Balance Hardening](r9-balance-hardening.md) rather than retroactively claimed by this R8 pass.

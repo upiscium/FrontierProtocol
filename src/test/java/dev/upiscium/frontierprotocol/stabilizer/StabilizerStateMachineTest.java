@@ -10,6 +10,8 @@ import java.lang.reflect.Constructor;
 import net.neoforged.fml.config.IConfigSpec;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class StabilizerStateMachineTest {
     @BeforeAll
@@ -47,6 +49,10 @@ class StabilizerStateMachineTest {
 
         machine.tick(false, false, 3, 10);
         machine.tick(false, false, 3, 10);
+        assertEquals(StabilizerStatus.GRACE_PERIOD, machine.status());
+        assertEquals(0, machine.graceRemainingTicks());
+
+        machine.tick(false, false, 3, 10);
         assertEquals(StabilizerStatus.OFFLINE, machine.status());
         assertEquals(0, machine.graceRemainingTicks());
     }
@@ -61,7 +67,7 @@ class StabilizerStateMachineTest {
         assertFalse(result.consumeItem());
         assertEquals(StabilizerStatus.ACTIVE, machine.status());
         assertEquals(4, machine.cellRemainingTicks());
-        assertEquals(20, machine.graceRemainingTicks());
+        assertEquals(12, machine.graceRemainingTicks());
     }
 
     @Test
@@ -109,5 +115,95 @@ class StabilizerStateMachineTest {
             assertEquals(Math.max(0, definition.gracePeriodTicks() - 1),
                     machine.graceRemainingTicks(), tier.serializedName());
         }
+    }
+
+    @Test
+    void activeTicksDoNotRefillGrace() {
+        StabilizerStateMachine machine = new StabilizerStateMachine(StabilizerStatus.ACTIVE, 2, 8);
+
+        machine.tick(true, false, 4, 10);
+
+        assertEquals(StabilizerStatus.ACTIVE, machine.status());
+        assertEquals(2, machine.graceRemainingTicks());
+        assertEquals(7, machine.cellRemainingTicks());
+    }
+
+    @Test
+    void onlyAnewCellRefillsExhaustedGrace() {
+        StabilizerStateMachine machine = new StabilizerStateMachine(StabilizerStatus.OFFLINE, 0, 0);
+
+        StabilizerStateMachine.TickResult result = machine.tick(true, true, 4, 10);
+
+        assertTrue(result.consumeItem());
+        assertEquals(StabilizerStatus.ACTIVE, machine.status());
+        assertEquals(4, machine.graceRemainingTicks());
+        assertEquals(9, machine.cellRemainingTicks());
+    }
+
+    @Test
+    void powerCyclingCannotIncreaseGraceForOneCell() {
+        StabilizerStateMachine machine = new StabilizerStateMachine();
+        machine.tick(true, true, 4, 10);
+
+        machine.tick(false, false, 4, 10);
+        machine.tick(false, false, 4, 10);
+        assertEquals(2, machine.graceRemainingTicks());
+
+        machine.tick(true, false, 4, 10);
+        assertEquals(2, machine.graceRemainingTicks());
+        machine.tick(false, false, 4, 10);
+        assertEquals(1, machine.graceRemainingTicks());
+
+        machine.tick(true, false, 4, 10);
+        machine.tick(false, false, 4, 10);
+        assertEquals(0, machine.graceRemainingTicks());
+    }
+
+    @Test
+    void graceExhaustionDoesNotDiscardCellOrRefillOnRecovery() {
+        StabilizerStateMachine machine = new StabilizerStateMachine(StabilizerStatus.GRACE_PERIOD, 0, 5);
+        machine.tick(false, false, 4, 10);
+
+        assertEquals(StabilizerStatus.OFFLINE, machine.status());
+        assertEquals(5, machine.cellRemainingTicks());
+
+        machine.tick(true, false, 4, 10);
+        assertEquals(StabilizerStatus.ACTIVE, machine.status());
+        assertEquals(0, machine.graceRemainingTicks());
+        assertEquals(4, machine.cellRemainingTicks());
+    }
+
+    @Test
+    void configuredGraceReductionClampsExistingBudget() {
+        StabilizerStateMachine machine = new StabilizerStateMachine(StabilizerStatus.ACTIVE, 12000, 8);
+
+        machine.tick(true, false, 1200, 10);
+
+        assertEquals(1200, machine.graceRemainingTicks());
+    }
+
+    @Test
+    void zeroGraceSkipsGracePeriod() {
+        StabilizerStateMachine machine = new StabilizerStateMachine(StabilizerStatus.ACTIVE, 0, 5);
+
+        machine.tick(false, false, 0, 10);
+
+        assertEquals(StabilizerStatus.OFFLINE, machine.status());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3})
+    void gracePeriodIsObservableForExactlyConfiguredTicks(int graceTicks) {
+        StabilizerStateMachine machine =
+                new StabilizerStateMachine(StabilizerStatus.ACTIVE, graceTicks, 5);
+
+        for (int tick = 0; tick < graceTicks; tick++) {
+            machine.tick(false, false, graceTicks, 10);
+            assertEquals(StabilizerStatus.GRACE_PERIOD, machine.status(), "tick " + tick);
+        }
+        assertEquals(0, machine.graceRemainingTicks());
+
+        machine.tick(false, false, graceTicks, 10);
+        assertEquals(StabilizerStatus.OFFLINE, machine.status());
     }
 }

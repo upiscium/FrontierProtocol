@@ -37,6 +37,7 @@ final class StabilizerNbt {
     static ReadResult read(
             CompoundTag tag,
             StabilizerTier expectedTier,
+            int configuredGraceDuration,
             ItemStackHandler inventory,
             HolderLookup.Provider registries) {
         StabilizerTier storedTier = StabilizerTier.fromSerializedName(tag.getString(TIER));
@@ -51,7 +52,9 @@ final class StabilizerNbt {
         }
         StabilizerStateMachine machine = new StabilizerStateMachine(
                 StabilizerStatus.fromSerializedName(tag.getString(STATUS)),
-                Math.max(0, tag.getInt(GRACE_REMAINING_TICKS)),
+                Math.min(
+                        Math.max(0, tag.getInt(GRACE_REMAINING_TICKS)),
+                        Math.max(0, configuredGraceDuration)),
                 Math.max(0, tag.getInt(CELL_REMAINING_TICKS)));
         Integer registeredChunkRadius = null;
         if (tag.contains(REGISTERED_CHUNK_RADIUS, Tag.TAG_INT)) {

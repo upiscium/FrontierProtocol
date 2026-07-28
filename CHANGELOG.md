@@ -17,7 +17,7 @@ All notable changes to Frontier Protocol are documented in this file.
 - Added Stabilization Cell as the common finished Stabilizer consumable.
 - Changed Stabilization Compound into a production intermediate.
 - Added exactly five Create Mixing, Deploying, and Mechanical Crafting recipes, including staged Tier 1-to-2 and Tier 2-to-3 upgrades with no crafting bypass.
-- Added a common-Cell operating-supply chain designed for Create production and logistics; final physical Mechanical Crafter and continuous Cell-supply smoke tests remain outstanding.
+- Added a common-Cell operating-supply chain verified with physical Chest/Chute delivery through two default-duration Tier 2 and Tier 3 Cell rollovers.
 - Added explicit vanilla-texture placeholder models for all three tiers without custom PNG or final art.
 - Added Engineer's Goggles diagnostics for all Stabilizer tiers.
 - Added targeted, depth-tested chunk-range visualization while using Goggles.
@@ -31,10 +31,14 @@ All notable changes to Frontier Protocol are documented in this file.
 - Replaced the Spore-derived heated Compound recipe with unheated Mixing of 100 mB TFMG Liquid Plastic, Sand, Blue Ice, and eight Iron Nuggets for one Compound.
 - Made Create: The Factory Must Grow 1.2.0 or newer a required client and server dependency.
 - Added visible Mixer, Basin, fluid supply, Deployer, Depot, and Mechanical Crafter equipment to Production Ponder.
+- Changed Grace into a finite per-Cell suppression-continuity budget that is replenished only when a new Cell is consumed, blocking recovery and power-cycle refills.
+- Changed Tier 1/2/3 Grace defaults from 6000/9000/12000 to 1200/1800/2400 ticks and clamp saved excess Grace to the configured limit.
+- Added physical unheated Mixing assertions and Tier 1/2/3 Mechanical Crafter execution tests, including exact output and upgrade-consumption checks.
+- Added the remaining per-Cell Grace reserve to the ACTIVE Engineer's Goggles display in English and Japanese.
 
 ### Compatibility
 
 - Requires Minecraft 1.21.1, Java 21, NeoForge 21.1.235 or newer, Create 6.0.11 or newer, and exactly Spore 2.2.0j.
 - Existing infected terrain, structures, nests, hazards, and Block Entities are retained; cleanup removes only explicitly audited non-Block-Entity foliage.
 - All three tiers and their common Stabilization Cells use the Create production chain; Stabilization Compound is an intermediate and is not accepted by any Stabilizer.
-- Stabilizers do not restore terrain, destroy nests, load chunks, suppress moving contraptions, or add a Block Entity GUI. R8 diagnostics are informational only. Further recipe and operating balance is reserved for R9.
+- Stabilizers do not restore terrain, destroy nests, load chunks, suppress moving contraptions, or add a Block Entity GUI. Existing world serverconfig values are retained and must be updated manually to adopt new R9 defaults.
