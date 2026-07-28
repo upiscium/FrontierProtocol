@@ -58,7 +58,7 @@ No normal crafting or alternate acquisition recipe exists for these outputs.
 
 - The dedicated server loaded Create, TFMG, Spore, and Frontier Protocol, loaded 3593 recipes, accepted the manually updated 1200/1800/2400 development config, and reached `Done`. The Gradle JavaExec process still required external termination after readiness, so a clean task exit is not claimed.
 - The R9 client reached the Japanese title screen and joined the existing creative smoke world under Xvfb without a startup, model, localization-key, or scene-load crash.
-- The attempted in-world Tier 1 fixture did not reach ACTIVE because the graphical automation failed to establish its kinetic/logistics setup. The focused Goggle sequence covering partial Grace consumption, recovery with the preserved amount, a second outage, and next-Cell refill remains unverified. Unit tests and GameTests cover the semantics but are not reported as a substitute for this client smoke.
+- The focused Tier 1 Grace lifecycle passed in the creative smoke world. With Engineer's Goggles equipped, the machine reached ACTIVE, entered GRACE_PERIOD when rotation was removed, and displayed a decreasing Grace reserve. Restoring rotation returned the machine to ACTIVE without refilling the partially consumed reserve. Removing rotation again resumed from that preserved amount, exhaustion reached OFFLINE, and consuming the next Cell restored the reserve to the configured maximum. No raw translation key appeared during the sequence.
 
 ## Boundaries
 

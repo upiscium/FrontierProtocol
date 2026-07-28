@@ -60,7 +60,7 @@ Current R9 automated verification includes passing unit tests and all 39 GameTes
 
 R9 verification launched the production dedicated server with the manually updated development Grace values. Create, TFMG, Spore, and Frontier Protocol loaded, 3593 recipes were accepted, and the server reached `Done` without config, Mixin, or client-class errors. The server Gradle task did not receive a normal console `stop`, so its clean task exit remains unverified.
 
-The R8 production client command joined the creative smoke world under a 1920x1080 Xvfb display and completed the broad English/Japanese graphical checks in [R8 Graphical Verification](r8-graphical-verification.md). The R9 client again reached the Japanese title screen and joined that world without a startup failure. Its attempted automated Tier 1 fixture did not reach ACTIVE, so the focused power-loss/recovery/new-Cell Goggle sequence remains unverified and is not inferred from unit or GameTest coverage.
+The R8 production client command joined the creative smoke world under a 1920x1080 Xvfb display and completed the broad English/Japanese graphical checks in [R8 Graphical Verification](r8-graphical-verification.md). The focused R9 Tier 1 Grace lifecycle also passed there with Engineer's Goggles: ACTIVE entered GRACE_PERIOD after rotation loss, the displayed reserve decreased, rotation recovery preserved the partial reserve, a second outage resumed from that amount, exhaustion reached OFFLINE, and the next consumed Cell restored the configured maximum. No raw translation key appeared.
 
 The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. The dedicated-server smoke reached the server-ready state with Create and Spore without a Mixin application or client-class error. The client smoke used a graphical display; a `glfwInit` failure when `DISPLAY` is unavailable would not constitute a successful client smoke test.
 
@@ -79,6 +79,7 @@ The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mix
 - [x] Verify revised Production Ponder equipment in English and Japanese.
 - [x] Execute the tier recipes in physical Mechanical Crafters.
 - [x] Smoke-test continuous automated Cell supply at upper-tier consumption intervals.
+- [x] Complete the focused R9 client Grace lifecycle smoke.
 - [x] Inspect the production JAR contents and generated metadata.
 - Set the actual release date.
 - Prepare an icon or screenshots only if required by the selected channel.
