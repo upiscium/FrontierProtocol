@@ -46,10 +46,14 @@ authors="upiscium"
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-Internal alpha with a Create-powered Tier 1 Stabilizer prototype, permanent
-initial-spawn protection, and optional initial-spawn ore-generation suppression.
-Integrates with exactly Fungal Infection: Spore 2.2.0j. It does not clean up
-existing infection or affect hostile mob movement or combat.
+Internal alpha with three Create-powered Stabilizer tiers, permanent initial-spawn
+protection, and optional initial-spawn ore-generation suppression. Integrates with
+exactly Fungal Infection: Spore 2.2.0j and incrementally removes audited removable
+infection foliage while a Stabilizer is active. It does not restore infected
+terrain, destroy nests, or affect hostile mob movement or combat. All three tiers
+use common Stabilization Cells made through a Create production chain. Engineer's
+Goggles, targeted range lines, item guidance, and Ponder explain operation without
+adding a machine GUI or changing containment behavior.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
@@ -107,8 +111,8 @@ config="${mod_id}.mixins.json"
 
 [[dependencies.${mod_id}]]
     modId="tfmg"
-    type="optional"
-    versionRange="[1.2.0,)"
+    type="required"
+    versionRange="[${tfmg_version},)"
     ordering="AFTER"
     side="BOTH"
 

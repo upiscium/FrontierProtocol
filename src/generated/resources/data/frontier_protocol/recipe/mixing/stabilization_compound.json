@@ -1,0 +1,45 @@
+{
+  "type": "create:mixing",
+  "ingredients": [
+    {
+      "item": "minecraft:sand"
+    },
+    {
+      "item": "minecraft:blue_ice"
+    },
+    {
+      "item": "minecraft:iron_nugget"
+    },
+    {
+      "item": "minecraft:iron_nugget"
+    },
+    {
+      "item": "minecraft:iron_nugget"
+    },
+    {
+      "item": "minecraft:iron_nugget"
+    },
+    {
+      "item": "minecraft:iron_nugget"
+    },
+    {
+      "item": "minecraft:iron_nugget"
+    },
+    {
+      "item": "minecraft:iron_nugget"
+    },
+    {
+      "item": "minecraft:iron_nugget"
+    },
+    {
+      "type": "neoforge:single",
+      "amount": 100,
+      "fluid": "tfmg:molten_plastic"
+    }
+  ],
+  "results": [
+    {
+      "id": "frontier_protocol:stabilization_compound"
+    }
+  ]
+}

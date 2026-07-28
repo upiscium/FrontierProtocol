@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "frontier_protocol:tier_1_stabilizer"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "frontier_protocol:blocks/tier_1_stabilizer"
+}

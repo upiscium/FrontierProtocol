@@ -27,7 +27,13 @@ sourceSets.main.resources {
 }
 
 def generatedGameTestResources = layout.buildDirectory.dir('generated/gametestResources')
+def createGameTestJar = configurations.compileClasspath.elements.map { files ->
+    def artifact = files.find { it.asFile.name.startsWith('create-1.21.1-') }
+    if (artifact == null) throw new GradleException('Create jar not found for GameTest structure generation')
+    artifact.asFile
+}
 tasks.register('generateGameTestStructure') {
+    inputs.file(createGameTestJar)
     outputs.dir(generatedGameTestResources)
     doLast {
         def output = generatedGameTestResources.get().file('data/frontier_protocol/structure/empty.nbt').asFile
@@ -46,6 +52,17 @@ tasks.register('generateGameTestStructure') {
                 }
             }
         }
+
+        def physicalMixing = generatedGameTestResources.get()
+                .file('data/frontier_protocol/structure/r6_physical_mixing.nbt').asFile
+        physicalMixing.parentFile.mkdirs()
+        new java.util.zip.ZipFile(createGameTestJar.get()).withCloseable { zip ->
+            def entry = zip.getEntry('data/create/structure/gametest/processing/brass_mixing.nbt')
+            if (entry == null) throw new GradleException('Create physical mixing GameTest structure not found')
+            zip.getInputStream(entry).withCloseable { input ->
+                physicalMixing.withOutputStream { outputStream -> input.transferTo(outputStream) }
+            }
+        }
     }
 }
 sourceSets.main.resources.srcDir(generatedGameTestResources)
@@ -56,6 +73,7 @@ repositories {
     maven { url = 'https://maven.tterrag.com' }
     maven { url = 'https://maven.ithundxr.dev/snapshots' }
     maven { url = 'https://api.modrinth.com/maven' }
+    maven { url = 'https://maven.blamejared.com' }
     exclusiveContent {
         forRepository {
             maven { url = 'https://cursemaven.com' }
@@ -159,11 +177,15 @@ configurations {
 dependencies {
     implementation "com.simibubi.create:create-${minecraft_version}:${create_version}"
     implementation "curse.maven:fungal-infection-spore-678295:${spore_file_id}"
+    implementation "maven.modrinth:create-tfmg:${tfmg_version}"
 
     if (project.hasProperty('enableOptionalCompatRuntime')) {
-        localRuntime "maven.modrinth:create-tfmg:${tfmg_version}"
         localRuntime "maven.modrinth:sable:${sable_version}"
         localRuntime "maven.modrinth:create-aeronautics:${aeronautics_version}"
+    }
+
+    if (project.hasProperty('enableRecipeViewerRuntime')) {
+        localRuntime "mezz.jei:jei-1.21.1-neoforge:${jei_version}"
     }
 
     testImplementation platform('org.junit:junit-bom:5.11.4')
@@ -211,6 +233,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             create_version         : create_version,
             create_mod_version     : create_mod_version,
             spore_version          : spore_version,
+            tfmg_version           : tfmg_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

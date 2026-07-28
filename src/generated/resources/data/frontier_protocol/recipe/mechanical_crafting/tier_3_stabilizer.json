@@ -1,0 +1,33 @@
+{
+  "type": "create:mechanical_crafting",
+  "accept_mirrored": true,
+  "category": "misc",
+  "key": {
+    "2": {
+      "item": "frontier_protocol:tier_2_stabilizer"
+    },
+    "C": {
+      "item": "frontier_protocol:stabilization_cell"
+    },
+    "P": {
+      "item": "create:precision_mechanism"
+    },
+    "R": {
+      "item": "create:railway_casing"
+    },
+    "S": {
+      "item": "create:sturdy_sheet"
+    }
+  },
+  "pattern": [
+    "SSCSS",
+    "SRPRS",
+    "CP2PC",
+    "SRPRS",
+    "SSCSS"
+  ],
+  "result": {
+    "count": 1,
+    "id": "frontier_protocol:tier_3_stabilizer"
+  }
+}

@@ -1,10 +1,10 @@
 {
   "variants": {
-    "horizontal_axis=x,status=offline": { "model": "frontier_protocol:block/tier_1_stabilizer_offline", "y": 90 },
-    "horizontal_axis=x,status=grace_period": { "model": "frontier_protocol:block/tier_1_stabilizer_grace_period", "y": 90 },
-    "horizontal_axis=x,status=active": { "model": "frontier_protocol:block/tier_1_stabilizer_active", "y": 90 },
-    "horizontal_axis=z,status=offline": { "model": "frontier_protocol:block/tier_1_stabilizer_offline" },
-    "horizontal_axis=z,status=grace_period": { "model": "frontier_protocol:block/tier_1_stabilizer_grace_period" },
-    "horizontal_axis=z,status=active": { "model": "frontier_protocol:block/tier_1_stabilizer_active" }
+    "axis=x,status=offline": { "model": "frontier_protocol:block/tier_1_stabilizer_offline", "y": 90 },
+    "axis=x,status=grace_period": { "model": "frontier_protocol:block/tier_1_stabilizer_grace_period", "y": 90 },
+    "axis=x,status=active": { "model": "frontier_protocol:block/tier_1_stabilizer_active", "y": 90 },
+    "axis=z,status=offline": { "model": "frontier_protocol:block/tier_1_stabilizer_offline" },
+    "axis=z,status=grace_period": { "model": "frontier_protocol:block/tier_1_stabilizer_grace_period" },
+    "axis=z,status=active": { "model": "frontier_protocol:block/tier_1_stabilizer_active" }
   }
 }
