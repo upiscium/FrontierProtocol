@@ -48,7 +48,7 @@
   "frontier_protocol.tooltip.cell.summary": "全Stabilizer Tier共通の完成済み消耗品。",
   "frontier_protocol.tooltip.cell.details": "鉄板へ安定化化合物をDeployingして製造します。動力を受けたStabilizerが新しい稼働時間を開始すると消費されます。",
   "frontier_protocol.tooltip.compound.summary": "Stabilizer製造用の中間素材。",
-  "frontier_protocol.tooltip.compound.details": "加熱Create Mixingで製造します。使用前に安定化セルへ封入する必要があり、Stabilizerへ直接投入できません。",
+  "frontier_protocol.tooltip.compound.details": "TFMG Liquid Plastic、砂、青氷、鉄塊8個を加熱なしでMixingします。使用前に安定化セルへ封入する必要があります。",
   "frontier_protocol.ponder.tag.containment": "Frontier Protocol",
   "frontier_protocol.ponder.tag.containment.description": "Spore感染を抑制するCreate動力式インフラ。",
   "frontier_protocol.ponder.stabilizer_operation.header": "Stabilizerの運転",
@@ -64,8 +64,10 @@
   "frontier_protocol.ponder.stabilizer_coverage.text_4": "抑制は敵対Mobを止めません。壁、照明、物理防衛を別途構築してください。",
   "frontier_protocol.ponder.stabilizer_coverage.text_5": "初期Overworldスポーンは既定5x5の独立した永久抑制sourceです。セルと回転力は不要ですが、浄化を行わずMobも止めません。",
   "frontier_protocol.ponder.stabilizer_production.header": "Stabilizerの製造",
-  "frontier_protocol.ponder.stabilizer_production.text_1": "加熱MixingでSpore Biomass Block、レッドストーン、木炭、水から安定化化合物を製造します。",
-  "frontier_protocol.ponder.stabilizer_production.text_2": "化合物を鉄板へDeployingして安定化セルへ封入します。化合物はStabilizerへ直接投入できません。",
-  "frontier_protocol.ponder.stabilizer_production.text_3": "Mechanical CrafterでTier 1を製造し、Tier 1からTier 2、Tier 2からTier 3へ段階的に強化します。",
-  "frontier_protocol.ponder.stabilizer_production.text_4": "全Tierが同じ安定化セルを消費します。Create物流で製造と継続供給を自動化してください。"
+  "frontier_protocol.ponder.stabilizer_production.text_1": "TFMG Liquid Plastic 100 mB、砂、青氷、鉄塊8個をMixingします。加熱は不要です。",
+  "frontier_protocol.ponder.stabilizer_production.text_2": "加熱なしのMixingで安定化化合物を1個製造します。",
+  "frontier_protocol.ponder.stabilizer_production.text_3": "動力を受けたDeployerがDepot上の鉄板へ安定化化合物を押し付けます。",
+  "frontier_protocol.ponder.stabilizer_production.text_4": "Deployingで安定化セルを1個製造します。化合物はStabilizerへ直接投入できません。",
+  "frontier_protocol.ponder.stabilizer_production.text_5": "代表的な3x3 Mechanical Crafter配置でTier 1 Stabilizerを製造します。",
+  "frontier_protocol.ponder.stabilizer_production.text_6": "Mechanical CrafterでTier 1からTier 2、Tier 2からTier 3へ段階的に強化します。全Tierが同じセルを使用します。"
 }

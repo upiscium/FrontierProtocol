@@ -48,7 +48,7 @@
   "frontier_protocol.tooltip.cell.summary": "Finished consumable for every Stabilizer tier.",
   "frontier_protocol.tooltip.cell.details": "Produced by Deploying Stabilization Compound onto an Iron Sheet. Consumed when a powered Stabilizer begins a new operating duration.",
   "frontier_protocol.tooltip.compound.summary": "Stabilizer production intermediate.",
-  "frontier_protocol.tooltip.compound.details": "Produced by heated Create Mixing. Must be sealed into a Stabilization Cell before use and cannot power a Stabilizer directly.",
+  "frontier_protocol.tooltip.compound.details": "Mix TFMG Liquid Plastic, Sand, Blue Ice, and eight Iron Nuggets without heat. Must be sealed into a Stabilization Cell before use.",
   "frontier_protocol.ponder.tag.containment": "Frontier Protocol",
   "frontier_protocol.ponder.tag.containment.description": "Create-powered infrastructure for suppressing Spore infection.",
   "frontier_protocol.ponder.stabilizer_operation.header": "Operating a Stabilizer",
@@ -64,8 +64,10 @@
   "frontier_protocol.ponder.stabilizer_coverage.text_4": "Suppression does not stop hostile mobs. Build walls, lighting, and physical defenses separately.",
   "frontier_protocol.ponder.stabilizer_coverage.text_5": "Initial Overworld spawn is a separate permanent 5x5 suppression source by default. It needs no Cell or rotation, performs no cleanup, and does not stop mobs.",
   "frontier_protocol.ponder.stabilizer_production.header": "Stabilizer Production",
-  "frontier_protocol.ponder.stabilizer_production.text_1": "Heated Mixing combines Spore Biomass Block, Redstone, Charcoal, and Water into Stabilization Compound.",
-  "frontier_protocol.ponder.stabilizer_production.text_2": "Deploy Compound onto an Iron Sheet to seal a Stabilization Cell. Compound cannot power a Stabilizer directly.",
-  "frontier_protocol.ponder.stabilizer_production.text_3": "Mechanical Crafters produce Tier 1, then upgrade Tier 1 to Tier 2 and Tier 2 to Tier 3.",
-  "frontier_protocol.ponder.stabilizer_production.text_4": "Every tier consumes the same Stabilization Cell. Automate production and continuous delivery with Create logistics."
+  "frontier_protocol.ponder.stabilizer_production.text_1": "Mix 100 mB of TFMG Liquid Plastic with Sand, Blue Ice, and eight Iron Nuggets. No heat is required.",
+  "frontier_protocol.ponder.stabilizer_production.text_2": "The unheated Mixing step produces one Stabilization Compound.",
+  "frontier_protocol.ponder.stabilizer_production.text_3": "A powered Deployer presses Compound onto an Iron Sheet on a Depot.",
+  "frontier_protocol.ponder.stabilizer_production.text_4": "Deploying produces one Stabilization Cell. Compound cannot power a Stabilizer directly.",
+  "frontier_protocol.ponder.stabilizer_production.text_5": "A representative 3x3 Mechanical Crafter array produces the Tier 1 Stabilizer.",
+  "frontier_protocol.ponder.stabilizer_production.text_6": "Mechanical Crafters then upgrade Tier 1 to Tier 2 and Tier 2 to Tier 3. Every tier uses the same Cell."
 }
