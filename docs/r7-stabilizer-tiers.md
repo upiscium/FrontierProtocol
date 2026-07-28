@@ -6,7 +6,7 @@ R7 implements the common three-tier architecture accepted by [ADR 0002](adr/0002
 
 - `tier_1_stabilizer`, `tier_2_stabilizer`, and `tier_3_stabilizer` are distinct Registry entries backed by one shared `StabilizerBlock` class, one shared `StabilizerBlockEntity` class and Block Entity type, and one operating state machine.
 - `StabilizerTier` supplies stable identity. `StabilizerTierDefinition` resolves current server-config values rather than retaining stale config snapshots.
-- All tiers consume `frontier_protocol:stabilization_cell`; Compound is rejected. A Cell is consumed when a powered machine begins a configured ACTIVE duration.
+- All tiers consume `frontier_protocol:stabilization_cell`; Compound is rejected. A Cell is consumed when a powered machine begins a configured ACTIVE duration and grants one finite Grace budget. ACTIVE or recovery with the same Cell never refills that budget.
 - ACTIVE and GRACE_PERIOD project dimension-local, overlap-safe suppression. ACTIVE performs cleanup; GRACE_PERIOD retains suppression but pauses cleanup; OFFLINE does neither. Unloading, removing, or destroying the block unregisters its source.
 - Every machine registers the generic `STABILIZER` source type. Its source ID has tier and position in the exact shape `stabilizer/<tier>/<x>_<y>_<z>`; dimension-local services keep equal positions in different dimensions independent.
 - Each source contributes its tier's cleanup interval, inspection budget, and mutation budget. Server-global caps of 512 inspections and 16 mutations per tick remain hard aggregate limits across sources and dimensions.
@@ -23,12 +23,12 @@ R7 implements the common three-tier architecture accepted by [ADR 0002](adr/0002
 | Stress impact | 16 | 64 | 256 |
 | Cell capacity | 8 | 32 | 64 |
 | Cell duration ticks | 6000 | 3000 | 2000 |
-| Grace period ticks | 6000 | 9000 | 12000 |
+| Grace budget ticks per Cell | 1200 | 1800 | 2400 |
 | Cleanup interval ticks | 20 | 20 | 20 |
 | Cleanup inspection budget per cycle/source | 128 | 2048 | 8192 |
 | Cleanup mutation budget per cycle/source | 4 | 64 | 256 |
 
-At default coverage and duration, one Cell provides 6000, 27000, and 50000 protected chunk-ticks for Tier 1, Tier 2, and Tier 3 respectively. Upper tiers are more Cell-efficient by protected area, but consume the common Cell at shorter machine intervals: every 3000 ticks for Tier 2 and every 2000 ticks for Tier 3 instead of every 6000 ticks for Tier 1. Their input logistics therefore need faster delivery and enough buffering despite the higher area efficiency.
+At default coverage and duration, one Cell provides 6000, 27000, and 50000 protected chunk-ticks for Tier 1, Tier 2, and Tier 3 respectively. Full buffers run for 48000, 96000, and 128000 ticks, or 40 minutes, 80 minutes, and 106 minutes 40 seconds. Upper tiers are more Cell-efficient by protected area, but consume the common Cell every 3000 and 2000 ticks. R9 physically verifies that Chest/Chute supply follows both intervals without interrupting ACTIVE or suppression.
 
 ## Production upgrades
 
@@ -72,7 +72,7 @@ SSCSS
 - `P`: `create:precision_mechanism`
 - `2`: `frontier_protocol:tier_2_stabilizer`
 
-The complete five-recipe chain is Compound Mixing, Cell Deploying, and Tier 1, Tier 2, and Tier 3 Mechanical Crafting. The inherited R6 recipe details remain in [R6 Minimal Create Production Line](r6-production-line.md). Recipe and operating balance remains provisional and is reserved for R9.
+The complete five-recipe chain is Compound Mixing, Cell Deploying, and Tier 1, Tier 2, and Tier 3 Mechanical Crafting. The inherited R6 recipe details remain in [R6 Minimal Create Production Line](r6-production-line.md). R9 preserves all five recipes and fixes the accepted operating balance in [R9 Balance Hardening](r9-balance-hardening.md).
 
 ## Assets
 
@@ -80,10 +80,10 @@ All tier state models are explicit placeholders using only vanilla texture refer
 
 ## Non-goals
 
-R7 does not add a GUI, Goggles information, Ponder scenes, particles, chunk-boundary visualization, a custom creative tab, tier-specific Cells, Empty or Spent Cells, container returns, new custom materials, TFMG integration, a multiblock tier, suppression from moving/virtual Create contraptions, chunk loading, terrain restoration, nest handling, mob handling, or final assets. R8 adds informational operational displays without changing these R7 gameplay contracts. Balance changes remain deferred to R9.
+R7 does not add a GUI, Goggles information, Ponder scenes, particles, chunk-boundary visualization, a custom creative tab, tier-specific Cells, Empty or Spent Cells, container returns, new custom materials, TFMG integration, a multiblock tier, suppression from moving/virtual Create contraptions, chunk loading, terrain restoration, nest handling, mob handling, or final assets. R8 adds informational operational displays. R9 changes only Grace semantics/defaults and verification coverage described in ADR 0005.
 
 ## Verification status
 
-Automated verification already performed covers the unit tests, build, all 33 GameTests, RecipeManager assertions for exact serializers/ingredients/patterns/results and no bypasses, and datagen output. These checks cover shared registration and lifecycle, all tier definitions, coverage, suppression IDs, overlap behavior, per-source cleanup profiles/global caps, staged recipes, and generated resources.
+Automated R9 verification covers the unit tests and all 39 GameTests, RecipeManager assertions for exact serializers/ingredients/patterns/results and no bypasses, physical execution of all three Mechanical Crafting recipes, and two default-duration Cell rollovers for both upper tiers.
 
-Final smoke testing launched the production dedicated server through readiness and confirmed shutdown with all dimensions saved. The graphical client reached the title screen, joined the existing creative smoke world, rendered all three placeholder Stabilizers without Frontier Protocol model errors, and displayed Mixing, Deploying, and all three Mechanical Crafting recipes in JEI. Physical Mechanical Crafter execution for the Tier 2 and Tier 3 upgrades and continuous automated Cell-supply smoke testing remain unverified. The physical R6 Mixing GameTest does not satisfy those remaining R7 checks, so the complete line must not be described as fully automation-verified.
+Earlier smoke testing launched the production dedicated server through readiness and exercised the graphical client. R9 now physically executes Tier 1/2/3 Mechanical Crafting and continuous Tier 2/Tier 3 Cell delivery in dedicated GameTests. The Deployer recipe remains RecipeManager/JEI verified rather than physically executed.

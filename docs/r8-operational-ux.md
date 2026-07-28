@@ -1,6 +1,6 @@
 # R8 Operational UX
 
-R8 adds targeted operational explanation without changing Stabilizer suppression, cleanup, Cell consumption, recipes, tier values, or balance. The accepted architecture is recorded in [ADR 0003](adr/0003-operational-display-and-client-visualization.md), and exact dependency APIs are recorded in [the client API audit](r8-client-api-audit.md).
+R8 added targeted operational explanation without changing its contemporary gameplay contract. R9 later changed Grace to the finite per-Cell budget in [ADR 0005](adr/0005-per-cell-grace-budget.md) and exposes the preserved budget while ACTIVE.
 
 ## Display contract
 
@@ -9,7 +9,7 @@ R8 adds targeted operational explanation without changing Stabilizer suppression
 - Display snapshots use the existing Block Entity update channel. Immediate changes are coalesced within a server tick; ACTIVE and GRACE_PERIOD countdown corrections are limited to one update per 20 ticks.
 - Invalid or incomplete client NBT is rejected. Until the first valid snapshot arrives, Goggles show a synchronization message and the range overlay stays hidden.
 
-The normal Goggle section contains tier, state, current/theoretical and required RPM, Cell count/capacity, active or grace time, coverage, suppressed chunk count, and one prioritized diagnostic. Shift adds center chunk, exact X/Z ranges, full-dimension-height behavior, configured Stress impact, and configured Cell duration. Diagnostic priority is overstressed, grace while the lifecycle state is GRACE_PERIOD, no rotation, insufficient RPM, no Cell or stored time, then operational.
+The normal Goggle section contains tier, state, current/theoretical and required RPM, Cell count/capacity, active or grace time, coverage, suppressed chunk count, and one prioritized diagnostic. R9 additionally shows the remaining per-Cell Grace budget while ACTIVE so recovery can be checked without hiding the depleted amount. Shift adds center chunk, exact X/Z ranges, full-dimension-height behavior, configured Stress impact, and configured Cell duration.
 
 Client options are `showStabilizerGoggleDetails`, `showStabilizerRangeOverlay`, `rangeOverlayRequiresSneaking`, and `showRangeVerticalCorners`. They affect display only.
 
@@ -41,4 +41,4 @@ The dedicated server reached ready without loading Frontier Protocol client clas
 
 The required client command joined an existing creative smoke world under a 1920x1080 Xvfb display. English and Japanese checks covered live Tier 1/2/3 and grace displays, Shift details, over-capacity reporting, client-option toggles, Goggle removal and crosshair cleanup, 1x1/3x3/5x5 and negative-coordinate range geometry, item tooltips, and complete Operation/Coverage/Production Ponder playback. The graphical pass and its remaining Overstressed-fixture limitation are recorded in [R8 Graphical Verification](r8-graphical-verification.md).
 
-Physical upper-tier Mechanical Crafting and continuous automated Cell supply remain separate, previously unverified production smoke checks.
+R9 completed the separate physical Tier 1/2/3 Mechanical Crafting and default-duration Tier 2/Tier 3 continuous Cell-supply GameTests. R8's Ponder remains visual guidance rather than the physical test fixture.

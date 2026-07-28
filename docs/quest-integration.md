@@ -42,11 +42,11 @@ Obtain `frontier_protocol:stabilization_cell` by Deploying Compound onto an Iron
 
 ### 4. Field Containment
 
-Obtain or place `frontier_protocol:tier_1_stabilizer`. Supply rotation and Cells, then verify ACTIVE operation with Engineer's Goggles.
+Obtain or place `frontier_protocol:tier_1_stabilizer`. Supply rotation and Cells, then verify ACTIVE operation with Engineer's Goggles. Each consumed Cell grants one finite Grace budget; restoring rotation preserves the remaining budget and only the next consumed Cell replenishes it.
 
 ### 5. Automated Supply
 
-Build Create logistics that continuously deliver Stabilization Cells. Quest systems that cannot reliably detect operating logistics should use a manual check rather than infer operation from possession alone.
+Build Create logistics that continuously deliver Stabilization Cells. Tier 2 needs delivery every 3000 ticks and Tier 3 every 2000 ticks. Quest systems that cannot reliably detect uninterrupted ACTIVE operation should use a manual check rather than infer operation from possession alone.
 
 ### 6. Industrial Containment
 
