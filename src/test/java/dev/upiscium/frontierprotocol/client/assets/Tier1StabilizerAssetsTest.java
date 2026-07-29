@@ -36,8 +36,16 @@ class Tier1StabilizerAssetsTest {
             "front_offline", "side_offline", "top_offline",
             "front_active", "side_active", "top_active",
             "front_grace", "side_grace", "top_grace",
-            "casing", "armor", "metal", "plate", "warning", "window",
-            "core", "gear", "light_mask", "ring_offline", "ring_active", "ring_grace");
+            "core", "gear", "light_mask", "metal");
+    private static final List<String> REMOVED_UNUSED_TEXTURES = List.of(
+            "armor",
+            "casing",
+            "plate",
+            "warning",
+            "window",
+            "ring_active",
+            "ring_grace",
+            "ring_offline");
 
     @Test
     void blockstateDefinesEveryFacingAndStatusCombination() throws Exception {
@@ -94,6 +102,7 @@ class Tier1StabilizerAssetsTest {
 
     @Test
     void everyFinalTextureIsNonBlank32PixelRgba() throws Exception {
+        assertEquals(18, TEXTURES.size());
         for (String texture : TEXTURES) {
             String path = ROOT + "textures/block/tier_1_stabilizer_" + texture + ".png";
             try (InputStream resource = loader().getResourceAsStream(path)) {
@@ -120,6 +129,9 @@ class Tier1StabilizerAssetsTest {
                 assertTrue(colors.size() >= (texture.equals("light_mask") ? 1 : 3), path + " lacks color detail");
             }
         }
+        for (String texture : REMOVED_UNUSED_TEXTURES) {
+            assertNull(loader().getResource(ROOT + "textures/block/tier_1_stabilizer_" + texture + ".png"));
+        }
     }
 
     @Test
@@ -133,6 +145,9 @@ class Tier1StabilizerAssetsTest {
             }
             for (String texture : TEXTURES) {
                 assertNotNull(jar.getJarEntry(ROOT + "textures/block/tier_1_stabilizer_" + texture + ".png"));
+            }
+            for (String texture : REMOVED_UNUSED_TEXTURES) {
+                assertNull(jar.getJarEntry(ROOT + "textures/block/tier_1_stabilizer_" + texture + ".png"));
             }
         }
     }
