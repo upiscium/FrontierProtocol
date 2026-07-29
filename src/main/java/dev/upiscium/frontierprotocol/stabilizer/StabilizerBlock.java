@@ -2,7 +2,7 @@ package dev.upiscium.frontierprotocol.stabilizer;
 
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.simibubi.create.content.kinetics.base.HorizontalAxisKineticBlock;
+import com.simibubi.create.content.kinetics.base.HorizontalKineticBlock;
 import com.simibubi.create.foundation.block.IBE;
 import dev.upiscium.frontierprotocol.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -15,9 +15,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 
-public final class StabilizerBlock extends HorizontalAxisKineticBlock implements IBE<StabilizerBlockEntity> {
+public final class StabilizerBlock extends HorizontalKineticBlock implements IBE<StabilizerBlockEntity> {
     public static final MapCodec<StabilizerBlock> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                     StringRepresentable.fromEnum(StabilizerTier::values)
                             .fieldOf("tier")
@@ -26,6 +28,7 @@ public final class StabilizerBlock extends HorizontalAxisKineticBlock implements
             .apply(instance, StabilizerBlock::new));
     public static final EnumProperty<StabilizerStatus> STATUS =
             EnumProperty.create("status", StabilizerStatus.class);
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     private final StabilizerTier tier;
 
@@ -33,7 +36,7 @@ public final class StabilizerBlock extends HorizontalAxisKineticBlock implements
         super(properties);
         this.tier = tier;
         registerDefaultState(defaultBlockState()
-                .setValue(HORIZONTAL_AXIS, Direction.Axis.X)
+                .setValue(FACING, Direction.EAST)
                 .setValue(STATUS, StabilizerStatus.OFFLINE));
     }
 
@@ -42,7 +45,7 @@ public final class StabilizerBlock extends HorizontalAxisKineticBlock implements
     }
 
     @Override
-    protected MapCodec<? extends HorizontalAxisKineticBlock> codec() {
+    protected MapCodec<? extends HorizontalKineticBlock> codec() {
         return CODEC;
     }
 
@@ -53,8 +56,13 @@ public final class StabilizerBlock extends HorizontalAxisKineticBlock implements
     }
 
     @Override
+    public Direction.Axis getRotationAxis(BlockState state) {
+        return state.getValue(FACING).getClockWise().getAxis();
+    }
+
+    @Override
     public boolean hasShaftTowards(LevelReader level, BlockPos pos, BlockState state, Direction face) {
-        return face.getAxis() == state.getValue(HORIZONTAL_AXIS);
+        return face.getAxis() == getRotationAxis(state);
     }
 
     @Override

@@ -113,10 +113,14 @@ Release-specific compatibility notes and verification details are documented
 in [`docs/alpha-release.md`](docs/alpha-release.md).
 
 Stabilization Compound and Stabilization Cell use custom final 32x32 item icons.
-The three Stabilizer blocks still use internal-alpha placeholder models and
-vanilla textures; see [`docs/placeholder-assets.md`](docs/placeholder-assets.md)
-and [R10 Final Item Assets](docs/r10-item-assets.md). Final block art, the
-project logo, licensing decisions, and public distribution remain pending.
+All three Stabilizers use final static Create-casing machine models with a
+top status LED, a front control panel, a rear decorative pipe, and dual-side
+shaft bearings. Rotation input is accepted only from the two side faces, with
+the horizontal rotation axis derived perpendicular to `FACING`.
+They use no custom Block Entity Renderer or dynamic block parts. See
+[`docs/placeholder-assets.md`](docs/placeholder-assets.md) and
+[R11 Stabilizer Casing Redesign](docs/r11-stabilizer-casing-redesign.md).
+The project logo, licensing decisions, and public distribution remain pending.
 
 ## Development
 

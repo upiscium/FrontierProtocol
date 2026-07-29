@@ -2,9 +2,11 @@ package dev.upiscium.frontierprotocol.registry;
 
 import dev.upiscium.frontierprotocol.FrontierProtocolMod;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 
 public final class ModItems {
@@ -24,5 +26,13 @@ public final class ModItems {
 
     public static void register(IEventBus bus) {
         ITEMS.register(bus);
+    }
+
+    public static void addCreativeModeTabContents(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
+            event.accept(TIER_1_STABILIZER);
+            event.accept(TIER_2_STABILIZER);
+            event.accept(TIER_3_STABILIZER);
+        }
     }
 }

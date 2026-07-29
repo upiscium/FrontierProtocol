@@ -45,7 +45,7 @@ public final class StabilizerDisplayGameTests {
                         device.pos(),
                         block(device.tier())
                                 .defaultBlockState()
-                                .setValue(StabilizerBlock.HORIZONTAL_AXIS, Direction.Axis.X),
+                                .setValue(StabilizerBlock.FACING, Direction.NORTH),
                         Block.UPDATE_ALL);
                 StabilizerDisplaySnapshot offline = blockEntity(level, device.pos()).displaySnapshot();
                 assertSnapshot(helper, offline, device.tier(), StabilizerStatus.OFFLINE, 0);

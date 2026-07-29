@@ -38,6 +38,101 @@ import net.neoforged.neoforge.items.IItemHandler;
 public final class StabilizerGameTests {
     private StabilizerGameTests() {}
 
+    @GameTest(template = "empty", batch = "stabilizer_directional_shafts", timeoutTicks = 80)
+    public static void everyTierUsesBothSideShaftsAndRejectsFrontAndBack(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos origin = helper.absolutePos(BlockPos.ZERO).offset(3, 2, 3);
+        StabilizerBlock[] blocks = {
+            ModBlocks.TIER_1_STABILIZER.get(),
+            ModBlocks.TIER_2_STABILIZER.get(),
+            ModBlocks.TIER_3_STABILIZER.get()
+        };
+
+        for (int index = 0; index < blocks.length; index++) {
+            BlockPos northPowered = origin.offset(index * 5, 0, 0);
+            BlockPos southPowered = origin.offset(index * 5, 0, 4);
+            BlockPos frontPowered = origin.offset(index * 5, 0, 8);
+            BlockPos backPowered = origin.offset(index * 5, 0, 12);
+            BlockState state = blocks[index].defaultBlockState();
+            helper.assertTrue(state.getValue(StabilizerBlock.FACING) == Direction.EAST,
+                    "Tier " + (index + 1) + " default facing is not EAST");
+            for (StabilizerStatus status : StabilizerStatus.values()) {
+                BlockState statusState = state.setValue(StabilizerBlock.STATUS, status);
+                helper.assertTrue(statusState.getValue(StabilizerBlock.FACING) == Direction.EAST,
+                        "Tier " + (index + 1) + " status changed its facing");
+                helper.assertTrue(blocks[index].getRotationAxis(statusState) == Direction.Axis.Z,
+                        "Tier " + (index + 1) + " status changed its rotation axis");
+                helper.assertTrue(blocks[index].hasShaftTowards(level, northPowered, statusState, Direction.NORTH)
+                                && blocks[index].hasShaftTowards(
+                                        level, northPowered, statusState, Direction.SOUTH),
+                        "Tier " + (index + 1) + " status changed its side shafts");
+            }
+            level.setBlock(northPowered, state, Block.UPDATE_ALL);
+            level.setBlock(northPowered.north(), motor(Direction.SOUTH), Block.UPDATE_ALL);
+            level.setBlock(southPowered, state, Block.UPDATE_ALL);
+            level.setBlock(southPowered.south(), motor(Direction.NORTH), Block.UPDATE_ALL);
+            level.setBlock(frontPowered, state, Block.UPDATE_ALL);
+            level.setBlock(frontPowered.east(), motor(Direction.WEST), Block.UPDATE_ALL);
+            level.setBlock(backPowered, state, Block.UPDATE_ALL);
+            level.setBlock(backPowered.west(), motor(Direction.EAST), Block.UPDATE_ALL);
+        }
+
+        helper.runAfterDelay(5, () -> {
+            for (int index = 0; index < blocks.length; index++) {
+                BlockPos northPowered = origin.offset(index * 5, 0, 0);
+                BlockPos southPowered = origin.offset(index * 5, 0, 4);
+                BlockPos frontPowered = origin.offset(index * 5, 0, 8);
+                BlockPos backPowered = origin.offset(index * 5, 0, 12);
+                helper.assertTrue(blockEntity(level, northPowered).getSpeed() != 0.0F,
+                        "Tier " + (index + 1) + " north side motor did not connect");
+                helper.assertTrue(blockEntity(level, southPowered).getSpeed() != 0.0F,
+                        "Tier " + (index + 1) + " south side motor did not connect");
+                helper.assertTrue(blockEntity(level, frontPowered).getSpeed() == 0.0F,
+                        "Tier " + (index + 1) + " front motor connected");
+                helper.assertTrue(blockEntity(level, backPowered).getSpeed() == 0.0F,
+                        "Tier " + (index + 1) + " back motor connected");
+
+                BlockState rotated = blocks[index].getRotatedBlockState(
+                        level.getBlockState(northPowered), Direction.UP);
+                KineticBlockEntity.switchToBlockState(level, northPowered, rotated);
+            }
+            helper.runAfterDelay(5, () -> verifyWrenchDisconnect(helper, level, origin, blocks));
+        });
+    }
+
+    private static void verifyWrenchDisconnect(
+            GameTestHelper helper, ServerLevel level, BlockPos origin, StabilizerBlock[] blocks) {
+        for (int index = 0; index < blocks.length; index++) {
+            BlockPos position = origin.offset(index * 5, 0, 0);
+            BlockState rotated = level.getBlockState(position);
+            helper.assertTrue(rotated.getValue(StabilizerBlock.FACING).getAxis() == Direction.Axis.Z,
+                    "Tier " + (index + 1) + " wrench did not rotate FACING by 90 degrees");
+            helper.assertTrue(blocks[index].getRotationAxis(rotated) == Direction.Axis.X,
+                    "Tier " + (index + 1) + " wrench did not move the rotation axis");
+            helper.assertTrue(
+                    !blocks[index].hasShaftTowards(level, position, rotated, Direction.NORTH)
+                            && !blocks[index].hasShaftTowards(level, position, rotated, Direction.SOUTH)
+                            && blocks[index].hasShaftTowards(level, position, rotated, Direction.EAST)
+                            && blocks[index].hasShaftTowards(level, position, rotated, Direction.WEST),
+                    "Tier " + (index + 1) + " wrench did not move both shaft faces");
+            helper.assertTrue(blockEntity(level, position).getSpeed() == 0.0F,
+                    "Tier " + (index + 1) + " retained its old north-side kinetic network");
+            level.setBlock(position.east(), motor(Direction.WEST), Block.UPDATE_ALL);
+        }
+        helper.runAfterDelay(5, () -> {
+            for (int index = 0; index < blocks.length; index++) {
+                BlockPos position = origin.offset(index * 5, 0, 0);
+                helper.assertTrue(blockEntity(level, position).getSpeed() != 0.0F,
+                        "Tier " + (index + 1) + " did not reconnect on its rotated side");
+            }
+            helper.succeed();
+        });
+    }
+
+    private static BlockState motor(Direction facing) {
+        return AllBlocks.CREATIVE_MOTOR.getDefaultState().setValue(CreativeMotorBlock.FACING, facing);
+    }
+
     @GameTest(template = "empty", batch = "tier1", timeoutTicks = 200)
     public static void tierOneLifecycleUsesCreateKineticsAndSuppressionCore(GameTestHelper helper) {
         ServerLevel overworld = helper.getLevel().getServer().overworld();
@@ -456,7 +551,7 @@ public final class StabilizerGameTests {
 
     private static void placeDevice(ServerLevel level, BlockPos pos) {
         level.setBlock(pos, ModBlocks.TIER_1_STABILIZER.get().defaultBlockState()
-                .setValue(StabilizerBlock.HORIZONTAL_AXIS, Direction.Axis.X), Block.UPDATE_ALL);
+                .setValue(StabilizerBlock.FACING, Direction.NORTH), Block.UPDATE_ALL);
     }
 
     private static void placeMotor(ServerLevel level, BlockPos pos) {

@@ -22,6 +22,7 @@ public final class FrontierProtocolMod {
         modBus.addListener(SuppressionConfigEvents::configReloading);
         modBus.addListener(FrontierProtocolMod::commonSetup);
         modBus.addListener(ModBlockEntities::registerCapabilities);
+        modBus.addListener(ModItems::addCreativeModeTabContents);
         modBus.addListener(FrontierProtocolDataGenerators::gatherData);
         ModBlocks.register(modBus);
         ModBlockEntities.register(modBus);

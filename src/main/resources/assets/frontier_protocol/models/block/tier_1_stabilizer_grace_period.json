@@ -1,8 +1,10 @@
 {
-  "parent": "minecraft:block/cube_bottom_top",
+  "parent": "frontier_protocol:block/stabilizer_casing_machine",
   "textures": {
-    "bottom": "minecraft:block/deepslate_tiles",
-    "side": "minecraft:block/exposed_copper",
-    "top": "minecraft:block/copper_grate"
+    "base": "create:block/copper_casing",
+    "front": "frontier_protocol:block/tier_1_stabilizer_front",
+    "back": "frontier_protocol:block/tier_1_stabilizer_back",
+    "side": "frontier_protocol:block/tier_1_stabilizer_side",
+    "top": "frontier_protocol:block/tier_1_stabilizer_top_grace"
   }
 }

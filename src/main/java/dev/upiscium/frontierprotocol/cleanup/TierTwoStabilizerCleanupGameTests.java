@@ -46,7 +46,7 @@ public final class TierTwoStabilizerCleanupGameTests {
             }
             ServerInfectionCleanupService.INSTANCE.clearRuntime(level.getServer());
             level.setBlock(device, ModBlocks.TIER_2_STABILIZER.get().defaultBlockState()
-                    .setValue(StabilizerBlock.HORIZONTAL_AXIS, Direction.Axis.X), Block.UPDATE_ALL);
+                    .setValue(StabilizerBlock.FACING, Direction.NORTH), Block.UPDATE_ALL);
             IItemHandler capability = level.getCapability(Capabilities.ItemHandler.BLOCK, device, Direction.UP);
             helper.assertTrue(capability != null, "Tier 2 cleanup test capability is unavailable");
             helper.assertTrue(capability.insertItem(

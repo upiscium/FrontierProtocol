@@ -792,7 +792,7 @@ public final class StabilizerCleanupGameTests {
                 ModBlocks.TIER_1_STABILIZER
                         .get()
                         .defaultBlockState()
-                        .setValue(StabilizerBlock.HORIZONTAL_AXIS, Direction.Axis.X),
+                        .setValue(StabilizerBlock.FACING, Direction.NORTH),
                 Block.UPDATE_ALL);
     }
 

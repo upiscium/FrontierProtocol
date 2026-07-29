@@ -1,32 +1,48 @@
 # Asset Status
 
-## Block assets
+## Final status
 
-| Asset/state | Status and exact vanilla texture references |
+| Asset | Status | Model and texture contract |
+| --- | --- | --- |
+| Tier 1 Stabilizer | FINAL | Copper Casing base; six custom 32x32 RGBA faces; three static state models |
+| Tier 2 Stabilizer | FINAL | Andesite Casing base; six custom 32x32 RGBA faces; three static state models |
+| Tier 3 Stabilizer | FINAL | Brass Casing base; six custom 32x32 RGBA faces; three static state models |
+| Stabilization Compound | FINAL | `minecraft:item/generated`; custom 32x32 RGBA PNG |
+| Stabilization Cell | FINAL | `minecraft:item/generated`; custom 32x32 RGBA PNG |
+
+## Stabilizer block assets
+
+R11 replaces the nine internal-alpha placeholder models with one static
+full-cube parent and nine tier/status child models. Each tier provides exactly
+six original textures: `front`, `back`, `side`, `top_offline`, `top_active`,
+and `top_grace`. All 18 are 32x32 RGBA pixel art.
+
+The bottom face directly references the verified Create 6.0.11 resources:
+
+| Tier | Base resource |
 | --- | --- |
-| Tier 1 offline | Placeholder: sides `minecraft:block/iron_block`; top/bottom `minecraft:block/deepslate_tiles` |
-| Tier 1 active | Placeholder: sides `minecraft:block/copper_block`; top `minecraft:block/redstone_block`; bottom `minecraft:block/deepslate_tiles` |
-| Tier 1 grace | Placeholder: sides `minecraft:block/exposed_copper`; top `minecraft:block/copper_grate`; bottom `minecraft:block/deepslate_tiles` |
-| Tier 2 offline | Placeholder: sides `minecraft:block/cut_copper`; top/bottom `minecraft:block/deepslate_tiles` |
-| Tier 2 active | Placeholder: sides `minecraft:block/copper_block`; top `minecraft:block/oxidized_cut_copper`; bottom `minecraft:block/deepslate_tiles` |
-| Tier 2 grace | Placeholder: sides `minecraft:block/exposed_cut_copper`; top `minecraft:block/copper_block`; bottom `minecraft:block/deepslate_tiles` |
-| Tier 3 offline | Placeholder: sides `minecraft:block/netherite_block`; top `minecraft:block/polished_blackstone`; bottom `minecraft:block/obsidian` |
-| Tier 3 active | Placeholder: sides `minecraft:block/gilded_blackstone`; top `minecraft:block/chiseled_polished_blackstone`; bottom `minecraft:block/obsidian` |
-| Tier 3 grace | Placeholder: sides `minecraft:block/polished_blackstone_bricks`; top `minecraft:block/netherite_block`; bottom `minecraft:block/obsidian` |
+| Tier 1 | `create:block/copper_casing` |
+| Tier 2 | `create:block/andesite_casing` |
+| Tier 3 | `create:block/brass_casing` |
 
-All three Stabilizer block models and textures remain internal-alpha placeholders. Registry IDs and recipes are independent of their future final art.
+Create PNGs are not copied or modified into Frontier Protocol. The custom
+front signal panel, rear pipe, dual-side shaft bearing, and top casing art are
+original.
+The old unmerged open-frame animated prototype was not adopted. No block
+renderer, dynamic part, translucent window, emissive overlay, or animated
+texture is part of the final block asset set.
+
+Only the centered LED changes between state textures: OFFLINE red, ACTIVE
+green, and GRACE_PERIOD yellow. Automated tests constrain state differences to
+the LED region, resolve every model and Create reference, and require the exact
+static asset set in the production JAR.
 
 ## Item assets
 
-| Asset | Status | Model and texture |
-| --- | --- | --- |
-| Stabilization Compound | Final item art | `minecraft:item/generated`; `frontier_protocol:item/stabilization_compound`; custom 32x32 RGBA PNG |
-| Stabilization Cell | Final item art | `minecraft:item/generated`; `frontier_protocol:item/stabilization_cell`; custom 32x32 RGBA PNG |
+Each Stabilizer Block Item statically parents the matching OFFLINE block model.
+Compound and Cell retain their original final R10 item textures; their former
+Blaze Powder and Prismarine Crystals placeholders are no longer used.
 
-The Stabilization Compound and Stabilization Cell use custom final item textures. Their former Blaze Powder and Prismarine Crystals references are no longer used.
-
-R6 established the Compound, Cell, and Tier 1 placeholders. R7 retains those models and adds Tier 2 and Tier 3 placeholders from the exact vanilla copper, deepslate, obsidian, netherite, and blackstone texture families listed above; it does not replace R6 assets with final art.
-
-R8 retained every placeholder block and item model. R10 replaces only the two non-block item icons; Goggle text, line-based range rendering, and Ponder storyboards add no particle texture or emissive asset.
-
-Production Ponder continues to use Create equipment models and TFMG's own Liquid Plastic rendering from the required dependency. The two R10 item textures are original Frontier Protocol assets and do not copy a TFMG texture.
+Production Ponder continues to use Create equipment models and TFMG's own
+Liquid Plastic rendering from the required dependency. Frontier Protocol does
+not copy a TFMG texture.
