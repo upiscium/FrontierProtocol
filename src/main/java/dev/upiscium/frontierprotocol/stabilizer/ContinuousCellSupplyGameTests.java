@@ -58,7 +58,7 @@ public final class ContinuousCellSupplyGameTests {
         BlockPos motor = device.west();
         level.setBlock(
                 helper.absolutePos(device),
-                block(tier).defaultBlockState().setValue(StabilizerBlock.HORIZONTAL_AXIS, Direction.Axis.X),
+                block(tier).defaultBlockState().setValue(StabilizerBlock.FACING, Direction.NORTH),
                 Block.UPDATE_ALL);
         level.setBlock(
                 helper.absolutePos(motor),

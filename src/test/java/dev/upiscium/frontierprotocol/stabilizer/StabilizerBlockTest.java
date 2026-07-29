@@ -2,11 +2,13 @@ package dev.upiscium.frontierprotocol.stabilizer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.MapCodec;
+import com.simibubi.create.content.kinetics.base.HorizontalAxisKineticBlock;
 import dev.upiscium.frontierprotocol.registry.ModBlocks;
 import java.lang.reflect.Field;
 import java.util.HashSet;
@@ -26,52 +28,70 @@ import org.junit.jupiter.api.Test;
 
 class StabilizerBlockTest {
     @Test
-    void defaultsAndPlacementFaceThePlayerWithMatchingAxis() {
+    void defaultsContainOnlyFacingAndStatusDirectionProperties() {
+        for (StabilizerTier tier : StabilizerTier.values()) {
+            BlockState state = block(tier).defaultBlockState();
+            assertEquals(Direction.EAST, state.getValue(StabilizerBlock.FACING));
+            assertEquals(StabilizerStatus.OFFLINE, state.getValue(StabilizerBlock.STATUS));
+            assertTrue(state.hasProperty(StabilizerBlock.FACING));
+            assertTrue(state.hasProperty(StabilizerBlock.STATUS));
+            assertFalse(state.hasProperty(HorizontalAxisKineticBlock.HORIZONTAL_AXIS));
+            assertEquals(Set.of(StabilizerBlock.FACING, StabilizerBlock.STATUS), Set.copyOf(state.getProperties()));
+        }
+    }
+
+    @Test
+    void rotationAxisAndBothSideShaftsAreDerivedFromFacing() {
         for (StabilizerTier tier : StabilizerTier.values()) {
             StabilizerBlock block = block(tier);
-            assertFacing(block.defaultBlockState(), Direction.EAST);
-            for (Direction playerFacing : Direction.Plane.HORIZONTAL) {
-                Direction facing = StabilizerBlock.facingForPlacement(playerFacing);
-                assertEquals(playerFacing.getOpposite(), facing);
-                assertFacing(StabilizerBlock.withFacing(block.defaultBlockState(), facing), facing);
+            for (Direction facing : Direction.Plane.HORIZONTAL) {
+                BlockState state = block.defaultBlockState().setValue(StabilizerBlock.FACING, facing);
+                assertShaftContract(block, state, facing.getClockWise().getAxis());
             }
         }
     }
 
     @Test
-    void onlyRearFaceExposesShaftForEveryTierAndFacing() {
+    void rotationMirrorAndStatusChangesPreserveDerivedShaftContract() {
         for (StabilizerTier tier : StabilizerTier.values()) {
             StabilizerBlock block = block(tier);
             for (Direction facing : Direction.Plane.HORIZONTAL) {
-                BlockState state = StabilizerBlock.withFacing(block.defaultBlockState(), facing);
-                for (Direction face : Direction.values()) {
-                    assertEquals(
-                            face == facing.getOpposite(),
-                            block.hasShaftTowards(null, BlockPos.ZERO, state, face));
-                }
-            }
-        }
-    }
-
-    @Test
-    void rotationMirrorAndStatusChangesPreserveFacingAxisInvariant() {
-        for (StabilizerTier tier : StabilizerTier.values()) {
-            StabilizerBlock block = block(tier);
-            for (Direction facing : Direction.Plane.HORIZONTAL) {
-                BlockState state = StabilizerBlock.withFacing(block.defaultBlockState(), facing);
+                BlockState state = block.defaultBlockState().setValue(StabilizerBlock.FACING, facing);
                 for (Rotation rotation : Rotation.values()) {
                     BlockState rotated = block.rotate(state, rotation);
-                    assertFacing(rotated, rotation.rotate(facing));
+                    assertEquals(rotation.rotate(facing), rotated.getValue(StabilizerBlock.FACING));
+                    assertShaftContract(block, rotated, rotation.rotate(facing).getClockWise().getAxis());
                 }
                 for (Mirror mirror : Mirror.values()) {
                     BlockState mirrored = block.mirror(state, mirror);
                     assertEquals(mirror.mirror(facing), mirrored.getValue(StabilizerBlock.FACING));
-                    assertFacing(mirrored, mirrored.getValue(StabilizerBlock.FACING));
+                    assertShaftContract(
+                            block,
+                            mirrored,
+                            mirrored.getValue(StabilizerBlock.FACING).getClockWise().getAxis());
                 }
                 for (StabilizerStatus status : StabilizerStatus.values()) {
-                    assertFacing(state.setValue(StabilizerBlock.STATUS, status), facing);
+                    BlockState changed = state.setValue(StabilizerBlock.STATUS, status);
+                    assertEquals(facing, changed.getValue(StabilizerBlock.FACING));
+                    assertShaftContract(block, changed, facing.getClockWise().getAxis());
                 }
             }
+        }
+    }
+
+    @Test
+    void topFaceWrenchRotationMovesFacingAxisAndShaftFaces() {
+        for (StabilizerTier tier : StabilizerTier.values()) {
+            StabilizerBlock block = block(tier);
+            BlockState initial = block.defaultBlockState().setValue(StabilizerBlock.STATUS, StabilizerStatus.ACTIVE);
+            assertShaftContract(block, initial, Direction.Axis.Z);
+
+            BlockState rotated = block.getRotatedBlockState(initial, Direction.UP);
+
+            assertNotEquals(Direction.EAST, rotated.getValue(StabilizerBlock.FACING));
+            assertTrue(rotated.getValue(StabilizerBlock.FACING).getAxis() == Direction.Axis.Z);
+            assertEquals(StabilizerStatus.ACTIVE, rotated.getValue(StabilizerBlock.STATUS));
+            assertShaftContract(block, rotated, Direction.Axis.X);
         }
     }
 
@@ -84,13 +104,11 @@ class StabilizerBlockTest {
 
             assertEquals(tier, decoded.tier());
             assertTrue(decoded.defaultBlockState().hasProperty(StabilizerBlock.FACING));
-            assertTrue(decoded.defaultBlockState().hasProperty(StabilizerBlock.HORIZONTAL_AXIS));
             assertTrue(decoded.defaultBlockState().hasProperty(StabilizerBlock.STATUS));
-            assertFacing(decoded.defaultBlockState(), Direction.EAST);
-            assertTrue(decoded.hasShaftTowards(
-                    null, BlockPos.ZERO, decoded.defaultBlockState(), Direction.WEST));
-            assertFalse(decoded.hasShaftTowards(
-                    null, BlockPos.ZERO, decoded.defaultBlockState(), Direction.EAST));
+            assertFalse(decoded.defaultBlockState().hasProperty(HorizontalAxisKineticBlock.HORIZONTAL_AXIS));
+            assertEquals(Direction.EAST, decoded.defaultBlockState().getValue(StabilizerBlock.FACING));
+            assertEquals(StabilizerStatus.OFFLINE, decoded.defaultBlockState().getValue(StabilizerBlock.STATUS));
+            assertShaftContract(decoded, decoded.defaultBlockState(), Direction.Axis.Z);
         }
     }
 
@@ -112,9 +130,15 @@ class StabilizerBlockTest {
         };
     }
 
-    private static void assertFacing(BlockState state, Direction facing) {
-        assertEquals(facing, state.getValue(StabilizerBlock.FACING));
-        assertEquals(facing.getAxis(), state.getValue(StabilizerBlock.HORIZONTAL_AXIS));
+    private static void assertShaftContract(
+            StabilizerBlock block, BlockState state, Direction.Axis expectedAxis) {
+        assertEquals(expectedAxis, block.getRotationAxis(state));
+        for (Direction face : Direction.values()) {
+            assertEquals(
+                    face.getAxis() == expectedAxis,
+                    block.hasShaftTowards(null, BlockPos.ZERO, state, face),
+                    "unexpected shaft contract for " + state + " at " + face);
+        }
     }
 
     private static <T extends Block> T decode(MapCodec<T> codec, JsonElement encoded)

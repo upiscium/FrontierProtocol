@@ -40,10 +40,10 @@ All notable changes to Frontier Protocol are documented in this file.
 - Added automated validation for final item models, PNG properties, visual distinction, and production-JAR packaging.
 - Strengthened pull-request CI with unit and asset tests, datagen clean-diff enforcement, clean build, GameTests, and a short-lived internal alpha JAR artifact.
 - Superseded the unmerged open-frame animated Stabilizer prototype with static full-cube Create-casing machines for all three tiers.
-- Added shared horizontal facing and rear-only Create shaft input while preserving each tier in the existing shared Block and tier-aware Codec.
+- Added shared horizontal facing and dual-side Create shaft input while preserving each tier in the existing shared Block and tier-aware Codec; the perpendicular rotation axis is derived from `FACING` without a second axis property.
 - Replaced all Stabilizer placeholder models with Copper, Andesite, and Brass casing designs, 18 original 32x32 face textures, and static red, green, and yellow top status LEDs.
 - Added all three Stabilizer Block Items to Functional Blocks in Tier order and verified inventory, JEI, held, dropped, Item Frame, and Ponder presentation.
-- Added block, Codec, model, texture, Create-reference, and production-JAR tests plus all-tier rear-versus-front kinetic GameTest coverage.
+- Added block, wrench, Codec, model, texture, Create-reference, and production-JAR tests plus all-tier side-versus-front/back kinetic GameTest coverage and wrench-network reconnection checks.
 
 ### Compatibility
 

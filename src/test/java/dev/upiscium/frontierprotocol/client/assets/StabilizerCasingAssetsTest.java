@@ -110,6 +110,18 @@ class StabilizerCasingAssetsTest {
     }
 
     @Test
+    void rearUsesPipeArtAndBothSidesUseBearingArt() throws Exception {
+        for (int tier = 1; tier <= 3; tier++) {
+            BufferedImage rearPipe = texture(tier, "back");
+            BufferedImage sideBearing = texture(tier, "side");
+            assertNotEquals(rearPipe.getRGB(15, 15), sideBearing.getRGB(15, 15));
+            assertTrue(
+                    brightness(sideBearing.getRGB(15, 15)) < brightness(rearPipe.getRGB(15, 15)),
+                    "Tier " + tier + " side bearing needs a dark central shaft hole");
+        }
+    }
+
+    @Test
     void topTexturesDifferOnlyInsideLedAndUseContractColors() throws Exception {
         for (int tier = 1; tier <= 3; tier++) {
             BufferedImage offline = texture(tier, "top_offline");
@@ -209,6 +221,10 @@ class StabilizerCasingAssetsTest {
 
     private static int[] pixels(BufferedImage image) {
         return image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
+    }
+
+    private static int brightness(int color) {
+        return ((color >> 16) & 0xFF) + ((color >> 8) & 0xFF) + (color & 0xFF);
     }
 
     private static void assertEntry(JarFile jar, String path) {

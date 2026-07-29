@@ -82,7 +82,7 @@ public final class FrontierProtocolPonderScenes {
         scene.setSceneOffsetY(-1.0F);
         Selection plate = util.select().fromTo(0, 0, 0, 4, 0, 4);
         BlockPos stabilizerPos = util.grid().at(2, 1, 2);
-        BlockPos shaftPos = util.grid().at(1, 1, 2);
+        BlockPos shaftPos = util.grid().at(2, 1, 1);
         BlockPos chutePos = util.grid().at(2, 2, 2);
         BlockPos depotPos = util.grid().at(2, 3, 2);
         Selection stabilizer = util.select().position(stabilizerPos);
@@ -91,11 +91,15 @@ public final class FrontierProtocolPonderScenes {
         scene.world().setBlocks(plate, Blocks.SMOOTH_STONE.defaultBlockState(), false);
         scene.showBasePlate();
         scene.world().setBlock(stabilizerPos, state(stabilizerBlock, StabilizerStatus.OFFLINE), false);
-        scene.world().setBlock(shaftPos, AllBlocks.SHAFT.getDefaultState(), false);
+        scene.world().setBlock(
+                shaftPos,
+                AllBlocks.SHAFT.getDefaultState()
+                        .setValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS, Direction.Axis.Z),
+                false);
         scene.world().setBlock(chutePos, AllBlocks.CHUTE.getDefaultState(), false);
         scene.world().setBlock(depotPos, AllBlocks.DEPOT.getDefaultState(), false);
         scene.world().showSection(stabilizer, Direction.DOWN);
-        scene.world().showSection(shaft, Direction.EAST);
+        scene.world().showSection(shaft, Direction.SOUTH);
         scene.world().showSection(logistics, Direction.DOWN);
         scene.overlay()
                 .showText(60)
@@ -370,7 +374,6 @@ public final class FrontierProtocolPonderScenes {
             StabilizerBlock block, StabilizerStatus status) {
         return block.defaultBlockState()
                 .setValue(StabilizerBlock.FACING, net.minecraft.core.Direction.EAST)
-                .setValue(StabilizerBlock.HORIZONTAL_AXIS, net.minecraft.core.Direction.Axis.X)
                 .setValue(StabilizerBlock.STATUS, status);
     }
 

@@ -26,7 +26,8 @@ The bottom face directly references the verified Create 6.0.11 resources:
 | Tier 3 | `create:block/brass_casing` |
 
 Create PNGs are not copied or modified into Frontier Protocol. The custom
-front signal panel, rear bearing, side pipe, and top casing art are original.
+front signal panel, rear pipe, dual-side shaft bearing, and top casing art are
+original.
 The old unmerged open-frame animated prototype was not adopted. No block
 renderer, dynamic part, translucent window, emissive overlay, or animated
 texture is part of the final block asset set.

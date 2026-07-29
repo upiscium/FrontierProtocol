@@ -391,7 +391,7 @@ public final class TierThreeStabilizerGameTests {
 
     private static void placeDevice(ServerLevel level, BlockPos position, StabilizerBlock block) {
         level.setBlock(position, block.defaultBlockState()
-                .setValue(StabilizerBlock.HORIZONTAL_AXIS, Direction.Axis.X), Block.UPDATE_ALL);
+                .setValue(StabilizerBlock.FACING, Direction.NORTH), Block.UPDATE_ALL);
     }
 
     private static void placeMotor(ServerLevel level, BlockPos position) {

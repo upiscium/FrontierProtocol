@@ -114,7 +114,9 @@ in [`docs/alpha-release.md`](docs/alpha-release.md).
 
 Stabilization Compound and Stabilization Cell use custom final 32x32 item icons.
 All three Stabilizers use final static Create-casing machine models with a
-top status LED, directional front and rear faces, and rear-only shaft input.
+top status LED, a front control panel, a rear decorative pipe, and dual-side
+shaft bearings. Rotation input is accepted only from the two side faces, with
+the horizontal rotation axis derived perpendicular to `FACING`.
 They use no custom Block Entity Renderer or dynamic block parts. See
 [`docs/placeholder-assets.md`](docs/placeholder-assets.md) and
 [R11 Stabilizer Casing Redesign](docs/r11-stabilizer-casing-redesign.md).

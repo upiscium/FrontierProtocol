@@ -16,9 +16,9 @@ emissive overlay, animation, or particle effect.
 
 | Tier | Base and bottom | Front | Back | Sides |
 | --- | --- | --- | --- | --- |
-| Tier 1 | `create:block/copper_casing` | Added-on signal control plate | Centered shaft bearing | Clamped elbow pipe |
-| Tier 2 | `create:block/andesite_casing` | Added-on signal control plate | Centered shaft bearing | Clamped elbow pipe |
-| Tier 3 | `create:block/brass_casing` | Added-on signal control plate | Centered shaft bearing | Clamped elbow pipe |
+| Tier 1 | `create:block/copper_casing` | Added-on signal control plate | Decorative clamped elbow pipe | Dual-side shaft bearings |
+| Tier 2 | `create:block/andesite_casing` | Added-on signal control plate | Decorative clamped elbow pipe | Dual-side shaft bearings |
+| Tier 3 | `create:block/brass_casing` | Added-on signal control plate | Decorative clamped elbow pipe | Dual-side shaft bearings |
 
 The original 32x32 face art borrows only Create's casing-machine visual
 language. No Create PNG is copied into Frontier Protocol. Each tier supplies
@@ -37,19 +37,21 @@ states. The LED is an ordinary lit texture pixel, not full-bright or animated.
 
 ## Direction contract
 
-Every tier has `FACING`, `HORIZONTAL_AXIS`, and `STATUS`. The default is
-`FACING=EAST`, `HORIZONTAL_AXIS=X`, and `STATUS=OFFLINE`. Placement faces the
-front toward the player. Rotation and mirroring derive the axis from the new
-facing, preserving `HORIZONTAL_AXIS == FACING.getAxis()`.
+Every tier has only `FACING` and `STATUS`. The default is `FACING=EAST` and
+`STATUS=OFFLINE`. Placement faces the front toward the player. Create's
+`HorizontalKineticBlock` owns placement, rotation, and mirroring, including the
+same `HORIZONTAL_FACING` property exposed as `FACING`.
 
-Only `FACING.getOpposite()` exposes a Create shaft. The front, both sides, top,
-and bottom do not connect. The default west rear remains aligned with existing
-Ponder and GameTest shaft fixtures.
+The horizontal rotation axis is derived perpendicular to `FACING`; it is not
+stored in BlockState. Both faces on that axis expose a Create shaft. The front,
+rear, top, and bottom do not connect. For default EAST, NORTH and SOUTH are the
+two shaft sides. A top- or bottom-face wrench rotation changes `FACING`, which
+atomically moves the model, derived axis, shaft faces, and kinetic network.
 
-Existing placed Stabilizers from all tiers should be broken and replaced
-after this redesign so their front and rear direction is selected explicitly.
-
-No DataFixer is added for this internal alpha. Existing inventory-drop,
+R11 is an unmerged internal-alpha branch, so no released world depends on its
+intermediate shaft schema. Development-world Stabilizers should be broken
+and replaced after the final R11 schema change. No DataFixer is added.
+Existing inventory-drop,
 display-snapshot, display-NBT schema, persistent NBT, sync, balance, recipe,
 Stress, Cell, Grace, cleanup, and suppression contracts are unchanged.
 
@@ -76,8 +78,11 @@ Automated verification passed:
 Focused client verification passed for all three tiers:
 
 - NORTH, EAST, SOUTH, and WEST presentation
-- Front control plate, rear bearing, both pipe sides, top LED, and casing bottom
+- Front control plate, rear decorative pipe, both side bearings, top LED, and casing bottom
 - OFFLINE, ACTIVE, and GRACE_PERIOD with LED-only differences
+- Default EAST side motors: NORTH +16 RPM and SOUTH -16 RPM
+- Default EAST front/back motors: EAST/WEST 0 RPM
+- Top-face wrench rotation: old NORTH network 0 RPM, new EAST side -16 RPM
 - Copper, Andesite, and Brass Casing adjacency plus Mechanical Press, Fluid
   Pipe, Redstone Link, and Shaft context
 - Inventory, creative inventory, held, dropped, Item Frame, JEI, and Ponder
