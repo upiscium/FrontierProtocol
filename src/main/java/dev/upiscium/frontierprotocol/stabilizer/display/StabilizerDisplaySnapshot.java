@@ -14,6 +14,7 @@ public record StabilizerDisplaySnapshot(
         int cellRemainingTicks,
         int cellDurationTicks,
         int graceRemainingTicks,
+        int graceDurationTicks,
         int chunkRadius) {
     public StabilizerDisplaySnapshot {
         if (tier == null) throw new IllegalArgumentException("tier must not be null");
@@ -32,10 +33,39 @@ public record StabilizerDisplaySnapshot(
         if (cellRemainingTicks < 0) throw new IllegalArgumentException("cellRemainingTicks must not be negative");
         if (cellDurationTicks < 1) throw new IllegalArgumentException("cellDurationTicks must be at least 1");
         if (graceRemainingTicks < 0) throw new IllegalArgumentException("graceRemainingTicks must not be negative");
+        if (graceDurationTicks < 0) throw new IllegalArgumentException("graceDurationTicks must not be negative");
+        if (graceRemainingTicks > graceDurationTicks) {
+            throw new IllegalArgumentException("graceRemainingTicks must not exceed graceDurationTicks");
+        }
         if (chunkRadius < StabilizerLimits.MIN_CHUNK_RADIUS
                 || chunkRadius > StabilizerLimits.MAX_CHUNK_RADIUS) {
             throw new IllegalArgumentException("chunkRadius must be between 0 and 16");
         }
+    }
+
+    public StabilizerDisplaySnapshot(
+            StabilizerTier tier,
+            StabilizerStatus status,
+            int minimumRpm,
+            double stressImpact,
+            int cellCount,
+            int cellCapacity,
+            int cellRemainingTicks,
+            int cellDurationTicks,
+            int graceRemainingTicks,
+            int chunkRadius) {
+        this(
+                tier,
+                status,
+                minimumRpm,
+                stressImpact,
+                cellCount,
+                cellCapacity,
+                cellRemainingTicks,
+                cellDurationTicks,
+                graceRemainingTicks,
+                graceRemainingTicks,
+                chunkRadius);
     }
 
     public int coverageWidth() {
@@ -59,6 +89,7 @@ public record StabilizerDisplaySnapshot(
                 && cellCount == other.cellCount
                 && cellCapacity == other.cellCapacity
                 && cellDurationTicks == other.cellDurationTicks
+                && graceDurationTicks == other.graceDurationTicks
                 && chunkRadius == other.chunkRadius;
     }
 }

@@ -7,7 +7,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 
 public final class StabilizerDisplayNbt {
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
     public static final String DISPLAY_KEY = "frontierDisplay";
     private static final String SCHEMA_VERSION_KEY = "schemaVersion";
     private static final String TIER = "tier";
@@ -19,6 +19,7 @@ public final class StabilizerDisplayNbt {
     private static final String CELL_REMAINING_TICKS = "cellRemainingTicks";
     private static final String CELL_DURATION_TICKS = "cellDurationTicks";
     private static final String GRACE_REMAINING_TICKS = "graceRemainingTicks";
+    private static final String GRACE_DURATION_TICKS = "graceDurationTicks";
     private static final String CHUNK_RADIUS = "chunkRadius";
 
     private StabilizerDisplayNbt() {}
@@ -35,6 +36,7 @@ public final class StabilizerDisplayNbt {
         display.putInt(CELL_REMAINING_TICKS, snapshot.cellRemainingTicks());
         display.putInt(CELL_DURATION_TICKS, snapshot.cellDurationTicks());
         display.putInt(GRACE_REMAINING_TICKS, snapshot.graceRemainingTicks());
+        display.putInt(GRACE_DURATION_TICKS, snapshot.graceDurationTicks());
         display.putInt(CHUNK_RADIUS, snapshot.chunkRadius());
         root.put(DISPLAY_KEY, display);
     }
@@ -59,6 +61,7 @@ public final class StabilizerDisplayNbt {
                     display.getInt(CELL_REMAINING_TICKS),
                     display.getInt(CELL_DURATION_TICKS),
                     display.getInt(GRACE_REMAINING_TICKS),
+                    display.getInt(GRACE_DURATION_TICKS),
                     display.getInt(CHUNK_RADIUS)));
         } catch (IllegalArgumentException exception) {
             return Optional.empty();
@@ -88,6 +91,7 @@ public final class StabilizerDisplayNbt {
                 && tag.contains(CELL_REMAINING_TICKS, Tag.TAG_INT)
                 && tag.contains(CELL_DURATION_TICKS, Tag.TAG_INT)
                 && tag.contains(GRACE_REMAINING_TICKS, Tag.TAG_INT)
+                && tag.contains(GRACE_DURATION_TICKS, Tag.TAG_INT)
                 && tag.contains(CHUNK_RADIUS, Tag.TAG_INT);
     }
 }

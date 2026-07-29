@@ -72,6 +72,8 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     private StabilizerDisplaySnapshot lastObservedDisplaySnapshot;
     private StabilizerDisplaySnapshot clientDisplaySnapshot;
     private boolean displaySnapshotInvalid;
+    private float previousClientCoreAngle;
+    private float clientCoreAngle;
 
     public StabilizerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STABILIZER.get(), pos, state);
@@ -91,7 +93,17 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     public void tick() {
         if (!hasLevel()) return;
         super.tick();
-        if (!(level instanceof ServerLevel serverLevel)) return;
+        if (!(level instanceof ServerLevel serverLevel)) {
+            previousClientCoreAngle = clientCoreAngle;
+            boolean active = tier == StabilizerTier.TIER_1
+                    && clientDisplaySnapshot != null
+                    && clientDisplaySnapshot.status() == StabilizerStatus.ACTIVE
+                    && isRpmSufficient(getSpeed(), clientDisplaySnapshot.minimumRpm());
+            clientCoreAngle += Tier1StabilizerAnimation.coreRotationDelta(getSpeed(), active);
+            if (clientCoreAngle >= 360.0F) clientCoreAngle -= 360.0F;
+            if (clientCoreAngle < 0.0F) clientCoreAngle += 360.0F;
+            return;
+        }
         if (isRemoved() || isVirtual()) {
             unregisterSource(serverLevel);
             return;
@@ -153,6 +165,14 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         return clientDisplaySnapshot;
     }
 
+    public StabilizerTier tier() {
+        return tier;
+    }
+
+    public float clientCoreAngle(float partialTick) {
+        return previousClientCoreAngle + (clientCoreAngle - previousClientCoreAngle) * partialTick;
+    }
+
     @Override
     public boolean addToGoggleTooltip(List<net.minecraft.network.chat.Component> tooltip, boolean isPlayerSneaking) {
         boolean customAdded = false;
@@ -208,6 +228,7 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
                     machine.cellRemainingTicks(),
                     definition.cellDurationTicks(),
                     machine.graceRemainingTicks(),
+                    definition.gracePeriodTicks(),
                     definition.chunkRadius());
             displaySnapshotInvalid = false;
             return snapshot;
