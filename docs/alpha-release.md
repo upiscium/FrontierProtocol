@@ -6,6 +6,26 @@ This is an internal alpha release candidate of the rebuilt Frontier Protocol des
 
 The candidate artifact produced by the build is `frontier_protocol-0.1.0-alpha.1.jar`. It has not been approved for public distribution. Frontier Protocol remains **All Rights Reserved**.
 
+The verified GitHub Actions artifact is:
+
+```text
+frontier_protocol-0.1.0-alpha.1-release-candidate
+```
+
+It contains exactly:
+
+- `frontier_protocol-0.1.0-alpha.1.jar`
+- `frontier_protocol-0.1.0-alpha.1.jar.sha256`
+- `release-manifest.json`
+
+After extracting the Actions artifact, verify the production JAR with:
+
+```bash
+sha256sum --check frontier_protocol-0.1.0-alpha.1.jar.sha256
+```
+
+The Actions artifact ZIP digest covers the outer transport archive and is not the JAR checksum. Use the bundled `.sha256` file to verify the JAR. `release-manifest.json` records the source commit and required dependency versions. Dependency mod JARs are not bundled. This artifact is an internal alpha candidate and the workflow does not publish it as a GitHub Release or to an external distribution service.
+
 ## Publication status
 
 Public distribution of 0.1.0-alpha.1 has been deferred.
