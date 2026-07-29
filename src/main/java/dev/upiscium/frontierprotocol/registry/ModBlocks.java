@@ -18,7 +18,8 @@ public final class ModBlocks {
             TierOneStabilizerBlock::new,
             net.minecraft.world.level.block.state.BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5F)
-                    .requiresCorrectToolForDrops());
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion());
     public static final DeferredBlock<StabilizerBlock> TIER_2_STABILIZER = BLOCKS.registerBlock(
             "tier_2_stabilizer",
             properties -> new StabilizerBlock(StabilizerTier.TIER_2, properties),
