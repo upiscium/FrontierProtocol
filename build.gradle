@@ -23,7 +23,8 @@ sourceSets.main.resources {
 
     // Exclude common development only resources from finalized outputs
     exclude("**/*.bbmodel") // BlockBench project files
-    exclude("src/generated/**/.cache") // datagen cache files
+    exclude("**/.cache") // datagen cache directories
+    exclude("**/.cache/**") // datagen cache contents
 }
 
 def generatedGameTestResources = layout.buildDirectory.dir('generated/gametestResources')
@@ -215,10 +216,322 @@ dependencies {
 }
 
 def productionJar = tasks.named('jar', Jar)
+def productionJarFile = productionJar.flatMap { it.archiveFile }
+def releaseRoot = layout.buildDirectory.dir('release')
+def releaseMetadataDir = layout.buildDirectory.dir('release/metadata')
+def releaseCandidateDir = layout.buildDirectory.dir('release/candidate')
+def releaseChecksum = productionJarFile.flatMap { jar ->
+    releaseMetadataDir.map { directory -> directory.file("${jar.asFile.name}.sha256") }
+}
+def releaseManifest = releaseMetadataDir.map { it.file('release-manifest.json') }
+def localGitCommit = providers.exec {
+    commandLine 'git', 'rev-parse', 'HEAD'
+}.standardOutput.asText.map { it.trim() }
+def sourceCommit = providers.environmentVariable('GITHUB_SHA').orElse(localGitCommit)
+def releaseJavaVersion = java.toolchain.languageVersion.get().asInt().toString()
+
+def verifyReleaseJar = tasks.register('verifyReleaseJar') {
+    group = 'verification'
+    description = 'Verifies production JAR contents and expanded mod metadata.'
+    dependsOn productionJar
+    inputs.file(productionJarFile)
+    inputs.properties([
+            mod_id                 : mod_id,
+            mod_version            : mod_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            create_mod_version     : create_mod_version,
+            tfmg_version           : tfmg_version,
+            spore_version          : spore_version
+    ])
+
+    doLast {
+        Map<String, Object> releaseProperties = inputs.properties
+        File jarFile = inputs.files.singleFile
+        new java.util.zip.ZipFile(jarFile).withCloseable { jar ->
+            Set<String> entries = jar.entries().collect { it.name }.toSet()
+            Set<String> requiredEntries = [
+                    'META-INF/neoforge.mods.toml',
+                    'frontier_protocol.mixins.json',
+                    'assets/frontier_protocol/lang/en_us.json',
+                    'assets/frontier_protocol/lang/ja_jp.json',
+                    'assets/frontier_protocol/models/block/stabilizer_casing_machine.json',
+                    'assets/frontier_protocol/models/item/stabilization_compound.json',
+                    'assets/frontier_protocol/models/item/stabilization_cell.json',
+                    'assets/frontier_protocol/textures/item/stabilization_compound.png',
+                    'assets/frontier_protocol/textures/item/stabilization_cell.png',
+                    'dev/upiscium/frontierprotocol/FrontierProtocolMod.class'
+            ]
+            (1..3).each { tier ->
+                requiredEntries.add("assets/frontier_protocol/blockstates/tier_${tier}_stabilizer.json")
+                requiredEntries.add("assets/frontier_protocol/models/item/tier_${tier}_stabilizer.json")
+                ['offline', 'active', 'grace_period'].each { status ->
+                    requiredEntries.add(
+                            "assets/frontier_protocol/models/block/tier_${tier}_stabilizer_${status}.json")
+                }
+                ['front', 'back', 'side', 'top_offline', 'top_active', 'top_grace'].each { texture ->
+                    requiredEntries.add(
+                            "assets/frontier_protocol/textures/block/tier_${tier}_stabilizer_${texture}.png")
+                }
+            }
+            Set<String> missing = requiredEntries - entries
+            if (!missing.isEmpty()) throw new GradleException("Production JAR is missing entries: ${missing.sort()}")
+
+            [
+                    'dev/upiscium/frontierprotocol/stabilizer/',
+                    'dev/upiscium/frontierprotocol/suppression/',
+                    'dev/upiscium/frontierprotocol/cleanup/',
+                    'dev/upiscium/frontierprotocol/mixin/'
+            ].each { prefix ->
+                if (!entries.any { it.startsWith(prefix) && it.endsWith('.class') }) {
+                    throw new GradleException("Production JAR is missing classes under ${prefix}")
+                }
+            }
+
+            Set<String> forbiddenExact = [
+                    'assets/frontier_protocol/models/block/tier_1_stabilizer_core.json',
+                    'assets/frontier_protocol/models/block/tier_1_stabilizer_gear.json'
+            ]
+            List<String> forbiddenPrefixes = [
+                    'src/', 'run/', 'run-data/', '.gradle/', '.git/',
+                    'net/minecraft/', 'net/neoforged/',
+                    'com/simibubi/create/', 'com/Harbinger/Spore/', 'com/drmangotea/tfmg/'
+            ]
+            Set<String> forbidden = entries.findAll { entry ->
+                forbiddenExact.contains(entry)
+                        || forbiddenPrefixes.any { entry.startsWith(it) }
+                        || entry.endsWith('.bbmodel')
+                        || entry == '.cache'
+                        || entry.startsWith('.cache/')
+                        || entry.endsWith('/.cache')
+                        || entry.contains('/.cache/')
+                        || entry.endsWith('.jar')
+            }
+            if (!forbidden.isEmpty()) {
+                throw new GradleException("Production JAR contains forbidden entries: ${forbidden.sort()}")
+            }
+
+            String metadata = jar.getInputStream(jar.getEntry('META-INF/neoforge.mods.toml'))
+                    .getText(java.nio.charset.StandardCharsets.UTF_8.name())
+            if (metadata.contains('${')) throw new GradleException('Production metadata contains an unexpanded template')
+            [
+                    "modId=\"${releaseProperties.mod_id}\"",
+                    "version=\"${releaseProperties.mod_version}\"",
+                    "versionRange=\"${releaseProperties.minecraft_version_range}\"",
+                    "versionRange=\"[${releaseProperties.neo_version},)\"",
+                    "versionRange=\"[${releaseProperties.create_mod_version},)\"",
+                    "versionRange=\"[${releaseProperties.tfmg_version},)\"",
+                    "versionRange=\"[${releaseProperties.spore_version}]\""
+            ].each { expected ->
+                if (!metadata.contains(expected)) {
+                    throw new GradleException("Production metadata is missing ${expected}")
+                }
+            }
+            List<String> dependencyBlocks = metadata.split(
+                    java.util.regex.Pattern.quote("[[dependencies.${releaseProperties.mod_id}]]"))
+                    .drop(1)
+            ['neoforge', 'minecraft', 'create', 'tfmg', 'spore'].each { dependency ->
+                String dependencyBlock = dependencyBlocks.find { block ->
+                    block.contains("modId=\"${dependency}\"")
+                }
+                if (dependencyBlock == null
+                        || !dependencyBlock.contains('type="required"')
+                        || !dependencyBlock.contains('side="BOTH"')) {
+                    throw new GradleException("Production metadata does not require ${dependency} on BOTH sides")
+                }
+            }
+
+            byte[] mainClass = jar.getInputStream(
+                    jar.getEntry('dev/upiscium/frontierprotocol/FrontierProtocolMod.class')).readAllBytes()
+            int classMajorVersion = ((mainClass[6] & 0xFF) << 8) | (mainClass[7] & 0xFF)
+            if (classMajorVersion != 65) {
+                throw new GradleException("Production classes do not target Java 21: major=${classMajorVersion}")
+            }
+        }
+    }
+}
+
+def generateReleaseChecksum = tasks.register('generateReleaseChecksum') {
+    group = 'build'
+    description = 'Generates the production JAR SHA-256 checksum.'
+    dependsOn verifyReleaseJar
+    inputs.file(productionJarFile)
+    outputs.file(releaseChecksum)
+
+    doLast {
+        File jarFile = inputs.files.singleFile
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        jarFile.withInputStream { input ->
+            byte[] buffer = new byte[8192]
+            int count
+            while ((count = input.read(buffer)) >= 0) {
+                if (count > 0) digest.update(buffer, 0, count)
+            }
+        }
+        File checksumFile = outputs.files.singleFile
+        checksumFile.parentFile.mkdirs()
+        checksumFile.setText("${digest.digest().encodeHex()}  ${jarFile.name}\n", 'UTF-8')
+    }
+}
+
+def generateReleaseManifest = tasks.register('generateReleaseManifest') {
+    group = 'build'
+    description = 'Generates the reproducible release manifest.'
+    dependsOn generateReleaseChecksum
+    inputs.files(productionJarFile, releaseChecksum)
+    inputs.property('source_commit', sourceCommit)
+    inputs.properties([
+            mod_id            : mod_id,
+            mod_name          : mod_name,
+            mod_version       : mod_version,
+            minecraft_version : minecraft_version,
+            java_version      : releaseJavaVersion,
+            neo_version       : neo_version,
+            create_version    : create_version,
+            create_mod_version: create_mod_version,
+            tfmg_version      : tfmg_version,
+            spore_version     : spore_version,
+            spore_file_id     : spore_file_id
+    ])
+    outputs.file(releaseManifest)
+
+    doLast {
+        Map<String, Object> releaseProperties = inputs.properties
+        String commit = releaseProperties.source_commit.toString().trim()
+        if (!(commit ==~ /[0-9a-fA-F]{40}/)) {
+            throw new GradleException("Unable to resolve a full Git commit SHA: '${commit}'")
+        }
+        File jarFile = inputs.files.files.find { it.name.endsWith('.jar') }
+        File checksumFile = inputs.files.files.find { it.name.endsWith('.jar.sha256') }
+        String checksum = checksumFile.getText('UTF-8').tokenize().first()
+        Map<String, Object> manifest = [
+                schema_version: 1,
+                release_status: 'internal_alpha_candidate',
+                mod           : [
+                        id     : releaseProperties.mod_id,
+                        name   : releaseProperties.mod_name,
+                        version: releaseProperties.mod_version
+                ],
+                source        : [git_commit: commit.toLowerCase(java.util.Locale.ROOT)],
+                platform      : [
+                        minecraft: releaseProperties.minecraft_version,
+                        java     : releaseProperties.java_version,
+                        neoforge : releaseProperties.neo_version
+                ],
+                dependencies  : [
+                        create_artifact: releaseProperties.create_version,
+                        create_mod     : releaseProperties.create_mod_version,
+                        tfmg           : releaseProperties.tfmg_version,
+                        spore          : releaseProperties.spore_version,
+                        spore_file_id  : releaseProperties.spore_file_id
+                ],
+                artifact      : [filename: jarFile.name, sha256: checksum]
+        ]
+        File manifestFile = outputs.files.singleFile
+        manifestFile.parentFile.mkdirs()
+        manifestFile.setText(
+                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(manifest)) + '\n',
+                'UTF-8')
+    }
+}
+
+def assembleReleaseCandidate = tasks.register('assembleReleaseCandidate', Sync) {
+    group = 'build'
+    description = 'Assembles the verified three-file Release Candidate bundle.'
+    dependsOn productionJar, generateReleaseChecksum, generateReleaseManifest
+    inputs.property('jar_name', productionJarFile.map { it.asFile.name })
+    into releaseCandidateDir
+    from productionJarFile
+    from releaseChecksum
+    from releaseManifest
+
+    doLast {
+        File candidateDirectory = outputs.files.singleFile
+        String jarName = inputs.properties.jar_name
+        Set<String> expected = [jarName, "${jarName}.sha256", 'release-manifest.json']
+        Set<String> actual = candidateDirectory.listFiles().findAll { it.isFile() }.collect { it.name }.toSet()
+        if (actual != expected || candidateDirectory.listFiles().any { it.isDirectory() }) {
+            throw new GradleException("Unexpected Release Candidate contents: ${actual.sort()}")
+        }
+    }
+}
+
+tasks.register('verifyReleaseCandidate') {
+    group = 'verification'
+    description = 'Verifies the candidate checksum, manifest, and exact file set.'
+    dependsOn assembleReleaseCandidate
+    inputs.dir(releaseCandidateDir)
+    inputs.property('candidate_directory', releaseCandidateDir.map { it.asFile.absolutePath })
+    inputs.property('jar_name', productionJarFile.map { it.asFile.name })
+    inputs.properties([
+            mod_id            : mod_id,
+            mod_name          : mod_name,
+            mod_version       : mod_version,
+            minecraft_version : minecraft_version,
+            java_version      : releaseJavaVersion,
+            neo_version       : neo_version,
+            create_version    : create_version,
+            create_mod_version: create_mod_version,
+            tfmg_version      : tfmg_version,
+            spore_version     : spore_version,
+            spore_file_id     : spore_file_id
+    ])
+
+    doLast {
+        Map<String, Object> releaseProperties = inputs.properties
+        File candidateDirectory = new File(releaseProperties.candidate_directory.toString())
+        String jarName = releaseProperties.jar_name
+        Set<String> expected = [jarName, "${jarName}.sha256", 'release-manifest.json']
+        Set<String> actual = candidateDirectory.listFiles().findAll { it.isFile() }.collect { it.name }.toSet()
+        if (actual != expected || candidateDirectory.listFiles().any { it.isDirectory() }) {
+            throw new GradleException("Unexpected Release Candidate contents: ${actual.sort()}")
+        }
+
+        File jarFile = new File(candidateDirectory, jarName)
+        File checksumFile = new File(candidateDirectory, "${jarName}.sha256")
+        def checksumMatch = checksumFile.getText('UTF-8') =~ /^([0-9a-f]{64})  (.+)\n$/
+        if (!checksumMatch.matches() || checksumMatch.group(2) != jarName) {
+            throw new GradleException('Release checksum has an invalid format or JAR filename')
+        }
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        jarFile.withInputStream { input ->
+            byte[] buffer = new byte[8192]
+            int count
+            while ((count = input.read(buffer)) >= 0) {
+                if (count > 0) digest.update(buffer, 0, count)
+            }
+        }
+        String checksum = digest.digest().encodeHex().toString()
+        if (checksum != checksumMatch.group(1)) throw new GradleException('Release checksum does not match the JAR')
+
+        Map<String, Object> manifest = new groovy.json.JsonSlurper().parse(
+                new File(candidateDirectory, 'release-manifest.json'))
+        if (manifest.schema_version != 1 || manifest.release_status != 'internal_alpha_candidate'
+                || manifest.mod.id != releaseProperties.mod_id
+                || manifest.mod.name != releaseProperties.mod_name
+                || manifest.mod.version != releaseProperties.mod_version
+                || manifest.platform.minecraft != releaseProperties.minecraft_version
+                || manifest.platform.java != releaseProperties.java_version
+                || manifest.platform.neoforge != releaseProperties.neo_version
+                || manifest.dependencies.create_artifact != releaseProperties.create_version
+                || manifest.dependencies.create_mod != releaseProperties.create_mod_version
+                || manifest.dependencies.tfmg != releaseProperties.tfmg_version
+                || manifest.dependencies.spore != releaseProperties.spore_version
+                || manifest.dependencies.spore_file_id != releaseProperties.spore_file_id
+                || manifest.artifact.filename != jarName
+                || manifest.artifact.sha256 != checksum) {
+            throw new GradleException('Release manifest does not match the candidate or Gradle properties')
+        }
+        if (!(manifest.source.git_commit ==~ /[0-9a-fA-F]{40}/)) {
+            throw new GradleException('Release manifest does not contain a full Git commit SHA')
+        }
+    }
+}
+
 tasks.named('test', Test).configure {
     useJUnitPlatform()
     dependsOn productionJar
-    systemProperty 'frontierProtocol.testJar', productionJar.flatMap { it.archiveFile }.get().asFile.absolutePath
+    systemProperty 'frontierProtocol.testJar', productionJarFile.get().asFile.absolutePath
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

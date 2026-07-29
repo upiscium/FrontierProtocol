@@ -44,6 +44,9 @@ All notable changes to Frontier Protocol are documented in this file.
 - Replaced all Stabilizer placeholder models with Copper, Andesite, and Brass casing designs, 18 original 32x32 face textures, and static red, green, and yellow top status LEDs.
 - Added all three Stabilizer Block Items to Functional Blocks in Tier order and verified inventory, JEI, held, dropped, Item Frame, and Ponder presentation.
 - Added block, wrench, Codec, model, texture, Create-reference, and production-JAR tests plus all-tier side-versus-front/back kinetic GameTest coverage and wrench-network reconnection checks.
+- Excluded datagen cache files from the production JAR.
+- Added SHA-256 and source/dependency manifest generation.
+- Bundled the verified production JAR and metadata in the CI artifact.
 
 ### Compatibility
 

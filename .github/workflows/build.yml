@@ -5,6 +5,10 @@ on:
     branches:
       - main
       - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -15,6 +19,10 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+
+      - name: Require main for manual candidate
+        if: github.event_name == 'workflow_dispatch'
+        run: test "${GITHUB_REF}" = "refs/heads/main"
 
       - name: Setup JDK 21
         uses: actions/setup-java@v4
@@ -40,10 +48,13 @@ jobs:
       - name: Run GameTests
         run: ./gradlew runGameTestServer
 
-      - name: Upload internal alpha JAR
+      - name: Assemble release candidate
+        run: ./gradlew verifyReleaseCandidate
+
+      - name: Upload release candidate bundle
         uses: actions/upload-artifact@v4
         with:
-          name: frontier_protocol-0.1.0-alpha.1
-          path: build/libs/frontier_protocol-0.1.0-alpha.1.jar
+          name: frontier_protocol-0.1.0-alpha.1-release-candidate
+          path: build/release/candidate/*
           if-no-files-found: error
-          retention-days: 10
+          retention-days: 14
