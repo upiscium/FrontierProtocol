@@ -100,8 +100,9 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
                     && clientDisplaySnapshot.status() == StabilizerStatus.ACTIVE
                     && isRpmSufficient(getSpeed(), clientDisplaySnapshot.minimumRpm());
             clientCoreAngle += Tier1StabilizerAnimation.coreRotationDelta(getSpeed(), active);
-            if (clientCoreAngle >= 360.0F) clientCoreAngle -= 360.0F;
-            if (clientCoreAngle < 0.0F) clientCoreAngle += 360.0F;
+            float completedTurns = Tier1StabilizerAnimation.rebaseTurns(clientCoreAngle);
+            clientCoreAngle -= completedTurns;
+            previousClientCoreAngle -= completedTurns;
             return;
         }
         if (isRemoved() || isVirtual()) {
@@ -170,7 +171,7 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     }
 
     public float clientCoreAngle(float partialTick) {
-        return previousClientCoreAngle + (clientCoreAngle - previousClientCoreAngle) * partialTick;
+        return Tier1StabilizerAnimation.interpolateAngle(previousClientCoreAngle, clientCoreAngle, partialTick);
     }
 
     @Override

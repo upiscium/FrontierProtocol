@@ -22,6 +22,26 @@ class Tier1StabilizerAnimationTest {
     }
 
     @Test
+    void continuousAngleInterpolationDoesNotReverseAtEitherWrap() {
+        assertEquals(359.0F, Tier1StabilizerAnimation.interpolateAngle(359.0F, 362.0F, 0.0F));
+        assertEquals(360.5F, Tier1StabilizerAnimation.interpolateAngle(359.0F, 362.0F, 0.5F));
+        assertEquals(362.0F, Tier1StabilizerAnimation.interpolateAngle(359.0F, 362.0F, 1.0F));
+        assertEquals(-0.5F, Tier1StabilizerAnimation.interpolateAngle(1.0F, -2.0F, 0.5F));
+        assertEquals(0.5F, Tier1StabilizerAnimation.renderedAngle(360.5F));
+        assertEquals(359.5F, Tier1StabilizerAnimation.renderedAngle(-0.5F));
+    }
+
+    @Test
+    void rebasingPreservesPositiveAndNegativeRotationDeltas() {
+        float positiveTurns = Tier1StabilizerAnimation.rebaseTurns(36_002.0F);
+        assertEquals(3.0F, (36_002.0F - positiveTurns) - (35_999.0F - positiveTurns));
+
+        float negativeTurns = Tier1StabilizerAnimation.rebaseTurns(-36_002.0F);
+        assertEquals(-3.0F, (-36_002.0F - negativeTurns) - (-35_999.0F - negativeTurns));
+        assertEquals(0.0F, Tier1StabilizerAnimation.rebaseTurns(36_000.0F));
+    }
+
+    @Test
     void graceBlinkAcceleratesAtThresholdsAndStaysBounded() {
         assertEquals(0.75, Tier1StabilizerAnimation.graceBlinkFrequency(60, 100));
         assertEquals(1.5, Tier1StabilizerAnimation.graceBlinkFrequency(30, 100));

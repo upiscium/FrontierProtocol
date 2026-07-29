@@ -18,6 +18,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 
 public final class StabilizerBlockEntityRenderer implements BlockEntityRenderer<StabilizerBlockEntity> {
     private static final ResourceLocation CORE_TEXTURE = texture("tier_1_stabilizer_core.png");
@@ -53,7 +54,10 @@ public final class StabilizerBlockEntityRenderer implements BlockEntityRenderer<
         poseStack.translate(-0.5F, 0.5F, -0.5F);
         poseStack.scale(1.0F, -1.0F, 1.0F);
 
-        gear.yRot = (float) Math.toRadians(blockEntity.clientCoreAngle(partialTick));
+        gear.xRot = 0.0F;
+        gear.yRot = 0.0F;
+        gear.zRot = -Mth.DEG_TO_RAD
+                * Tier1StabilizerAnimation.renderedAngle(blockEntity.clientCoreAngle(partialTick));
         VertexConsumer gearBuffer = buffers.getBuffer(RenderType.entityCutoutNoCull(GEAR_TEXTURE));
         gear.render(poseStack, gearBuffer, packedLight, OverlayTexture.NO_OVERLAY);
 

@@ -1,6 +1,7 @@
 package dev.upiscium.frontierprotocol.stabilizer;
 
 public final class Tier1StabilizerAnimation {
+    private static final float ANGLE_REBASE_THRESHOLD = 36_000.0F;
     public static final int ACTIVE_COLOR = 0x39D47A;
     public static final int GRACE_COLOR = 0xF1C840;
     public static final int OFFLINE_COLOR = 0xA83B3B;
@@ -33,6 +34,20 @@ public final class Tier1StabilizerAnimation {
         if (!active || speed == 0.0F) return 0.0F;
         float magnitude = Math.clamp(Math.abs(speed) * 0.10F, 2.0F, 9.0F);
         return Math.copySign(magnitude, speed);
+    }
+
+    public static float interpolateAngle(float previous, float current, float partialTick) {
+        return previous + (current - previous) * partialTick;
+    }
+
+    public static float renderedAngle(float angle) {
+        float remainder = angle % 360.0F;
+        return remainder < 0.0F ? remainder + 360.0F : remainder;
+    }
+
+    public static float rebaseTurns(float angle) {
+        if (Math.abs(angle) <= ANGLE_REBASE_THRESHOLD) return 0.0F;
+        return (float) Math.floor(angle / 360.0F) * 360.0F;
     }
 
     public static float corePulse(double timeSeconds) {
