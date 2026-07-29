@@ -36,6 +36,9 @@ All notable changes to Frontier Protocol are documented in this file.
 - Added physical unheated Mixing assertions and Tier 1/2/3 Mechanical Crafter execution tests, including exact output and upgrade-consumption checks.
 - Added the remaining per-Cell Grace reserve to the ACTIVE Engineer's Goggles display in English and Japanese.
 - Verified backup-Cell rollover, insufficient-RPM and Overstressed Grace behavior, client reconnect synchronization, and dedicated-server lifecycle persistence.
+- Replaced the Stabilization Compound and Stabilization Cell vanilla placeholder icons with custom 32x32 item textures.
+- Added automated validation for final item models, PNG properties, visual distinction, and production-JAR packaging.
+- Strengthened pull-request CI with unit and asset tests, datagen clean-diff enforcement, clean build, GameTests, and a short-lived internal alpha JAR artifact.
 
 ### Compatibility
 

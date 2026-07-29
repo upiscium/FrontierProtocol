@@ -112,10 +112,11 @@ use a different Spore version with this alpha build.
 Release-specific compatibility notes and verification details are documented
 in [`docs/alpha-release.md`](docs/alpha-release.md).
 
-All three tiers, Compound, and Cell currently use explicit internal-alpha
-placeholder models backed only by vanilla textures. No custom PNG or final art
-is included; see
-[`docs/placeholder-assets.md`](docs/placeholder-assets.md).
+Stabilization Compound and Stabilization Cell use custom final 32x32 item icons.
+The three Stabilizer blocks still use internal-alpha placeholder models and
+vanilla textures; see [`docs/placeholder-assets.md`](docs/placeholder-assets.md)
+and [R10 Final Item Assets](docs/r10-item-assets.md). Final block art, the
+project logo, licensing decisions, and public distribution remain pending.
 
 ## Development
 
