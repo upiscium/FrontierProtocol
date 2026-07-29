@@ -21,7 +21,7 @@ Four block-model resources define the open-frame base and three static status pr
 
 The base model has real north, west, east, and top apertures around one central chamber rather than transparent markings over a solid cuboid. Its south side remains sealed and includes a centered reinforcement plate, bearing housing, shaft collar reaching the `z=16` connection plane, and two non-emissive conduits. Tier 1 disables occlusion so adjacent faces remain visible through its cut corners and windows; its collision shape remains a full cube. Tier 2 and Tier 3 retain their original occlusion and models.
 
-The asset set contains 26 custom 32x32 RGBA block textures. Static status textures keep OFFLINE, ACTIVE, and GRACE_PERIOD distinguishable if animated rendering is unavailable. The core, gear, and light mask require transparent backgrounds. Tier 1 final models do not reference its former Vanilla iron, copper, redstone, deepslate, or copper-grate placeholders and do not copy Vanilla, Create, TFMG, or Spore textures.
+The asset set contains 18 referenced custom 32x32 RGBA block textures. Every production texture is referenced by a static model or the Block Entity renderer. Static status textures keep OFFLINE, ACTIVE, and GRACE_PERIOD distinguishable if animated rendering is unavailable. The core, gear, and light mask require transparent backgrounds. Eight unused casing, armor, plate, warning, window, and state-ring textures were removed. Tier 1 final models do not reference its former Vanilla iron, copper, redstone, deepslate, or copper-grate placeholders and do not copy Vanilla, Create, TFMG, or Spore textures.
 
 ## Dynamic presentation
 
@@ -37,6 +37,8 @@ The gear rotates around its local Z axis so it stays parallel to the north-facin
 
 Display synchronization uses schema version 2 and includes both `graceRemainingTicks` and `graceDurationTicks`. The client derives warning cadence from their ratio. Invalid snapshots, missing fields, wrong schema versions, and remaining Grace above duration are rejected. The visual angle is client-only and is not persisted or sent in server NBT.
 
+The server-authoritative display snapshot remains the first visual source. When it is absent, including in Ponder and before the first display packet, Tier 1 resolves its visual state from the BlockState `status` property and uses the configured minimum RPM. Missing `status` falls back to OFFLINE. Snapshotless GRACE_PERIOD uses the same warning renderer with a fixed 0.75 Hz low-frequency blink. Ponder does not write synthetic display NBT and uses this same resolver for its ACTIVE gear, core, and lights.
+
 `TierOneStabilizerBlock` owns a dedicated `simpleCodec` that reconstructs the Tier 1 subclass and its `facing` contract. The tier remains fixed by the class and is not serialized as a codec field. Tier 2 and Tier 3 continue to use `StabilizerBlock.CODEC`.
 
 ## Automated verification
@@ -49,7 +51,8 @@ Automated coverage verifies:
 - removal of the three unused dynamic JSON models, with Java `ModelPart` retained as the dynamic source of truth;
 - open-frame texture slots, absence of the former solid central cuboid, and rear bearing geometry reaching `z=16`;
 - the static OFFLINE item-model parent and rejection of former Tier 1 placeholder references;
-- all 26 textures for dimensions, alpha, visible content, color detail, and required transparent backgrounds;
+- all 18 referenced textures for dimensions, alpha, visible content, color detail, required transparent backgrounds, and production-JAR inclusion, plus classpath and JAR absence for the eight removed textures;
+- snapshot-first visual status, BlockState fallback, configured minimum-RPM fallback, missing-property OFFLINE fallback, and snapshotless Grace blink;
 - state colors, Grace frequency thresholds and alpha bounds, signed speed, speed clamp, wrap-safe interpolation, long-running-angle rebasing, and ACTIVE pulse;
 - Tier 1 dedicated codec encode/decode, restored subclass and rear shaft behavior, Tier 1 no-occlusion, full-cube collision, and Tier 2/3 codec and occlusion regressions;
 - display schema v2 round trips and invalid-input rejection;
@@ -59,14 +62,14 @@ Unit tests, datagen cleanliness, clean build, and all 39 GameTests pass after al
 
 ## Manual verification status
 
-Focused client verification: **PENDING**. Until it is completed, R11 does not claim that the following have passed in game:
+Focused client verification: **PASS**.
 
-- body, core, gear, and light alignment without clipping or z-fighting;
-- all four facings and rear-only physical shaft attachment;
-- OFFLINE, ACTIVE, and GRACE_PERIOD colors and animation;
-- 32, 64, and 128+ RPM plus negative-speed rotation;
-- high-, middle-, and low-reserve Grace warning cadence;
-- Fast and Fancy graphics, English and Japanese, and GUI Scale 2 and Auto;
-- inventory, held, dropped, Item Frame, JEI, and Operation/Coverage/Production Ponder presentation.
+- NORTH, EAST, SOUTH, and WEST placement, rotated windows and UVs, rear bearing, rear-only physical kinetic attachment, and Stone/Glass/Iron/Tier 1 adjacency passed.
+- OFFLINE dim-red, ACTIVE green/core pulse/local-Z gear motion, and GRACE_PERIOD synchronized yellow warning lights passed without clipping or z-fighting.
+- Actual kinetic speeds of positive and negative 32, 64, and 128 RPM passed; frame sequences showed direction reversal, visible speed differences, planar gear motion, and continuous full-turn animation.
+- Grace reserves above 60%, near 30%, and near 10% passed with visibly increasing 0.75, 1.5, and 3 Hz cadence bands.
+- Japanese with GUI Scale Auto and Fancy graphics, and English with GUI Scale 2 and Fast graphics, both passed ACTIVE and GRACE_PERIOD world rendering.
+- Inventory, creative catalog, held, dropped Item Entity, Item Frame, JEI, and Ponder ItemStack rendering passed with the static OFFLINE item model.
+- Operation Ponder passed OFFLINE, ACTIVE gear/core/green lights, and GRACE_PERIOD yellow blink; Coverage and Production completed without a scene crash or Frontier Protocol missing texture.
 
 The dedicated server was repeated after the renderer addition. It loaded 3593 recipes, reached `Done` without a renderer client-class error, and stopped normally. The existing optional Farmers Delight recipe parse warning from Spore remains unrelated to R11. Tier 2 and Tier 3 final art, the project logo, licensing decisions, and public distribution remain pending.

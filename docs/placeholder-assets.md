@@ -27,6 +27,6 @@ The Stabilization Compound and Stabilization Cell use custom final item textures
 
 R6 established the Compound, Cell, and Tier 1 placeholders. R7 retains those models and adds Tier 2 and Tier 3 placeholders from the exact vanilla copper, deepslate, obsidian, netherite, and blackstone texture families listed above; it does not replace R6 assets with final art.
 
-R8 retained every placeholder block and item model. R10 replaces only the two non-block item icons. R11 replaces the Tier 1 placeholder with four static block-model resources, 26 custom 32x32 RGBA textures, 12 facing/status variants, and Java `ModelPart` animated parts. Goggle text, line-based range rendering, and Ponder storyboards add no particle texture.
+R8 retained every placeholder block and item model. R10 replaces only the two non-block item icons. R11 replaces the Tier 1 placeholder with four static block-model resources, 18 referenced custom 32x32 RGBA textures, 12 facing/status variants, and Java `ModelPart` animated parts. Every final Tier 1 texture is referenced by a model or renderer; eight unused production textures were removed. Goggle text, line-based range rendering, and Ponder storyboards add no particle texture.
 
 Production Ponder continues to use Create equipment models and TFMG's own Liquid Plastic rendering from the required dependency. The R10 item textures and R11 Tier 1 textures are Frontier Protocol assets and do not copy Vanilla, Create, TFMG, or Spore textures.

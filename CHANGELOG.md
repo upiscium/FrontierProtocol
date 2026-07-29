@@ -48,6 +48,10 @@ All notable changes to Frontier Protocol are documented in this file.
 - Rebuilt the Tier 1 body around four real window apertures with one central 3D core, synchronized front/left/right/top status lights, an eight-tooth front gear, and a rear bearing housing.
 - Added Tier 1-only non-occluding rendering while preserving full-cube collision, and added a dedicated Tier 1 block codec that reconstructs the directional subclass.
 - Removed three unused dynamic block-model JSON files; Java `ModelPart` geometry is now the sole dynamic-model definition.
+- Added snapshot-first Tier 1 visual resolution with BlockState and configured-RPM fallback so ACTIVE and GRACE_PERIOD animate correctly in Ponder and before the first display packet.
+- Removed eight unused Tier 1 PNGs, leaving 18 production textures that are all referenced by a model or renderer.
+- Added the Tier 1 block item to the Functional Blocks catalog so creative search and JEI expose its static OFFLINE item model.
+- Completed focused client verification for four facings, signed 32/64/128 RPM, three Grace cadence bands, Fast/Fancy, English/Japanese, GUI Scale 2/Auto, item contexts, JEI, and all three Ponder scenes.
 
 ### Compatibility
 
