@@ -94,11 +94,14 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         if (!hasLevel()) return;
         super.tick();
         if (!(level instanceof ServerLevel serverLevel)) {
+            if (tier != StabilizerTier.TIER_1) return;
             previousClientCoreAngle = clientCoreAngle;
-            boolean active = tier == StabilizerTier.TIER_1
-                    && clientDisplaySnapshot != null
-                    && clientDisplaySnapshot.status() == StabilizerStatus.ACTIVE
-                    && isRpmSufficient(getSpeed(), clientDisplaySnapshot.minimumRpm());
+            StabilizerStatus visualStatus = Tier1StabilizerVisualState.resolveStatus(
+                    clientDisplaySnapshot, getBlockState());
+            int minimumRpm = Tier1StabilizerVisualState.resolveMinimumRpm(
+                    clientDisplaySnapshot, definition().minimumRpm());
+            boolean active = visualStatus == StabilizerStatus.ACTIVE
+                    && isRpmSufficient(getSpeed(), minimumRpm);
             clientCoreAngle += Tier1StabilizerAnimation.coreRotationDelta(getSpeed(), active);
             float completedTurns = Tier1StabilizerAnimation.rebaseTurns(clientCoreAngle);
             clientCoreAngle -= completedTurns;

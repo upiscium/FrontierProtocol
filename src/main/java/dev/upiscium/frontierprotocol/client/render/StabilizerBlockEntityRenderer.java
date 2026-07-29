@@ -8,6 +8,7 @@ import dev.upiscium.frontierprotocol.stabilizer.StabilizerBlockEntity;
 import dev.upiscium.frontierprotocol.stabilizer.StabilizerStatus;
 import dev.upiscium.frontierprotocol.stabilizer.StabilizerTier;
 import dev.upiscium.frontierprotocol.stabilizer.Tier1StabilizerAnimation;
+import dev.upiscium.frontierprotocol.stabilizer.Tier1StabilizerVisualState;
 import dev.upiscium.frontierprotocol.stabilizer.TierOneStabilizerBlock;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.LightTexture;
@@ -46,7 +47,7 @@ public final class StabilizerBlockEntityRenderer implements BlockEntityRenderer<
         if (blockEntity.tier() != StabilizerTier.TIER_1
                 || !blockEntity.getBlockState().hasProperty(TierOneStabilizerBlock.FACING)) return;
         var snapshot = blockEntity.displaySnapshot();
-        StabilizerStatus status = snapshot == null ? StabilizerStatus.OFFLINE : snapshot.status();
+        StabilizerStatus status = Tier1StabilizerVisualState.resolveStatus(snapshot, blockEntity.getBlockState());
 
         poseStack.pushPose();
         poseStack.translate(0.5F, 0.5F, 0.5F);
@@ -81,12 +82,8 @@ public final class StabilizerBlockEntityRenderer implements BlockEntityRenderer<
         float alpha = switch (status) {
             case ACTIVE -> 1.0F;
             case OFFLINE -> 0.55F;
-            case GRACE_PERIOD -> snapshot == null
-                    ? 0.25F
-                    : Tier1StabilizerAnimation.graceLightAlpha(
-                            gameTime(blockEntity, partialTick),
-                            snapshot.graceRemainingTicks(),
-                            snapshot.graceDurationTicks());
+            case GRACE_PERIOD -> Tier1StabilizerVisualState.resolveGraceLightAlpha(
+                    snapshot, gameTime(blockEntity, partialTick));
         };
         lights.render(
                 poseStack,
