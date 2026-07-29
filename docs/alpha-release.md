@@ -11,7 +11,7 @@ The candidate artifact produced by the build is `frontier_protocol-0.1.0-alpha.1
 Public distribution of 0.1.0-alpha.1 has been deferred.
 This version is currently used for internal testing and integration validation only.
 
-The accepted Stabilizer consumable model is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), with the current TFMG Compound materials in [ADR 0004](adr/0004-tfmg-compound-production.md). The common tier architecture is recorded in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md), and the finite Grace contract in [ADR 0005](adr/0005-per-cell-grace-budget.md). Operational display architecture is recorded in [ADR 0003](adr/0003-operational-display-and-client-visualization.md), with current behavior documented in [R9 Balance Hardening](r9-balance-hardening.md).
+The accepted Stabilizer consumable model is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), with the current TFMG Compound materials in [ADR 0004](adr/0004-tfmg-compound-production.md). The common tier architecture is recorded in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md), and the finite Grace contract in [ADR 0005](adr/0005-per-cell-grace-budget.md). Operational display architecture is recorded in [ADR 0003](adr/0003-operational-display-and-client-visualization.md), with current behavior documented in [R9 Balance Hardening](r9-balance-hardening.md) and the Tier 1 visual contract in [R11 Tier 1 Final Block Asset](r11-tier1-final-block-asset.md).
 
 ## Compatibility matrix
 
@@ -31,7 +31,7 @@ Spore 2.2.0j is the artifact audited by SHA-256 in `docs/spore-integration-audit
 - The persisted initial Overworld spawn center supplies permanent suppression, using a configurable radius of two chunks by default.
 - Fresh-world spawn search publishes a provisional center before normal ore placement and replaces it with the final center when spawn selection completes.
 - Tier 1, Tier 2, and Tier 3 use a real Create kinetic network and the same finished Stabilization Cell. Their default coverage is 1x1, 3x3, and 5x5 chunks. A machine consumes one Cell when beginning an ACTIVE duration and grants one finite Grace budget. ACTIVE and recovery do not refill spent Grace; only a new Cell does.
-- All three Registry entries use one shared `StabilizerBlock`, one shared `StabilizerBlockEntity` class/type, and one state machine. Generic `STABILIZER` source IDs include tier and position as `stabilizer/<tier>/<x>_<y>_<z>`.
+- Tier 1 uses a dedicated `StabilizerBlock` subclass only for horizontal facing and rear-only shaft input. All three Registry entries retain one shared `StabilizerBlockEntity` class/type and one state machine. Generic `STABILIZER` source IDs include tier and position as `stabilizer/<tier>/<x>_<y>_<z>`.
 - While ACTIVE, each source incrementally removes audited removable Spore foliage from loaded covered chunks under its tier cleanup profile and hard server-global caps. Cleanup pauses during grace and resumes from persisted progress after power recovery or reload.
 - Multiple sources can cover the same chunk without premature removal, and identical chunk coordinates remain independent across dimensions.
 - Audited Spore environmental spread, offset foliage and branch writes, configured conversion, falling wood conversion, HiveTumor/Proto CDU replacement, and Mound additions query the actual mutation target before writing.
@@ -39,6 +39,7 @@ Spore 2.2.0j is the artifact audited by SHA-256 in `docs/spore-integration-audit
 - Engineer's Goggles expose server-authoritative Stabilizer operation, Shift details, and a targeted chunk-range overlay. Static item tooltips and localized Ponder scenes explain operation, coverage, production, physical-defense limits, and initial-spawn protection.
 - Reducing configured Cell capacity does not delete existing inventory. Operational snapshots continue to report the actual over-capacity buffer, such as `32 / 8`, until Cells are consumed normally.
 - Ponder Operation scenes show the selected Stabilizer Tier and represent Cell insertion through Create logistics. Stabilizers do not support direct right-click Cell insertion.
+- Tier 1 has a final directional model with four horizontal facings and three static status variants. Its client renderer adds ACTIVE core and gear motion, an ACTIVE pulse, a ratio-driven GRACE_PERIOD warning blink, and a dim OFFLINE light. Kinetic input connects only to the rear face.
 
 At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress, hold 8/32/64 Cells, run 6000/3000/2000 ticks per Cell, and receive per-Cell Grace budgets of 1200/1800/2400 ticks. Their 1/9/25-chunk coverage yields 6000/27000/50000 protected chunk-ticks per Cell. Full buffers provide 40 minutes, 80 minutes, and 106 minutes 40 seconds. Existing world serverconfig values remain unchanged until an operator updates the three Grace keys manually.
 
@@ -47,11 +48,11 @@ At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress,
 - Existing infected terrain, structures, nests, active hazards, and Block Entities are not restored, removed, replaced, or frozen. Cleanup is an explicit allowlist of audited non-Block-Entity foliage and replaces it only with air or retained water.
 - All tiers and Stabilization Cells have Create production recipes. Compound cannot power a Stabilizer directly; the bundled consumable tag accepts only Cells, while datapacks may explicitly extend that public tag. The common consumable decision is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), and the shared tier architecture in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md).
 - R9 fixes the current recipe quantities and operating values for this internal candidate. Future changes require a new balance decision.
-- Stabilization Compound and Stabilization Cell have final custom 32x32 RGBA item art. Tier 1, Tier 2, and Tier 3 block models and textures remain internal-alpha placeholders; see [Asset Status](placeholder-assets.md) and [R10 Final Item Assets](r10-item-assets.md).
+- Stabilization Compound and Stabilization Cell have final custom 32x32 RGBA item art. Tier 1 has final custom block art; Tier 2 and Tier 3 block models and textures remain internal-alpha placeholders. See [Asset Status](placeholder-assets.md), [R10 Final Item Assets](r10-item-assets.md), and [R11 Tier 1 Final Block Asset](r11-tier1-final-block-asset.md).
 - Hostile mob movement, combat, block breaking, and explosions are not containment responsibilities.
 - Spore random ticks, scheduled ticks, and existing infected block-entity state continue normally.
 - World-generation features outside the selected runtime Spore spread paths are not globally intercepted.
-- R9 adds no Block Entity GUI, persistent HUD, particles, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, multiblock, moving-contraption suppression, chunk loading, terrain restoration, or nest or mob handling. R10 changes only Compound and Cell item art; block art remains pending.
+- R9 adds no Block Entity GUI, persistent HUD, particles, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, multiblock, moving-contraption suppression, chunk loading, terrain restoration, or nest or mob handling. R10 changes only Compound and Cell item art. R11 changes Tier 1 presentation and shaft orientation only; it does not change operation, balance, recipes, coverage, cleanup, Tier 2, or Tier 3.
 - No Minecraft-wide `Level#setBlock` hook is used.
 
 ## Verification status
@@ -66,7 +67,9 @@ Extended R9 manual verification also passed for insufficient RPM, Overstressed o
 
 R10 final item-art verification passed for Compound and Cell in Japanese at GUI Scale Auto and English at GUI Scale 2. Creative inventory, tooltips, JEI production views, Ponder controls, held, dropped, and Item Frame rendering showed distinct icons without a Frontier Protocol missing texture or atlas error. Automated tests also verify PNG quality, exact model references, and production-JAR packaging.
 
-Final item art: Compound complete; Cell complete. Final block art: Tier 1 pending; Tier 2 pending; Tier 3 pending. This partial asset completion does not make the alpha approved for public distribution.
+R11 automated verification covers all 12 Tier 1 facing/status blockstate variants, seven block-model resources, 26 custom 32x32 RGBA textures, item-model selection, animation calculations, orientation invariants, display schema v2, and production-JAR packaging. Unit tests, datagen cleanliness, clean build, and all 39 GameTests pass. The dedicated server also reached `Done` after the renderer addition without a client-class error and stopped normally. Focused in-game rendering verification remains pending and is not recorded as passed.
+
+Final item art: Compound complete; Cell complete. Final block art: Tier 1 implemented with in-game visual verification pending; Tier 2 pending; Tier 3 pending. This partial asset completion does not make the alpha approved for public distribution.
 
 The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. The dedicated-server smoke reached the server-ready state with Create and Spore without a Mixin application or client-class error. The client smoke used a graphical display; a `glfwInit` failure when `DISPLAY` is unavailable would not constitute a successful client smoke test.
 
@@ -88,5 +91,6 @@ The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mix
 - [x] Complete the focused R9 client Grace lifecycle smoke.
 - [x] Verify client reconnect and dedicated-server lifecycle persistence.
 - [x] Inspect the production JAR contents and generated metadata.
+- Complete the focused R11 Tier 1 directional model, animation, state-light, inventory, JEI, and Ponder client smoke.
 - Set the actual release date.
 - Prepare an icon or screenshots only if required by the selected channel.

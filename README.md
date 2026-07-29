@@ -51,10 +51,13 @@ containment integration preview:
   Tier 3. ACTIVE and power recovery do not refill spent Grace; only a new Cell does.
 - Physical Create GameTests for unheated Compound Mixing, all three Mechanical
   Crafter recipes, and default-duration Tier 2/Tier 3 continuous Cell logistics.
+- A final directional Tier 1 block asset with state lights, an ACTIVE rotating
+  core and gear, and Grace warning pulses; Tier 2 and Tier 3 retain placeholder art.
 
-Suppression prevents selected new Spore mutations. One shared `StabilizerBlock`
-class, one shared `StabilizerBlockEntity` class/type, and one state machine serve
-all three Registry entries. Generic `STABILIZER` source IDs contain tier and
+Suppression prevents selected new Spore mutations. Tier 1 uses a small
+`StabilizerBlock` subclass for horizontal facing and rear-only shaft input, while
+all tiers retain one shared `StabilizerBlockEntity` class/type and state machine.
+Generic `STABILIZER` source IDs contain tier and
 position. While ACTIVE, each source removes only audited non-Block-Entity foliage
 under its tier profile and server-global caps; cleanup pauses during grace and
 stops offline. Stabilizers do not restore infected terrain, destroy nests, load
@@ -68,7 +71,9 @@ revised Compound material decision is recorded in
 [ADR 0004](docs/adr/0004-tfmg-compound-production.md).
 The finite Grace decision and final R9 values are recorded in
 [ADR 0005](docs/adr/0005-per-cell-grace-budget.md) and
-[R9 Balance Hardening](docs/r9-balance-hardening.md).
+[R9 Balance Hardening](docs/r9-balance-hardening.md). The Tier 1 visual and
+orientation contract is recorded in
+[R11 Tier 1 Final Block Asset](docs/r11-tier1-final-block-asset.md).
 
 ## Inspecting a Stabilizer
 
@@ -113,10 +118,12 @@ Release-specific compatibility notes and verification details are documented
 in [`docs/alpha-release.md`](docs/alpha-release.md).
 
 Stabilization Compound and Stabilization Cell use custom final 32x32 item icons.
-The three Stabilizer blocks still use internal-alpha placeholder models and
-vanilla textures; see [`docs/placeholder-assets.md`](docs/placeholder-assets.md)
-and [R10 Final Item Assets](docs/r10-item-assets.md). Final block art, the
-project logo, licensing decisions, and public distribution remain pending.
+Tier 1 uses its final custom directional model, textures, state lights, and ACTIVE
+animation. Tier 2 and Tier 3 still use internal-alpha placeholder models and
+vanilla textures; see [`docs/placeholder-assets.md`](docs/placeholder-assets.md),
+[R10 Final Item Assets](docs/r10-item-assets.md), and
+[R11 Tier 1 Final Block Asset](docs/r11-tier1-final-block-asset.md). Tier 2/3 final
+block art, the project logo, licensing decisions, and public distribution remain pending.
 
 ## Development
 

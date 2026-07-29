@@ -1,6 +1,6 @@
 # R10 Final Item Assets
 
-R10 completes the non-block art for Stabilization Compound and Stabilization Cell while leaving every Stabilizer block asset as an internal-alpha placeholder.
+R10 completed the non-block art for Stabilization Compound and Stabilization Cell. At the R10 milestone every Stabilizer block asset remained an internal-alpha placeholder; R11 subsequently replaces the Tier 1 placeholder.
 
 ## Asset contract
 
@@ -31,9 +31,8 @@ Client verification passed in Japanese at GUI Scale Auto and English at GUI Scal
 
 ## Remaining block work
 
-- Tier 1 final block model and textures
 - Tier 2 final block model and textures
 - Tier 3 final block model and textures
-- Final OFFLINE, ACTIVE, and GRACE visual treatment
+- Focused in-game verification of the R11 Tier 1 OFFLINE, ACTIVE, and GRACE visual treatment
 
-R10 does not claim that all project art or public-distribution preparation is complete.
+The Tier 1 replacement is documented in [R11 Tier 1 Final Block Asset](r11-tier1-final-block-asset.md). R10 does not claim that all project art or public-distribution preparation is complete.

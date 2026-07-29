@@ -39,6 +39,11 @@ All notable changes to Frontier Protocol are documented in this file.
 - Replaced the Stabilization Compound and Stabilization Cell vanilla placeholder icons with custom 32x32 item textures.
 - Added automated validation for final item models, PNG properties, visual distinction, and production-JAR packaging.
 - Strengthened pull-request CI with unit and asset tests, datagen clean-diff enforcement, clean build, GameTests, and a short-lived internal alpha JAR artifact.
+- Replaced the Tier 1 Stabilizer placeholder with a custom directional model and 32x32 RGBA block textures for OFFLINE, ACTIVE, and GRACE_PERIOD.
+- Added Tier 1 horizontal facing with front-facing placement and rear-only Create shaft input while keeping Tier 2 and Tier 3 orientation behavior unchanged.
+- Added client-only Tier 1 core, gear, and full-bright status-light rendering. ACTIVE rotates and pulses according to signed kinetic speed, GRACE_PERIOD accelerates its warning blink as reserve falls, and OFFLINE uses a dim red light.
+- Added Grace duration to display schema v2 so clients derive warning cadence from the server-authoritative remaining-to-total ratio.
+- Added automated validation for all 12 Tier 1 facing/status variants, final models and textures, animation behavior, orientation invariants, display schema v2, and production-JAR packaging.
 
 ### Compatibility
 
@@ -46,3 +51,4 @@ All notable changes to Frontier Protocol are documented in this file.
 - Existing infected terrain, structures, nests, hazards, and Block Entities are retained; cleanup removes only explicitly audited non-Block-Entity foliage.
 - All three tiers and their common Stabilization Cells use the Create production chain; Stabilization Compound is an intermediate and is not accepted by any Stabilizer.
 - Stabilizers do not restore terrain, destroy nests, load chunks, suppress moving contraptions, or add a Block Entity GUI. Existing world serverconfig values are retained and must be updated manually to adopt new R9 defaults.
+- Existing placed Tier 1 Stabilizers may need to be broken and replaced to select their intended front and rear after the directional block-state change. Tier 2 and Tier 3 retain their previous block states and placeholder assets.
