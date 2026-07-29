@@ -32,7 +32,7 @@ jobs:
         run: ./gradlew runData
 
       - name: Verify generated data is committed
-        run: git diff --exit-code
+        run: test -z "$(git status --porcelain --untracked-files=all -- src/generated/resources)"
 
       - name: Build clean artifact
         run: ./gradlew clean build
