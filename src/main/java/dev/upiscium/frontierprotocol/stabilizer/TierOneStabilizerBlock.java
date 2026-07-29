@@ -1,5 +1,7 @@
 package dev.upiscium.frontierprotocol.stabilizer;
 
+import com.mojang.serialization.MapCodec;
+import com.simibubi.create.content.kinetics.base.HorizontalAxisKineticBlock;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.LevelReader;
@@ -11,6 +13,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 
 public final class TierOneStabilizerBlock extends StabilizerBlock {
+    public static final MapCodec<TierOneStabilizerBlock> CODEC = simpleCodec(TierOneStabilizerBlock::new);
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public TierOneStabilizerBlock(Properties properties) {
@@ -58,5 +61,10 @@ public final class TierOneStabilizerBlock extends StabilizerBlock {
             throw new IllegalArgumentException("player direction must be horizontal");
         }
         return playerDirection.getOpposite();
+    }
+
+    @Override
+    protected MapCodec<? extends HorizontalAxisKineticBlock> codec() {
+        return CODEC;
     }
 }
