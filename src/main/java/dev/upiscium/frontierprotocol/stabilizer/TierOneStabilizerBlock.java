@@ -16,8 +16,8 @@ public final class TierOneStabilizerBlock extends StabilizerBlock {
     public TierOneStabilizerBlock(Properties properties) {
         super(StabilizerTier.TIER_1, properties);
         registerDefaultState(defaultBlockState()
-                .setValue(FACING, Direction.NORTH)
-                .setValue(HORIZONTAL_AXIS, Direction.Axis.Z)
+                .setValue(FACING, Direction.EAST)
+                .setValue(HORIZONTAL_AXIS, Direction.Axis.X)
                 .setValue(STATUS, StabilizerStatus.OFFLINE));
     }
 
