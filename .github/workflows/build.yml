@@ -25,8 +25,25 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: Run unit and asset tests
+        run: ./gradlew test
+
+      - name: Run data generation
+        run: ./gradlew runData
+
+      - name: Verify generated data is committed
+        run: test -z "$(git status --porcelain --untracked-files=all -- src/generated/resources)"
+
+      - name: Build clean artifact
+        run: ./gradlew clean build
 
       - name: Run GameTests
         run: ./gradlew runGameTestServer
+
+      - name: Upload internal alpha JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier_protocol-0.1.0-alpha.1
+          path: build/libs/frontier_protocol-0.1.0-alpha.1.jar
+          if-no-files-found: error
+          retention-days: 10

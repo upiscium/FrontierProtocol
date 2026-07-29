@@ -76,7 +76,7 @@ The complete five-recipe chain is Compound Mixing, Cell Deploying, and Tier 1, T
 
 ## Assets
 
-All tier state models are explicit placeholders using only vanilla texture references. Compound and Cell retain their R6 vanilla item-model parents. R7 adds no custom PNG and no final art; the exact references are listed in [Placeholder Assets](placeholder-assets.md).
+All tier state models are explicit placeholders using only vanilla texture references. R7 retained the R6 vanilla item-model parents and added no custom PNG or final art. R10 later replaces only the Compound and Cell icons with final item textures; the current split is listed in [Asset Status](placeholder-assets.md).
 
 ## Non-goals
 

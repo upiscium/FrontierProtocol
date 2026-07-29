@@ -47,11 +47,11 @@ At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress,
 - Existing infected terrain, structures, nests, active hazards, and Block Entities are not restored, removed, replaced, or frozen. Cleanup is an explicit allowlist of audited non-Block-Entity foliage and replaces it only with air or retained water.
 - All tiers and Stabilization Cells have Create production recipes. Compound cannot power a Stabilizer directly; the bundled consumable tag accepts only Cells, while datapacks may explicitly extend that public tag. The common consumable decision is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), and the shared tier architecture in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md).
 - R9 fixes the current recipe quantities and operating values for this internal candidate. Future changes require a new balance decision.
-- All three Stabilizer tiers, Compound, and Cell use explicit placeholder models referencing exact vanilla texture families. No custom PNG or final art is included; see [Placeholder Assets](placeholder-assets.md).
+- Stabilization Compound and Stabilization Cell have final custom 32x32 RGBA item art. Tier 1, Tier 2, and Tier 3 block models and textures remain internal-alpha placeholders; see [Asset Status](placeholder-assets.md) and [R10 Final Item Assets](r10-item-assets.md).
 - Hostile mob movement, combat, block breaking, and explosions are not containment responsibilities.
 - Spore random ticks, scheduled ticks, and existing infected block-entity state continue normally.
 - World-generation features outside the selected runtime Spore spread paths are not globally intercepted.
-- R9 adds no Block Entity GUI, persistent HUD, particles, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, multiblock, moving-contraption suppression, chunk loading, terrain restoration, nest or mob handling, or final assets.
+- R9 adds no Block Entity GUI, persistent HUD, particles, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, multiblock, moving-contraption suppression, chunk loading, terrain restoration, or nest or mob handling. R10 changes only Compound and Cell item art; block art remains pending.
 - No Minecraft-wide `Level#setBlock` hook is used.
 
 ## Verification status
@@ -61,6 +61,12 @@ Current R9 automated verification includes passing unit tests and all 39 GameTes
 R9 verification launched the production dedicated server with the manually updated development Grace values. Create, TFMG, Spore, and Frontier Protocol loaded, 3593 recipes were accepted, and the server reached `Done` without config, Mixin, or client-class errors. The server Gradle task did not receive a normal console `stop`, so its clean task exit remains unverified.
 
 The R8 production client command joined the creative smoke world under a 1920x1080 Xvfb display and completed the broad English/Japanese graphical checks in [R8 Graphical Verification](r8-graphical-verification.md). The focused R9 Tier 1 Grace lifecycle also passed there with Engineer's Goggles: ACTIVE entered GRACE_PERIOD after rotation loss, the displayed reserve decreased, rotation recovery preserved the partial reserve, a second outage resumed from that amount, exhaustion reached OFFLINE, and the next consumed Cell restored the configured maximum. No raw translation key appeared.
+
+Extended R9 manual verification also passed for insufficient RPM, Overstressed operation, exact single-Cell backup rollover without leaving ACTIVE, no-backup fallback according to the remaining Grace reserve, client reconnect synchronization, and normal dedicated-server restart persistence of status, Cell time, and Grace.
+
+R10 final item-art verification passed for Compound and Cell in Japanese at GUI Scale Auto and English at GUI Scale 2. Creative inventory, tooltips, JEI production views, Ponder controls, held, dropped, and Item Frame rendering showed distinct icons without a Frontier Protocol missing texture or atlas error. Automated tests also verify PNG quality, exact model references, and production-JAR packaging.
+
+Final item art: Compound complete; Cell complete. Final block art: Tier 1 pending; Tier 2 pending; Tier 3 pending. This partial asset completion does not make the alpha approved for public distribution.
 
 The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. The dedicated-server smoke reached the server-ready state with Create and Spore without a Mixin application or client-class error. The client smoke used a graphical display; a `glfwInit` failure when `DISPLAY` is unavailable would not constitute a successful client smoke test.
 
@@ -80,6 +86,7 @@ The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mix
 - [x] Execute the tier recipes in physical Mechanical Crafters.
 - [x] Smoke-test continuous automated Cell supply at upper-tier consumption intervals.
 - [x] Complete the focused R9 client Grace lifecycle smoke.
+- [x] Verify client reconnect and dedicated-server lifecycle persistence.
 - [x] Inspect the production JAR contents and generated metadata.
 - Set the actual release date.
 - Prepare an icon or screenshots only if required by the selected channel.
