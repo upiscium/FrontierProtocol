@@ -14,13 +14,16 @@ import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.MappedRegistry;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.Shapes;
 import org.junit.jupiter.api.Test;
 
 class TierOneStabilizerBlockTest {
@@ -104,6 +107,15 @@ class TierOneStabilizerBlockTest {
             assertTrue(decoded.hasShaftTowards(null, null, state, Direction.WEST));
             assertFalse(decoded.hasShaftTowards(null, null, state, Direction.NORTH));
         }
+    }
+
+    @Test
+    void onlyTierOneDisablesOcclusionAndCollisionRemainsFullCube() {
+        BlockState tierOne = block().defaultBlockState();
+        assertFalse(tierOne.canOcclude());
+        assertEquals(Shapes.block(), tierOne.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO));
+        assertTrue(ModBlocks.TIER_2_STABILIZER.get().defaultBlockState().canOcclude());
+        assertTrue(ModBlocks.TIER_3_STABILIZER.get().defaultBlockState().canOcclude());
     }
 
     private static TierOneStabilizerBlock block() {

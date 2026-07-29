@@ -3,6 +3,7 @@ package dev.upiscium.frontierprotocol.client.assets;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
@@ -25,7 +26,8 @@ class Tier1StabilizerAssetsTest {
             "tier_1_stabilizer_base",
             "tier_1_stabilizer_offline",
             "tier_1_stabilizer_active",
-            "tier_1_stabilizer_grace_period",
+            "tier_1_stabilizer_grace_period");
+    private static final List<String> REMOVED_DYNAMIC_MODELS = List.of(
             "tier_1_stabilizer_core",
             "tier_1_stabilizer_gear",
             "tier_1_stabilizer_light_overlay");
@@ -67,6 +69,30 @@ class Tier1StabilizerAssetsTest {
     }
 
     @Test
+    void baseModelDefinesOpenFrameAndRearBearingContract() throws Exception {
+        JsonObject base = json(ROOT + "models/block/tier_1_stabilizer_base.json");
+        JsonObject textures = base.getAsJsonObject("textures");
+        for (String texture : List.of("front", "back", "side", "top", "bottom", "metal")) {
+            assertTrue(textures.has(texture), "missing texture slot " + texture);
+        }
+
+        boolean oldSolidCore = false;
+        boolean rearBearingReachesBoundary = false;
+        for (var element : base.getAsJsonArray("elements")) {
+            var object = element.getAsJsonObject();
+            var from = object.getAsJsonArray("from");
+            var to = object.getAsJsonArray("to");
+            oldSolidCore |= from.toString().equals("[2,2,2]") && to.toString().equals("[14,14,14]");
+            rearBearingReachesBoundary |= from.get(2).getAsFloat() >= 14.0F && to.get(2).getAsFloat() == 16.0F;
+        }
+        assertFalse(oldSolidCore, "central solid cuboid would block the four core windows");
+        assertTrue(rearBearingReachesBoundary, "rear bearing must reach the shaft connection plane");
+        for (String model : REMOVED_DYNAMIC_MODELS) {
+            assertNull(loader().getResource(ROOT + "models/block/" + model + ".json"));
+        }
+    }
+
+    @Test
     void everyFinalTextureIsNonBlank32PixelRgba() throws Exception {
         for (String texture : TEXTURES) {
             String path = ROOT + "textures/block/tier_1_stabilizer_" + texture + ".png";
@@ -102,6 +128,9 @@ class Tier1StabilizerAssetsTest {
             assertNotNull(jar.getJarEntry(ROOT + "blockstates/tier_1_stabilizer.json"));
             assertNotNull(jar.getJarEntry(ROOT + "models/item/tier_1_stabilizer.json"));
             for (String model : MODELS) assertNotNull(jar.getJarEntry(ROOT + "models/block/" + model + ".json"));
+            for (String model : REMOVED_DYNAMIC_MODELS) {
+                assertNull(jar.getJarEntry(ROOT + "models/block/" + model + ".json"));
+            }
             for (String texture : TEXTURES) {
                 assertNotNull(jar.getJarEntry(ROOT + "textures/block/tier_1_stabilizer_" + texture + ".png"));
             }
