@@ -18,6 +18,8 @@ class StabilizerDisplayNbtTest {
 
         CompoundTag display = root.getCompound(StabilizerDisplayNbt.DISPLAY_KEY);
         assertEquals(StabilizerDisplayNbt.SCHEMA_VERSION, display.getInt("schemaVersion"));
+        assertEquals(2, display.getInt("schemaVersion"));
+        assertEquals(1800, display.getInt("graceDurationTicks"));
         assertEquals("tier_2", display.getString("tier"));
         assertEquals("grace_period", display.getString("status"));
         assertEquals(expected, StabilizerDisplayNbt.read(root).orElseThrow());
@@ -41,6 +43,18 @@ class StabilizerDisplayNbtTest {
 
         root = written();
         root.getCompound(StabilizerDisplayNbt.DISPLAY_KEY).remove("chunkRadius");
+        assertTrue(StabilizerDisplayNbt.read(root).isEmpty());
+
+        root = written();
+        root.getCompound(StabilizerDisplayNbt.DISPLAY_KEY).remove("graceDurationTicks");
+        assertTrue(StabilizerDisplayNbt.read(root).isEmpty());
+
+        root = written();
+        root.getCompound(StabilizerDisplayNbt.DISPLAY_KEY).putInt("graceRemainingTicks", 1801);
+        assertTrue(StabilizerDisplayNbt.read(root).isEmpty());
+
+        root = written();
+        root.getCompound(StabilizerDisplayNbt.DISPLAY_KEY).putInt("schemaVersion", 1);
         assertTrue(StabilizerDisplayNbt.read(root).isEmpty());
 
         root = new CompoundTag();
@@ -118,6 +132,7 @@ class StabilizerDisplayNbtTest {
                 1200,
                 3000,
                 900,
+                1800,
                 1);
     }
 }
