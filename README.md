@@ -51,8 +51,9 @@ containment integration preview:
   Tier 3. ACTIVE and power recovery do not refill spent Grace; only a new Cell does.
 - Physical Create GameTests for unheated Compound Mixing, all three Mechanical
   Crafter recipes, and default-duration Tier 2/Tier 3 continuous Cell logistics.
-- A final directional Tier 1 block asset with state lights, an ACTIVE rotating
-  core and gear, and Grace warning pulses; Tier 2 and Tier 3 retain placeholder art.
+- A final directional Tier 1 open-frame asset with a central pulsing core,
+  local-axis rotating front gear, four-face state lights, and a rear bearing;
+  Tier 2 and Tier 3 retain placeholder art.
 
 Suppression prevents selected new Spore mutations. Tier 1 uses a small
 `StabilizerBlock` subclass for horizontal facing and rear-only shaft input, while
@@ -118,8 +119,9 @@ Release-specific compatibility notes and verification details are documented
 in [`docs/alpha-release.md`](docs/alpha-release.md).
 
 Stabilization Compound and Stabilization Cell use custom final 32x32 item icons.
-Tier 1 uses its final custom directional model, textures, state lights, and ACTIVE
-animation. Tier 2 and Tier 3 still use internal-alpha placeholder models and
+Tier 1 uses its final custom directional model, textures, central 3D core,
+four-face state lights, rear bearing, and ACTIVE animation. Focused client
+verification remains pending. Tier 2 and Tier 3 still use internal-alpha placeholder models and
 vanilla textures; see [`docs/placeholder-assets.md`](docs/placeholder-assets.md),
 [R10 Final Item Assets](docs/r10-item-assets.md), and
 [R11 Tier 1 Final Block Asset](docs/r11-tier1-final-block-asset.md). Tier 2/3 final

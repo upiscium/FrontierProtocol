@@ -44,6 +44,10 @@ All notable changes to Frontier Protocol are documented in this file.
 - Added client-only Tier 1 core, gear, and full-bright status-light rendering. ACTIVE rotates and pulses according to signed kinetic speed, GRACE_PERIOD accelerates its warning blink as reserve falls, and OFFLINE uses a dim red light.
 - Added Grace duration to display schema v2 so clients derive warning cadence from the server-authoritative remaining-to-total ratio.
 - Added automated validation for all 12 Tier 1 facing/status variants, final models and textures, animation behavior, orientation invariants, display schema v2, and production-JAR packaging.
+- Corrected the Tier 1 front gear to rotate around its local Z axis and made positive and negative angle interpolation continuous across full turns.
+- Rebuilt the Tier 1 body around four real window apertures with one central 3D core, synchronized front/left/right/top status lights, an eight-tooth front gear, and a rear bearing housing.
+- Added Tier 1-only non-occluding rendering while preserving full-cube collision, and added a dedicated Tier 1 block codec that reconstructs the directional subclass.
+- Removed three unused dynamic block-model JSON files; Java `ModelPart` geometry is now the sole dynamic-model definition.
 
 ### Compatibility
 
