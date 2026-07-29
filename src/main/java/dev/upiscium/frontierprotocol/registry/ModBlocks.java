@@ -5,6 +5,7 @@ import dev.upiscium.frontierprotocol.FrontierProtocolMod;
 import dev.upiscium.frontierprotocol.stabilizer.StabilizerBlock;
 import dev.upiscium.frontierprotocol.stabilizer.StabilizerTier;
 import dev.upiscium.frontierprotocol.stabilizer.StabilizerTierDefinitions;
+import dev.upiscium.frontierprotocol.stabilizer.TierOneStabilizerBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
@@ -12,9 +13,9 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class ModBlocks {
     private static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(FrontierProtocolMod.MOD_ID);
-    public static final DeferredBlock<StabilizerBlock> TIER_1_STABILIZER = BLOCKS.registerBlock(
+    public static final DeferredBlock<TierOneStabilizerBlock> TIER_1_STABILIZER = BLOCKS.registerBlock(
             "tier_1_stabilizer",
-            properties -> new StabilizerBlock(StabilizerTier.TIER_1, properties),
+            TierOneStabilizerBlock::new,
             net.minecraft.world.level.block.state.BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5F)
                     .requiresCorrectToolForDrops());

@@ -373,7 +373,7 @@ public final class FrontierProtocolPonderScenes {
 
     record OperationSceneDefinition(
             ResourceLocation component,
-            DeferredBlock<StabilizerBlock> block,
+            DeferredBlock<? extends StabilizerBlock> block,
             float kineticSpeed) {}
 
     record ProductionSceneEquipment(

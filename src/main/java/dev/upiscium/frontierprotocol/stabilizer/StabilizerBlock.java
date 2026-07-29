@@ -17,7 +17,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 
-public final class StabilizerBlock extends HorizontalAxisKineticBlock implements IBE<StabilizerBlockEntity> {
+public class StabilizerBlock extends HorizontalAxisKineticBlock implements IBE<StabilizerBlockEntity> {
     public static final MapCodec<StabilizerBlock> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                     StringRepresentable.fromEnum(StabilizerTier::values)
                             .fieldOf("tier")
