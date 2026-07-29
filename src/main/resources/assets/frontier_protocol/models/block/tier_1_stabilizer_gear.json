@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "frontier_protocol:block/tier_1_stabilizer_gear"
+  }
+}

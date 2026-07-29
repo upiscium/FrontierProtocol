@@ -1,0 +1,20 @@
+{
+  "textures": {
+    "texture": "frontier_protocol:block/tier_1_stabilizer_core",
+    "particle": "frontier_protocol:block/tier_1_stabilizer_core"
+  },
+  "elements": [
+    {
+      "from": [6, 5, 6],
+      "to": [10, 11, 10],
+      "faces": {
+        "north": { "texture": "#texture" },
+        "south": { "texture": "#texture" },
+        "west": { "texture": "#texture" },
+        "east": { "texture": "#texture" },
+        "up": { "texture": "#texture" },
+        "down": { "texture": "#texture" }
+      }
+    }
+  ]
+}

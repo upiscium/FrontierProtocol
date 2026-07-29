@@ -1,8 +1,8 @@
 {
-  "parent": "minecraft:block/cube_bottom_top",
+  "parent": "frontier_protocol:block/tier_1_stabilizer_base",
   "textures": {
-    "bottom": "minecraft:block/deepslate_tiles",
-    "side": "minecraft:block/iron_block",
-    "top": "minecraft:block/deepslate_tiles"
+    "front": "frontier_protocol:block/tier_1_stabilizer_front_offline",
+    "side": "frontier_protocol:block/tier_1_stabilizer_side_offline",
+    "top": "frontier_protocol:block/tier_1_stabilizer_top_offline"
   }
 }

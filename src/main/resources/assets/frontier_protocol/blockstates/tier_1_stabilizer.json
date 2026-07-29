@@ -1,10 +1,16 @@
 {
   "variants": {
-    "axis=x,status=offline": { "model": "frontier_protocol:block/tier_1_stabilizer_offline", "y": 90 },
-    "axis=x,status=grace_period": { "model": "frontier_protocol:block/tier_1_stabilizer_grace_period", "y": 90 },
-    "axis=x,status=active": { "model": "frontier_protocol:block/tier_1_stabilizer_active", "y": 90 },
-    "axis=z,status=offline": { "model": "frontier_protocol:block/tier_1_stabilizer_offline" },
-    "axis=z,status=grace_period": { "model": "frontier_protocol:block/tier_1_stabilizer_grace_period" },
-    "axis=z,status=active": { "model": "frontier_protocol:block/tier_1_stabilizer_active" }
+    "facing=north,status=offline": { "model": "frontier_protocol:block/tier_1_stabilizer_offline" },
+    "facing=east,status=offline": { "model": "frontier_protocol:block/tier_1_stabilizer_offline", "y": 90 },
+    "facing=south,status=offline": { "model": "frontier_protocol:block/tier_1_stabilizer_offline", "y": 180 },
+    "facing=west,status=offline": { "model": "frontier_protocol:block/tier_1_stabilizer_offline", "y": 270 },
+    "facing=north,status=active": { "model": "frontier_protocol:block/tier_1_stabilizer_active" },
+    "facing=east,status=active": { "model": "frontier_protocol:block/tier_1_stabilizer_active", "y": 90 },
+    "facing=south,status=active": { "model": "frontier_protocol:block/tier_1_stabilizer_active", "y": 180 },
+    "facing=west,status=active": { "model": "frontier_protocol:block/tier_1_stabilizer_active", "y": 270 },
+    "facing=north,status=grace_period": { "model": "frontier_protocol:block/tier_1_stabilizer_grace_period" },
+    "facing=east,status=grace_period": { "model": "frontier_protocol:block/tier_1_stabilizer_grace_period", "y": 90 },
+    "facing=south,status=grace_period": { "model": "frontier_protocol:block/tier_1_stabilizer_grace_period", "y": 180 },
+    "facing=west,status=grace_period": { "model": "frontier_protocol:block/tier_1_stabilizer_grace_period", "y": 270 }
   }
 }
