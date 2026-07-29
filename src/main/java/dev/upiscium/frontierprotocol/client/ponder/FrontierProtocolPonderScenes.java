@@ -368,7 +368,10 @@ public final class FrontierProtocolPonderScenes {
 
     private static net.minecraft.world.level.block.state.BlockState state(
             StabilizerBlock block, StabilizerStatus status) {
-        return block.defaultBlockState().setValue(StabilizerBlock.STATUS, status);
+        return block.defaultBlockState()
+                .setValue(StabilizerBlock.FACING, net.minecraft.core.Direction.EAST)
+                .setValue(StabilizerBlock.HORIZONTAL_AXIS, net.minecraft.core.Direction.Axis.X)
+                .setValue(StabilizerBlock.STATUS, status);
     }
 
     record OperationSceneDefinition(

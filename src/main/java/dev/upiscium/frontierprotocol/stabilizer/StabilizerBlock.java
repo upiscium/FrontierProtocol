@@ -12,10 +12,15 @@ import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.item.context.BlockPlaceContext;
 
 public final class StabilizerBlock extends HorizontalAxisKineticBlock implements IBE<StabilizerBlockEntity> {
     public static final MapCodec<StabilizerBlock> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
@@ -26,6 +31,7 @@ public final class StabilizerBlock extends HorizontalAxisKineticBlock implements
             .apply(instance, StabilizerBlock::new));
     public static final EnumProperty<StabilizerStatus> STATUS =
             EnumProperty.create("status", StabilizerStatus.class);
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     private final StabilizerTier tier;
 
@@ -33,6 +39,7 @@ public final class StabilizerBlock extends HorizontalAxisKineticBlock implements
         super(properties);
         this.tier = tier;
         registerDefaultState(defaultBlockState()
+                .setValue(FACING, Direction.EAST)
                 .setValue(HORIZONTAL_AXIS, Direction.Axis.X)
                 .setValue(STATUS, StabilizerStatus.OFFLINE));
     }
@@ -49,12 +56,35 @@ public final class StabilizerBlock extends HorizontalAxisKineticBlock implements
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
-        builder.add(STATUS);
+        builder.add(FACING, STATUS);
+    }
+
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        return withFacing(defaultBlockState(), facingForPlacement(context.getHorizontalDirection()));
+    }
+
+    @Override
+    public BlockState rotate(BlockState state, Rotation rotation) {
+        return withFacing(state, rotation.rotate(state.getValue(FACING)));
+    }
+
+    @Override
+    public BlockState mirror(BlockState state, Mirror mirror) {
+        return rotate(state, mirror.getRotation(state.getValue(FACING)));
     }
 
     @Override
     public boolean hasShaftTowards(LevelReader level, BlockPos pos, BlockState state, Direction face) {
-        return face.getAxis() == state.getValue(HORIZONTAL_AXIS);
+        return face == state.getValue(FACING).getOpposite();
+    }
+
+    static BlockState withFacing(BlockState state, Direction facing) {
+        return state.setValue(FACING, facing).setValue(HORIZONTAL_AXIS, facing.getAxis());
+    }
+
+    static Direction facingForPlacement(Direction playerFacing) {
+        return playerFacing.getOpposite();
     }
 
     @Override

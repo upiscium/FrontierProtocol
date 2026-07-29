@@ -38,6 +38,45 @@ import net.neoforged.neoforge.items.IItemHandler;
 public final class StabilizerGameTests {
     private StabilizerGameTests() {}
 
+    @GameTest(template = "empty", batch = "stabilizer_directional_shafts", timeoutTicks = 40)
+    public static void everyTierUsesOnlyItsWestRearShaftByDefault(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos origin = helper.absolutePos(BlockPos.ZERO).offset(3, 2, 3);
+        StabilizerBlock[] blocks = {
+            ModBlocks.TIER_1_STABILIZER.get(),
+            ModBlocks.TIER_2_STABILIZER.get(),
+            ModBlocks.TIER_3_STABILIZER.get()
+        };
+
+        for (int index = 0; index < blocks.length; index++) {
+            BlockPos rearPowered = origin.offset(index * 4, 0, 0);
+            BlockPos frontPowered = origin.offset(index * 4, 0, 5);
+            BlockState state = blocks[index].defaultBlockState();
+            helper.assertTrue(state.getValue(StabilizerBlock.FACING) == Direction.EAST,
+                    "Tier " + (index + 1) + " default facing is not EAST");
+            level.setBlock(rearPowered, state, Block.UPDATE_ALL);
+            level.setBlock(rearPowered.west(), AllBlocks.CREATIVE_MOTOR.getDefaultState()
+                    .setValue(CreativeMotorBlock.FACING, Direction.EAST), Block.UPDATE_ALL);
+            level.setBlock(frontPowered, state, Block.UPDATE_ALL);
+            level.setBlock(frontPowered.east(), AllBlocks.CREATIVE_MOTOR.getDefaultState()
+                    .setValue(CreativeMotorBlock.FACING, Direction.WEST), Block.UPDATE_ALL);
+        }
+
+        helper.runAfterDelay(5, () -> {
+            for (int index = 0; index < blocks.length; index++) {
+                BlockPos rearPowered = origin.offset(index * 4, 0, 0);
+                BlockPos frontPowered = origin.offset(index * 4, 0, 5);
+                helper.assertTrue(blockEntity(level, rearPowered).getSpeed() != 0.0F,
+                        "Tier " + (index + 1) + " rear motor did not connect");
+                helper.assertTrue(blockEntity(level, frontPowered).getSpeed() == 0.0F,
+                        "Tier " + (index + 1) + " front motor connected");
+                helper.assertTrue(level.getBlockState(rearPowered).getValue(StabilizerBlock.FACING) == Direction.EAST,
+                        "Tier " + (index + 1) + " status update changed facing");
+            }
+            helper.succeed();
+        });
+    }
+
     @GameTest(template = "empty", batch = "tier1", timeoutTicks = 200)
     public static void tierOneLifecycleUsesCreateKineticsAndSuppressionCore(GameTestHelper helper) {
         ServerLevel overworld = helper.getLevel().getServer().overworld();
