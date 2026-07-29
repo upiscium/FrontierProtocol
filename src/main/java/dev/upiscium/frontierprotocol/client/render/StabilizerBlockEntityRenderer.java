@@ -69,6 +69,13 @@ public final class StabilizerBlockEntityRenderer implements BlockEntityRenderer<
                     LightTexture.FULL_BRIGHT,
                     OverlayTexture.NO_OVERLAY,
                     color(0xD8FCFF, pulse));
+        } else {
+            core.render(
+                    poseStack,
+                    buffers.getBuffer(RenderType.entityCutoutNoCull(CORE_TEXTURE)),
+                    packedLight,
+                    OverlayTexture.NO_OVERLAY,
+                    color(0x667477, 1.0F));
         }
 
         float alpha = switch (status) {

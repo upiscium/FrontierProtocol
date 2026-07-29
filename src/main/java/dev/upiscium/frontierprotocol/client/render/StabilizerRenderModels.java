@@ -28,7 +28,7 @@ public final class StabilizerRenderModels {
                         .texOffs(0, 0)
                         .addBox(-1.0F, 2.0F, -1.0F, 2.0F, 1.0F, 2.0F),
                 PartPose.offset(8.0F, 8.0F, 8.0F));
-        var gear = root.addOrReplaceChild("gear", CubeListBuilder.create(), PartPose.offset(8.0F, 8.0F, 0.0F));
+        var gear = root.addOrReplaceChild("gear", CubeListBuilder.create(), PartPose.offset(8.0F, 8.0F, 1.75F));
         gear.addOrReplaceChild(
                 "top", CubeListBuilder.create().texOffs(0, 0).addBox(-3.0F, -4.0F, -0.75F, 6.0F, 1.0F, 0.75F), PartPose.ZERO);
         gear.addOrReplaceChild(
