@@ -48,6 +48,19 @@ jobs:
       - name: Run GameTests
         run: ./gradlew runGameTestServer
 
+      - name: Run dedicated-server smoke
+        id: dedicated-server-smoke
+        run: ./gradlew dedicatedServerSmoke
+
+      - name: Upload failed dedicated-server smoke log
+        if: failure() && steps.dedicated-server-smoke.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dedicated-server-smoke-log
+          path: build/dedicated-server-smoke/dedicated-server.log
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Assemble release candidate
         run: ./gradlew verifyReleaseCandidate
 

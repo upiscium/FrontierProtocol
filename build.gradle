@@ -118,6 +118,12 @@ neoForge {
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
+        dedicatedServerSmokeRuntime {
+            server()
+            gameDirectory = layout.buildDirectory.dir('dedicated-server-smoke/server').get().asFile
+            programArgument '--nogui'
+        }
+
         // This run config launches GameTestServer and runs all registered gametests, then exits.
         // By default, the server will crash when no gametests are provided.
         // The gametest system is also enabled by default for other run configs under the /test command.
@@ -532,6 +538,172 @@ tasks.named('test', Test).configure {
     useJUnitPlatform()
     dependsOn productionJar
     systemProperty 'frontierProtocol.testJar', productionJarFile.get().asFile.absolutePath
+}
+
+tasks.register('dedicatedServerSmoke') {
+    group = 'verification'
+    description = 'Starts the dedicated server, waits for readiness, and verifies a clean shutdown.'
+    dependsOn 'createDedicatedServerSmokeRuntimeLaunchScript'
+    timeout = java.time.Duration.ofMinutes(5)
+
+    def smokeRoot = layout.buildDirectory.dir('dedicated-server-smoke')
+    def serverDirectory = smokeRoot.map { it.dir('server') }
+    def smokeLog = smokeRoot.map { it.file('dedicated-server.log') }
+    def launchScript = layout.buildDirectory.file('moddev/runDedicatedServerSmokeRuntime.sh')
+    inputs.file(launchScript)
+    inputs.property('smoke_root', smokeRoot.map { it.asFile.absolutePath })
+    inputs.property('server_directory', serverDirectory.map { it.asFile.absolutePath })
+    inputs.property('smoke_log', smokeLog.map { it.asFile.absolutePath })
+    inputs.property('startup_timeout_seconds', 180)
+    inputs.property('shutdown_timeout_seconds', 60)
+    outputs.file(smokeLog)
+    outputs.upToDateWhen { false }
+
+    doLast {
+        Map<String, Object> smokeProperties = inputs.properties
+        File rootDirectory = new File(smokeProperties.smoke_root.toString())
+        File isolatedServerDirectory = new File(smokeProperties.server_directory.toString())
+        File logFile = new File(smokeProperties.smoke_log.toString())
+        int startupTimeoutSeconds = smokeProperties.startup_timeout_seconds as int
+        int shutdownTimeoutSeconds = smokeProperties.shutdown_timeout_seconds as int
+        File scriptFile = inputs.files.singleFile
+
+        if (rootDirectory.exists() && !rootDirectory.deleteDir()) {
+            throw new GradleException("Unable to clean dedicated-server smoke directory: ${rootDirectory}")
+        }
+        isolatedServerDirectory.mkdirs()
+        logFile.parentFile.mkdirs()
+        logFile.createNewFile()
+        new File(isolatedServerDirectory, 'eula.txt').setText('eula=true\n', 'UTF-8')
+
+        def ready = new java.util.concurrent.atomic.AtomicBoolean(false)
+        def stopping = new java.util.concurrent.atomic.AtomicBoolean(false)
+        def startupFailure = new java.util.concurrent.atomic.AtomicReference<String>()
+        def readerFailure = new java.util.concurrent.atomic.AtomicReference<Throwable>()
+        def tail = new java.util.ArrayDeque<String>(80)
+        List<java.util.regex.Pattern> failurePatterns = [
+                java.util.regex.Pattern.compile('(?i)---- Minecraft Crash Report ----'),
+                java.util.regex.Pattern.compile('(?i)(Preparing|Saving|Saved).*crash report'),
+                java.util.regex.Pattern.compile('(?i)Crash Report UUID|crash-reports/'),
+                java.util.regex.Pattern.compile('(?i)Mixin apply .* failed|Mixin application failed'),
+                java.util.regex.Pattern.compile('(?i)\\[mixin/ERROR]'),
+                java.util.regex.Pattern.compile('(?i)org\\.spongepowered\\.asm\\.mixin\\.throwables'),
+                java.util.regex.Pattern.compile('(?i)InjectionError'),
+                java.util.regex.Pattern.compile('(?i)Missing or unsupported mandatory dependencies'),
+                java.util.regex.Pattern.compile('(?i)Missing mandatory dependenc'),
+                java.util.regex.Pattern.compile('(?i)Loading errors encountered'),
+                java.util.regex.Pattern.compile('(?i)ModLoadingException'),
+                java.util.regex.Pattern.compile('(?i)Attempted to load class .* for invalid dist DEDICATED_SERVER'),
+                java.util.regex.Pattern.compile(
+                        '(?i)(NoClassDefFoundError|ClassNotFoundException).*net[./]minecraft[./]client')
+        ]
+
+        Process process = null
+        Thread outputThread = null
+        Throwable smokeFailure = null
+        try {
+            process = new ProcessBuilder('/bin/sh', scriptFile.absolutePath)
+                    .redirectErrorStream(true)
+                    .start()
+            Process runningProcess = process
+            outputThread = Thread.startDaemon('dedicated-server-smoke-output') {
+                try {
+                    logFile.withWriter('UTF-8') { writer ->
+                        runningProcess.inputStream.withReader('UTF-8') { reader ->
+                            reader.eachLine { line ->
+                                writer.write(line)
+                                writer.write('\n')
+                                writer.flush()
+                                synchronized (tail) {
+                                    if (tail.size() == 80) tail.removeFirst()
+                                    tail.addLast(line)
+                                }
+                                if (line =~ /\bDone \([^)]+\)! For help, type "help"/) ready.set(true)
+                                if (line.contains('Stopping server')) stopping.set(true)
+                                if (failurePatterns.any { it.matcher(line).find() }) {
+                                    startupFailure.compareAndSet(null, line)
+                                }
+                            }
+                        }
+                    }
+                } catch (Throwable failure) {
+                    readerFailure.set(failure)
+                }
+            }
+
+            long startupDeadlineMillis = System.currentTimeMillis() + startupTimeoutSeconds * 1000L
+            while (!ready.get()) {
+                if (readerFailure.get() != null) throw readerFailure.get()
+                if (startupFailure.get() != null) {
+                    throw new GradleException("Dedicated server reported a startup failure: ${startupFailure.get()}")
+                }
+                if (!process.isAlive()) {
+                    throw new GradleException("Dedicated server exited before readiness with status ${process.exitValue()}")
+                }
+                if (System.currentTimeMillis() >= startupDeadlineMillis) {
+                    throw new GradleException(
+                            "Dedicated server did not reach readiness within ${startupTimeoutSeconds} seconds")
+                }
+                Thread.sleep(100)
+            }
+            logger.lifecycle('Dedicated server reached the canonical Done ready state.')
+
+            process.outputStream.write('stop\n'.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+            process.outputStream.flush()
+            if (!process.waitFor(shutdownTimeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)) {
+                throw new GradleException(
+                        "Dedicated server did not stop within ${shutdownTimeoutSeconds} seconds")
+            }
+            outputThread.join(java.util.concurrent.TimeUnit.SECONDS.toMillis(5))
+            if (outputThread.isAlive()) throw new GradleException('Dedicated-server log reader did not terminate')
+            if (readerFailure.get() != null) throw readerFailure.get()
+            if (startupFailure.get() != null) {
+                throw new GradleException("Dedicated server reported a failure: ${startupFailure.get()}")
+            }
+            if (!stopping.get()) throw new GradleException('Dedicated server did not acknowledge the stop command')
+            if (process.exitValue() != 0) {
+                throw new GradleException("Dedicated server exited with status ${process.exitValue()}")
+            }
+            logger.lifecycle('Dedicated server accepted stop and exited with status 0.')
+        } catch (Throwable failure) {
+            smokeFailure = failure
+        } finally {
+            boolean cleanupInterrupted = false
+            if (process != null && process.isAlive()) {
+                List<ProcessHandle> descendants = process.toHandle().descendants().toList().reverse()
+                descendants.each { it.destroy() }
+                process.destroy()
+                try {
+                    process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)
+                } catch (InterruptedException ignored) {
+                    cleanupInterrupted = true
+                }
+                descendants.findAll { it.isAlive() }.each { it.destroyForcibly() }
+                if (process.isAlive()) process.destroyForcibly()
+                try {
+                    process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)
+                } catch (InterruptedException ignored) {
+                    cleanupInterrupted = true
+                }
+            }
+            if (outputThread != null) {
+                try {
+                    outputThread.join(java.util.concurrent.TimeUnit.SECONDS.toMillis(5))
+                } catch (InterruptedException ignored) {
+                    cleanupInterrupted = true
+                }
+            }
+            if (cleanupInterrupted) Thread.currentThread().interrupt()
+        }
+
+        if (smokeFailure != null) {
+            logger.error("Dedicated-server smoke failure: ${smokeFailure.message}")
+            logger.error("Dedicated-server smoke log tail (${logFile}):")
+            synchronized (tail) { tail.each { logger.error(it) } }
+            throw new GradleException("Dedicated-server smoke failed; retained log: ${logFile}", smokeFailure)
+        }
+        logger.lifecycle("Dedicated-server smoke log retained at: ${logFile}")
+    }
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

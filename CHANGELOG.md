@@ -47,6 +47,7 @@ All notable changes to Frontier Protocol are documented in this file.
 - Excluded datagen cache files from the production JAR.
 - Added SHA-256 and source/dependency manifest generation.
 - Bundled the verified production JAR and metadata in the CI artifact.
+- Added a timeout-bounded dedicated-server smoke that detects readiness, sends a normal stop command, verifies zero-status exit, and retains its log.
 
 ### Compatibility
 

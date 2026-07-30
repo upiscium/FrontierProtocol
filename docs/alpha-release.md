@@ -78,7 +78,7 @@ At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress,
 
 Current automated verification includes passing unit tests and all 40 GameTests. RecipeManager validation covers the exact five serializers, ingredients, patterns, outputs, and absence of crafting bypasses. Physical tests additionally cover a Basin with no heat source and heat level `NONE`, Tier 1/2/3 Mechanical Crafter execution, prior-tier consumption, two default-duration Tier 2/Tier 3 Cell rollovers through Chest/Chute logistics without ACTIVE or suppression interruption, dual-side shaft attachment with front/back rejection for all three directional Stabilizers, and kinetic-network disconnection and reconnection after Create wrench rotation.
 
-R9 verification launched the production dedicated server with the manually updated development Grace values. Create, TFMG, Spore, and Frontier Protocol loaded, 3593 recipes were accepted, and the server reached `Done` without config, Mixin, or client-class errors. The server Gradle task did not receive a normal console `stop`, so its clean task exit remains unverified.
+R9 verification launched the production dedicated server with the manually updated development Grace values. Create, TFMG, Spore, and Frontier Protocol loaded, 3593 recipes were accepted, and the server reached `Done` without config, Mixin, or client-class errors. Automated verification now launches the dedicated server in an isolated build directory, detects the canonical `Done` ready state, sends the normal console `stop` command, and requires shutdown within the configured timeout with exit status 0. Its retained log is `build/dedicated-server-smoke/dedicated-server.log`.
 
 The R8 production client command joined the creative smoke world under a 1920x1080 Xvfb display and completed the broad English/Japanese graphical checks in [R8 Graphical Verification](r8-graphical-verification.md). The focused R9 Tier 1 Grace lifecycle also passed there with Engineer's Goggles: ACTIVE entered GRACE_PERIOD after rotation loss, the displayed reserve decreased, rotation recovery preserved the partial reserve, a second outage resumed from that amount, exhaustion reached OFFLINE, and the next consumed Cell restored the configured maximum. No raw translation key appeared.
 
@@ -90,7 +90,7 @@ R11 casing verification passed for all three tiers and all four facings. The sta
 
 Final asset status: Tier 1 FINAL; Tier 2 FINAL; Tier 3 FINAL; Compound FINAL; Cell FINAL. Asset completion does not by itself make the alpha approved for public distribution.
 
-The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. The dedicated-server smoke reached the server-ready state with Create and Spore without a Mixin application or client-class error. The client smoke used a graphical display; a `glfwInit` failure when `DISPLAY` is unavailable would not constitute a successful client smoke test.
+The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. The automated dedicated-server smoke verifies startup readiness, normal stop handling, zero-status exit, and absence of crash, dependency, Mixin-application, and client-class errors. The client smoke used a graphical display; a `glfwInit` failure when `DISPLAY` is unavailable would not constitute a successful client smoke test.
 
 ## Future publication checklist
 
