@@ -44,12 +44,12 @@ class StableStartupMatrixTest {
                 java.util.List.of(
                         "/bin/sh",
                         "-c",
-                        "printf 'Done (0.1s)! For help, type \\\"help\\\"\\n'; read command; "
+                        "printf 'Done (0.1s)! For help, type \"help\"\\n'; read command; "
                                 + "test \"$command\" = stop; printf 'Stopping server\\n'"),
                 temporaryDirectory,
                 temporaryDirectory.resolve("success.log"),
-                Duration.ofSeconds(10),
-                Duration.ofSeconds(10),
+                Duration.ofSeconds(2),
+                Duration.ofSeconds(2),
                 ServerProcessRunner.Expectation.SUCCESS);
 
         assertTrue(result.ready());
