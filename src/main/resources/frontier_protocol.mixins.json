@@ -12,6 +12,9 @@
     "SporeMoundInvoker",
     "SporeMoundStructureSuppressionMixin"
   ],
+  "client": [
+    "client.NixieTubeBlockEntityMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

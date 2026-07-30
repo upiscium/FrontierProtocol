@@ -66,6 +66,19 @@ public final class StabilizerBlock extends HorizontalKineticBlock implements IBE
     }
 
     @Override
+    protected boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof StabilizerBlockEntity blockEntity) {
+            return blockEntity.comparatorSignal();
+        }
+        return 0;
+    }
+
+    @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!state.is(newState.getBlock())
                 && level instanceof ServerLevel serverLevel

@@ -47,6 +47,8 @@ containment integration preview:
   and eight Iron Nuggets.
 - Engineer's Goggles diagnostics, targeted chunk-range visualization, static
   item guidance, and localized Ponder scenes for operation, coverage, and production.
+- Create Nixie Tube binary status panels and vanilla comparator Cell-buffer
+  instrumentation for every Stabilizer tier.
 - Per-Cell Grace budgets of 1200, 1800, and 2400 ticks for Tier 1, Tier 2, and
   Tier 3. ACTIVE and power recovery do not refill spent Grace; only a new Cell does.
 - Physical Create GameTests for unheated Compound Mixing, all three Mechanical
@@ -78,6 +80,20 @@ The finite Grace decision and final R9 values are recorded in
 
 The overlay is shown only for the targeted Stabilizer and does not indicate protection from hostile mobs. Use Create's configured Ponder key while hovering a Stabilizer, Stabilization Cell, or Stabilization Compound to open the Operation, Coverage, and Production explanations. The completed English and Japanese client smoke is recorded in [R8 Graphical Verification](docs/r8-graphical-verification.md).
 
+A Create Nixie Tube mounted directly against a Stabilizer uses Create's train-signal
+panel visual as a binary containment indicator. Red means containment is offline.
+Green means infection suppression is active, including `GRACE_PERIOD`, because
+suppression continues while Grace is spent. The panel never uses yellow and does
+not distinguish `ACTIVE` from `GRACE_PERIOD`; Engineer's Goggles remain the
+detailed diagnostic interface.
+
+A vanilla comparator reads normalized stored Stabilization Cell fullness from
+any Stabilizer tier. Signal `0` is empty, any non-empty buffer is at least `1`,
+and configured-full or persisted over-capacity buffers are `15`. This signal is
+inventory instrumentation only: it does not report operating status or remaining
+runtime, and the Stabilizer emits no direct weak or strong redstone power. See
+[R15 Instrumentation Verification](docs/r15-instrumentation-verification.md).
+
 The initial Overworld spawn center is persisted and has permanent infection suppression with a default radius of two chunks, covering 5x5 chunks. Changing world spawn later does not move it. It needs no Cell or rotation and performs no progressive cleanup. It does not remove existing nests or stop hostile mobs; it is an initial refuge, not a complete safe zone. See [R8 Operational UX](docs/r8-operational-ux.md), [ADR 0003](docs/adr/0003-operational-display-and-client-visualization.md), and [Quest Integration](docs/quest-integration.md).
 
 現在の開発versionは **0.1.0-alpha.1** です。このbuildは内部Alphaリリース候補で、
@@ -92,6 +108,11 @@ ACTIVE復帰や電源操作では回復せず、次のCell消費時だけ補充�
 安定化化合物は中間素材であり、Stabilizerへ直接投入できません。
 
 Engineer's Gogglesを装着してStabilizerを見ると、server同期された運転情報を確認できます。Shiftを押すと正確なチャンク範囲と対象1台だけのrange overlayを表示します。この範囲は敵対Mobからの保護を示すものではありません。
+
+Stabilizerへ直接取り付けたCreate Nixie Tubeは、抑制停止中に赤、感染抑制中に緑を
+表示します。GRACE_PERIOD中も抑制は継続するため緑です。この表示は二値であり、
+詳細診断にはEngineer's Gogglesを使用します。Comparator出力は保存Cell数をTierの
+設定容量に対して正規化した満杯度で、運転状態や残り運転時間を表しません。
 
 ## Requirements
 

@@ -51,6 +51,8 @@ All notable changes to Frontier Protocol are documented in this file.
 - Adopted BSD-3-Clause for Frontier Protocol source code and original assets, with the authoritative license packaged in the JAR and release candidate.
 - Expanded the verified release candidate to exactly four files by adding a byte-identical standalone `LICENSE`.
 - Documented source and asset provenance while preserving the NeoForge MDK, Gradle wrapper, and audited Create fixture terms.
+- Added binary Create Nixie Tube status panels for all Stabilizer tiers: OFFLINE is red, while ACTIVE and GRACE_PERIOD are green because both suppress infection.
+- Added vanilla comparator output for normalized stored Cell fullness, including change-only updates after insertion, consumption, reload, drops, and live capacity changes.
 
 ### Compatibility
 
