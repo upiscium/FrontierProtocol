@@ -1,5 +1,7 @@
 # Frontier Protocol
 
+[English](README.md) | [Japanese](README.ja.md)
+
 Frontier Protocol is a NeoForge addon for Fungal Infection: Spore, Create, and
 Create: The Factory Must Grow (TFMG).
 It introduces Create-powered containment infrastructure that suppresses Spore
@@ -12,22 +14,11 @@ Containment does not prevent hostile mobs from entering protected areas.
 Physical defense remains the player's responsibility. Resource generation and
 infinite ore extraction are intentionally delegated to other Create addons.
 
-Frontier Protocolは、Fungal Infection: SporeとCreateを統合するNeoForge向け
-アドオンMODです。Createの動力、生産設備および物流を利用して、チャンク全高に
-わたるSpore感染抑制設備を継続運転できます。3段階のStabilizerと全Tier共通の
-安定化セルはCreate加工で製造します。安定化化合物は中間素材であり、Stabilizerへ
-直接投入できません。
-
-抑制範囲は感染の生成と拡大を防ぎますが、外部から侵入するMobを阻止しません。
-拠点の物理的な防衛はプレイヤー自身が構築する必要があります。鉱石や流体の
-無限生成は本MODの責務外であり、他のCreateアドオンへ委譲します。
-
 ## Alpha Release
 
 The current development version is **0.1.0-alpha.1**.
-This build remains an internal alpha release candidate until the reviewed
-`v0.1.0-alpha.1` tag is pushed from `main`. The tag-driven release workflow then
-publishes it as a GitHub prerelease, not as a stable release.
+The tagged build is published as a GitHub prerelease, not as a stable release.
+Untagged pull-request and manual workflow builds remain internal alpha candidates.
 Back up worlds before testing an alpha build. This candidate establishes the first
 containment integration preview:
 
@@ -97,25 +88,6 @@ runtime, and the Stabilizer emits no direct weak or strong redstone power. See
 [R15 Instrumentation Verification](docs/r15-instrumentation-verification.md).
 
 The initial Overworld spawn center is persisted and has permanent infection suppression with a default radius of two chunks, covering 5x5 chunks. Changing world spawn later does not move it. It needs no Cell or rotation and performs no progressive cleanup. It does not remove existing nests or stop hostile mobs; it is an initial refuge, not a complete safe zone. See [R8 Operational UX](docs/r8-operational-ux.md), [ADR 0003](docs/adr/0003-operational-display-and-client-visualization.md), and [Quest Integration](docs/quest-integration.md).
-
-現在の開発versionは **0.1.0-alpha.1** です。このbuildは`main`から検証済みの
-`v0.1.0-alpha.1` tagが作成されるまでは内部Alphaリリース候補です。tag作成後は
-GitHub prereleaseとして公開されますが、stable releaseではありません。テスト前にワールドを
-バックアップしてください。本候補は初期スポーン周辺の永久抑制、初期地形の
-鉱石生成抑制、Create動力を使う3段階のStabilizer、およびSpore 2.2.0jの監査済み
-環境拡散経路との統合を提供します。ACTIVE中のStabilizerは、ロード済みチャンク内の
-監査済み非Block Entity感染植生だけを処理予算内で段階的に除去し、GRACE_PERIODと
-OFFLINE中は浄化を停止します。感染地形の復元、巣の自動破壊、Mob侵入防止、
-チャンクロードは行いません。猶予はCellごとに一度だけ付与される有限の障害耐性予算で、
-ACTIVE復帰や電源操作では回復せず、次のCell消費時だけ補充されます。全Tierと運転用の共通安定化セルはCreate加工で製造し、
-安定化化合物は中間素材であり、Stabilizerへ直接投入できません。
-
-Engineer's Gogglesを装着してStabilizerを見ると、server同期された運転情報を確認できます。Shiftを押すと正確なチャンク範囲と対象1台だけのrange overlayを表示します。この範囲は敵対Mobからの保護を示すものではありません。
-
-Stabilizerへ直接取り付けたCreate Nixie Tubeは、抑制停止中に赤、感染抑制中に緑を
-表示します。GRACE_PERIOD中も抑制は継続するため緑です。この表示は二値であり、
-詳細診断にはEngineer's Gogglesを使用します。Comparator出力は保存Cell数をTierの
-設定容量に対して正規化した満杯度で、運転状態や残り運転時間を表しません。
 
 ## Distribution
 
