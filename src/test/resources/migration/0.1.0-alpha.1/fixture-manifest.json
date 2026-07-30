@@ -1,0 +1,129 @@
+{
+  "fixtureSchemaVersion": 1,
+  "provenance": {
+    "sourceModVersion": "0.1.0-alpha.1",
+    "sourceTag": "v0.1.0-alpha.1",
+    "sourceCommit": "fed467ec0cd52a936f06751cd922efcc259914a1",
+    "jarUrl": "https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar",
+    "checksumUrl": "https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar.sha256",
+    "jarSha256": "60cb68f625eab26e8a37fe86eed125c52a1c00efca5dcae85ff3db5085274a8f"
+  },
+  "runtime": {
+    "java": "21",
+    "minecraft": "1.21.1",
+    "neoForge": "21.1.235",
+    "createArtifact": "6.0.11-295",
+    "createMod": "6.0.11",
+    "tfmg": "1.2.0",
+    "spore": "2.2.0j",
+    "sporeFileId": "8342823"
+  },
+  "levelSeed": 8675309,
+  "archiveFilename": "world-fixture.zip",
+  "archiveSha256": "fbb996b918c34a317bda9eb84a6d3d87bb836fc9e523b779ff1fdf5c780ae886",
+  "archiveSize": 1240514,
+  "archiveSizeCeiling": 16777216,
+  "spawn": {
+    "schemaVersion": 2,
+    "initialized": true,
+    "centerChunkX": 1,
+    "centerChunkZ": 5
+  },
+  "stabilizers": [
+    {
+      "position": {
+        "x": 20,
+        "y": 100,
+        "z": 84
+      },
+      "blockId": "frontier_protocol:tier_1_stabilizer",
+      "blockEntityId": "frontier_protocol:stabilizer",
+      "facing": "north",
+      "tier": "tier_1",
+      "internalCellCount": 8,
+      "status": "offline",
+      "cellRemainingTicks": 0,
+      "graceRemainingTicks": 0,
+      "registeredChunkRadius": 0,
+      "overCapacityBoundary": true
+    },
+    {
+      "position": {
+        "x": 22,
+        "y": 100,
+        "z": 84
+      },
+      "blockId": "frontier_protocol:tier_2_stabilizer",
+      "blockEntityId": "frontier_protocol:stabilizer",
+      "facing": "east",
+      "tier": "tier_2",
+      "internalCellCount": 4,
+      "status": "grace_period",
+      "cellRemainingTicks": 1800,
+      "graceRemainingTicks": 1000,
+      "registeredChunkRadius": 1,
+      "overCapacityBoundary": false
+    },
+    {
+      "position": {
+        "x": 24,
+        "y": 100,
+        "z": 84
+      },
+      "blockId": "frontier_protocol:tier_3_stabilizer",
+      "blockEntityId": "frontier_protocol:stabilizer",
+      "facing": "south",
+      "tier": "tier_3",
+      "internalCellCount": 12,
+      "status": "grace_period",
+      "cellRemainingTicks": 1200,
+      "graceRemainingTicks": 2000,
+      "registeredChunkRadius": 2,
+      "overCapacityBoundary": false
+    }
+  ],
+  "container": {
+    "position": {
+      "x": 20,
+      "y": 100,
+      "z": 87
+    },
+    "blockId": "minecraft:chest",
+    "blockEntityId": "minecraft:chest",
+    "items": {
+      "frontier_protocol:tier_3_stabilizer": 3,
+      "frontier_protocol:tier_2_stabilizer": 2,
+      "frontier_protocol:tier_1_stabilizer": 1,
+      "frontier_protocol:stabilization_cell": 13,
+      "frontier_protocol:stabilization_compound": 11
+    }
+  },
+  "cleanup": {
+    "schemaVersion": 1,
+    "chunkX": 7,
+    "chunkZ": -3,
+    "sectionIndex": 2,
+    "localBlockIndex": 321,
+    "completed": false,
+    "restartRequired": true,
+    "minSection": -4,
+    "sectionCount": 24
+  },
+  "alphaRoundTripProcedure": [
+    "Verify the exact public Alpha JAR and checksum.",
+    "Start Alpha with the generation-only helper, reach Done, stop, and require exit 0.",
+    "Remove the helper and restart the same Alpha world, reach Done, stop, and require exit 0.",
+    "Inspect the post-second-restart world and archive only the sanitized world directory."
+  ],
+  "excludedData": [
+    "session.lock",
+    "logs",
+    "crash reports",
+    "mods",
+    "libraries",
+    "caches",
+    "playerdata",
+    "stats",
+    "advancements"
+  ]
+}

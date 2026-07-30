@@ -65,6 +65,7 @@ the current release objective.
 - Defined the future `0.1.0` stable support contract, blocker evidence audit, incomplete publication gates, and recommended `0.1.0-rc.1` sequence.
 - Generalized release classification and publication checks for SemVer prereleases and stable releases without changing the current alpha version.
 - Added an offline Stable startup matrix covering repeated fresh-world center persistence, actionable required-dependency diagnostics, malformed config recreation, safe numeric range correction, and bounded process cleanup.
+- Added a provenance-checked published-Alpha world fixture and offline two-restart migration smoke covering Stabilizer state, exact item counts, spawn/cleanup SavedData, region readability, and fixture immutability.
 
 ### Compatibility
 

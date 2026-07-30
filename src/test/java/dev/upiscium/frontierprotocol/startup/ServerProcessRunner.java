@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
-final class ServerProcessRunner {
+public final class ServerProcessRunner {
     private static final Pattern READY = Pattern.compile("\\bDone \\([^)]+\\)! For help, type \\\"help\\\"");
     private static final List<Pattern> TERMINAL_FAILURES = List.of(
             Pattern.compile("(?i)Mod ID:.*Actual version:.*MISSING"),
@@ -26,13 +26,13 @@ final class ServerProcessRunner {
             Pattern.compile("(?i)---- Minecraft Crash Report ----"),
             Pattern.compile("(?i)Mixin apply .* failed|Mixin application failed"));
 
-    enum Expectation {
+    public enum Expectation {
         SUCCESS,
         TERMINAL_FAILURE,
         SUCCESS_OR_TERMINAL_FAILURE
     }
 
-    record Result(
+    public record Result(
             boolean ready,
             boolean stopped,
             boolean terminatedAfterFailure,
@@ -40,7 +40,7 @@ final class ServerProcessRunner {
             String terminalFailure,
             List<String> output) {}
 
-    Result run(
+    public Result run(
             List<String> command,
             Path workingDirectory,
             Path logFile,
@@ -178,7 +178,7 @@ final class ServerProcessRunner {
         }
     }
 
-    static boolean isCanonicalReadyLine(String line) {
+    public static boolean isCanonicalReadyLine(String line) {
         return READY.matcher(line).find();
     }
 
