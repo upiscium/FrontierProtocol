@@ -71,15 +71,19 @@ code. Public source distributions include it only as historical project source.
   non-asset files under its MIT terms. The complete upstream notice is retained
   in `src/main/resources/META-INF/LICENSES/Create-LICENSE.md` and packaged in the
   production JAR. This fixture is not claimed as BSD-3-Clause project artwork.
-- Generated `META-INF/neoforge.mods.toml` combines the NeoForge MDK template
-  structure with Frontier Protocol metadata. The retained MDK terms are recorded
-  in `TEMPLATE_LICENSE.txt`.
+- Generated `META-INF/neoforge.mods.toml` retains NeoForge MDK-derived template
+  structure and combines it with Frontier Protocol metadata. The repository
+  `TEMPLATE_LICENSE.txt` remains the sole authoritative MIT notice. The JAR task
+  packages a byte-identical copy as
+  `META-INF/LICENSES/NeoForge-MDK-TEMPLATE-LICENSE.txt`.
 
 ## Retained third-party material
 
 - NeoForge MDK template files retain the MIT notice in `TEMPLATE_LICENSE.txt`.
   Later Frontier Protocol-specific modifications are covered by BSD-3-Clause
-  without removing the upstream notice.
+  without removing the upstream notice. The packaged byte-identical notice
+  applies only to retained NeoForge MDK template material; it does not license
+  the whole project or JAR under MIT.
 - `gradle/wrapper/gradle-wrapper.jar` is the Gradle wrapper and contains its own
   embedded Apache License 2.0 text. It is repository tooling and is not packaged
   in the production mod JAR or release candidate.
@@ -90,8 +94,9 @@ code. Public source distributions include it only as historical project source.
 ## Distribution boundary
 
 The production JAR contains Frontier Protocol classes and resources, the
-authoritative project `LICENSE`, and the retained Create fixture notice. It does
-not shade Minecraft, NeoForge, Create, TFMG, Spore, or other dependency classes.
+authoritative project `LICENSE`, the retained Create fixture notice, and the
+byte-identical NeoForge MDK template notice. It does not shade Minecraft,
+NeoForge, Create, TFMG, Spore, or other dependency classes.
 The release candidate contains exactly the Frontier Protocol JAR, its SHA-256,
 the release manifest, and the standalone project `LICENSE`; dependency JARs and
 dependency assets are not bundled. Users must obtain dependencies separately

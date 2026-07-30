@@ -225,6 +225,7 @@ def productionJar = tasks.named('jar', Jar)
 def productionJarFile = productionJar.flatMap { it.archiveFile }
 def repositoryLicense = layout.projectDirectory.file('LICENSE')
 def createLicenseNotice = layout.projectDirectory.file('src/main/resources/META-INF/LICENSES/Create-LICENSE.md')
+def neoForgeMdkTemplateNotice = layout.projectDirectory.file('TEMPLATE_LICENSE.txt')
 def canonicalLicenseSha256 = '08f5b811516c01ae6bdda845ed9f7284da0e909bccf554769e104db4b681ba4c'
 def activeLicenseClaimFiles = files(
         'README.md',
@@ -232,8 +233,13 @@ def activeLicenseClaimFiles = files(
         'gradle.properties',
         'src/main/templates/META-INF/neoforge.mods.toml',
         fileTree('docs') { include '**/*.md' })
+def activeLicenseClaimPaths = activeLicenseClaimFiles.files.collect { it.absolutePath }.sort()
 productionJar.configure {
     from(repositoryLicense)
+    from(neoForgeMdkTemplateNotice) {
+        into 'META-INF/LICENSES'
+        rename { 'NeoForge-MDK-TEMPLATE-LICENSE.txt' }
+    }
 }
 def releaseRoot = layout.buildDirectory.dir('release')
 def releaseMetadataDir = layout.buildDirectory.dir('release/metadata')
@@ -255,38 +261,39 @@ def verifyReleaseJar = tasks.register('verifyReleaseJar') {
     inputs.file(productionJarFile)
     inputs.file(repositoryLicense)
     inputs.file(createLicenseNotice)
+    inputs.file(neoForgeMdkTemplateNotice)
     inputs.files(activeLicenseClaimFiles)
+    inputs.property('production_jar_path', productionJarFile.map { it.asFile.absolutePath })
     inputs.properties([
-            mod_id                 : mod_id,
-            mod_license            : mod_license,
-            mod_version            : mod_version,
-            canonical_license_sha256: canonicalLicenseSha256,
-            repository_license_path: repositoryLicense.asFile.absolutePath,
-            create_notice_path     : createLicenseNotice.asFile.absolutePath,
-            minecraft_version_range: minecraft_version_range,
-            neo_version            : neo_version,
-            create_mod_version     : create_mod_version,
-            tfmg_version           : tfmg_version,
-            spore_version          : spore_version
+            mod_id                   : mod_id,
+            mod_license              : mod_license,
+            mod_version              : mod_version,
+            canonical_license_sha256 : canonicalLicenseSha256,
+            repository_license_path  : repositoryLicense.asFile.absolutePath,
+            create_notice_path       : createLicenseNotice.asFile.absolutePath,
+            neoforge_mdk_notice_path : neoForgeMdkTemplateNotice.asFile.absolutePath,
+            active_license_claim_paths: activeLicenseClaimPaths,
+            minecraft_version_range  : minecraft_version_range,
+            neo_version              : neo_version,
+            create_mod_version       : create_mod_version,
+            tfmg_version             : tfmg_version,
+            spore_version            : spore_version
     ])
 
     doLast {
         Map<String, Object> releaseProperties = inputs.properties
-        File jarFile = inputs.files.files.find { it.name.endsWith('.jar') }
+        File jarFile = new File(releaseProperties.production_jar_path.toString())
         File repositoryLicenseFile = new File(releaseProperties.repository_license_path.toString())
         File createNoticeFile = new File(releaseProperties.create_notice_path.toString())
+        File neoForgeMdkNoticeFile = new File(releaseProperties.neoforge_mdk_notice_path.toString())
         byte[] repositoryLicenseBytes = java.nio.file.Files.readAllBytes(repositoryLicenseFile.toPath())
         String repositoryLicenseSha256 = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(repositoryLicenseBytes).encodeHex().toString()
         if (repositoryLicenseSha256 != releaseProperties.canonical_license_sha256) {
             throw new GradleException('Repository LICENSE does not match the canonical BSD-3-Clause contract')
         }
-        inputs.files.files.findAll { file ->
-            file.isFile()
-                    && file != jarFile
-                    && file != repositoryLicenseFile
-                    && file != createNoticeFile
-        }.each { file ->
+        releaseProperties.active_license_claim_paths.each { path ->
+            File file = new File(path.toString())
             String text = file.getText('UTF-8')
             if (text =~ /(?is)(Frontier Protocol.{0,120}All Rights Reserved|All Rights Reserved.{0,120}Frontier Protocol|mod_license\s*=\s*All Rights Reserved)/) {
                 throw new GradleException("Active All Rights Reserved project claim remains in ${file}")
@@ -298,6 +305,7 @@ def verifyReleaseJar = tasks.register('verifyReleaseJar') {
                     'LICENSE',
                     'META-INF/neoforge.mods.toml',
                     'META-INF/LICENSES/Create-LICENSE.md',
+                    'META-INF/LICENSES/NeoForge-MDK-TEMPLATE-LICENSE.txt',
                     'frontier_protocol.mixins.json',
                     'assets/frontier_protocol/lang/en_us.json',
                     'assets/frontier_protocol/lang/ja_jp.json',
@@ -366,6 +374,14 @@ def verifyReleaseJar = tasks.register('verifyReleaseJar') {
             if (!java.util.Arrays.equals(
                     packagedCreateNotice, java.nio.file.Files.readAllBytes(createNoticeFile.toPath()))) {
                 throw new GradleException('Production JAR does not preserve the audited Create license notice')
+            }
+            byte[] packagedNeoForgeMdkNotice = jar.getInputStream(
+                    jar.getEntry('META-INF/LICENSES/NeoForge-MDK-TEMPLATE-LICENSE.txt')).readAllBytes()
+            if (!java.util.Arrays.equals(
+                    packagedNeoForgeMdkNotice,
+                    java.nio.file.Files.readAllBytes(neoForgeMdkNoticeFile.toPath()))) {
+                throw new GradleException(
+                        'Production JAR NeoForge MDK template notice differs from TEMPLATE_LICENSE.txt')
             }
 
             String metadata = jar.getInputStream(jar.getEntry('META-INF/neoforge.mods.toml'))
@@ -438,6 +454,8 @@ def generateReleaseManifest = tasks.register('generateReleaseManifest') {
     dependsOn generateReleaseChecksum
     inputs.files(productionJarFile, releaseChecksum)
     inputs.property('source_commit', sourceCommit)
+    inputs.property('production_jar_path', productionJarFile.map { it.asFile.absolutePath })
+    inputs.property('release_checksum_path', releaseChecksum.map { it.asFile.absolutePath })
     inputs.properties([
             mod_id            : mod_id,
             mod_name          : mod_name,
@@ -459,8 +477,8 @@ def generateReleaseManifest = tasks.register('generateReleaseManifest') {
         if (!(commit ==~ /[0-9a-fA-F]{40}/)) {
             throw new GradleException("Unable to resolve a full Git commit SHA: '${commit}'")
         }
-        File jarFile = inputs.files.files.find { it.name.endsWith('.jar') }
-        File checksumFile = inputs.files.files.find { it.name.endsWith('.jar.sha256') }
+        File jarFile = new File(releaseProperties.production_jar_path.toString())
+        File checksumFile = new File(releaseProperties.release_checksum_path.toString())
         String checksum = checksumFile.getText('UTF-8').tokenize().first()
         Map<String, Object> manifest = [
                 schema_version: 1,
