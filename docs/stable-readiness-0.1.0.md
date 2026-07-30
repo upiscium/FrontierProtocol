@@ -133,6 +133,18 @@ the follow-up produces retained evidence.
 9. Publish `v0.1.0` as a non-draft, non-prerelease release.
 10. Perform post-publication packwiz, checksum, and byte-identity verification.
 
+The pre-publication packwiz gate must use either the `v0.1.0-rc.1` public URL or
+a disposable local HTTP server for the final candidate. It does not require the
+future stable URL.
+
+Post-publication stable packwiz procedure:
+
+1. After `v0.1.0` is published, run `packwiz url add` against
+   `https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0/frontier_protocol-0.1.0.jar`.
+2. Verify the generated URL, hash format, and non-empty hash.
+3. Run `packwiz refresh` and confirm that it preserves the stable URL.
+4. Record the result and JAR-structure checks in the stable publication record.
+
 `0.1.0-rc.1` is recommended. The project has one public alpha and relies on
 narrow Mixins into one exact third-party Spore build; the current audit does not
 provide strong evidence that an RC is unnecessary.

@@ -30,6 +30,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Read and classify release version
+        id: release_metadata
         shell: bash
         run: |
           set -euo pipefail
@@ -73,6 +74,12 @@ jobs:
             printf 'RELEASE_TITLE=%s\n' "$release_title"
             printf 'RELEASE_NOTES=%s\n' "$release_notes"
           } >> "$GITHUB_ENV"
+          printf 'is_prerelease=%s\n' "$is_prerelease" >> "$GITHUB_OUTPUT"
+          printf 'release_status=%s\n' "$release_status" >> "$GITHUB_OUTPUT"
+          printf 'jar_name=%s\n' "$jar_name" >> "$GITHUB_OUTPUT"
+          printf 'checksum_name=%s\n' "$checksum_name" >> "$GITHUB_OUTPUT"
+          printf 'release_title=%s\n' "$release_title" >> "$GITHUB_OUTPUT"
+          printf 'release_notes=%s\n' "$release_notes" >> "$GITHUB_OUTPUT"
 
       - name: Require tagged commit on main
         run: |
@@ -112,7 +119,7 @@ jobs:
         run: ./gradlew dedicatedServerSmoke
 
       - name: Require completed stable gates
-        if: env.IS_PRERELEASE == 'false'
+        if: steps.release_metadata.outputs.is_prerelease == 'false'
         run: ./gradlew verifyStableReleaseGates
 
       - name: Verify public release candidate

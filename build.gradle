@@ -651,7 +651,7 @@ def requiredStableGateIds = [
         'alpha1-world-upgrade',
         'english-graphical-smoke',
         'japanese-graphical-smoke',
-        'packwiz-smoke',
+        'packwiz-candidate-smoke',
         'published-checksum',
         'published-byte-identity',
         'support-contract',
@@ -739,6 +739,9 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         if (!(releaseYaml =~ /(?m)^on:\s*\n  push:\s*\n    tags:\s*\n      - 'v\*'\s*$/)) {
             throw new GradleException('Release workflow must be triggered by v* tag pushes')
         }
+        if (!(releaseYaml =~ /(?m)^      - name: Read and classify release version\s*\n        id: release_metadata\s*$/)) {
+            throw new GradleException('Release classification step must expose the release_metadata outputs')
+        }
         [
                 'fetch-tags: true',
                 'test "$GITHUB_REF_NAME" = "v${mod_version}"',
@@ -752,8 +755,15 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 'checksum_name="${jar_name}.sha256"',
                 'release_title="Frontier Protocol ${mod_version}"',
                 'release_notes="docs/releases/${mod_version}.md"',
+                'id: release_metadata',
+                'printf \'is_prerelease=%s\\n\' "$is_prerelease" >> "$GITHUB_OUTPUT"',
+                'printf \'release_status=%s\\n\' "$release_status" >> "$GITHUB_OUTPUT"',
+                'printf \'jar_name=%s\\n\' "$jar_name" >> "$GITHUB_OUTPUT"',
+                'printf \'checksum_name=%s\\n\' "$checksum_name" >> "$GITHUB_OUTPUT"',
+                'printf \'release_title=%s\\n\' "$release_title" >> "$GITHUB_OUTPUT"',
+                'printf \'release_notes=%s\\n\' "$release_notes" >> "$GITHUB_OUTPUT"',
                 './gradlew verifyReleaseCandidate -PreleaseStatus="$RELEASE_STATUS"',
-                "if: env.IS_PRERELEASE == 'false'",
+                "if: steps.release_metadata.outputs.is_prerelease == 'false'",
                 './gradlew verifyStableReleaseGates',
                 'release_args+=(--prerelease)',
                 '--argjson prerelease "$IS_PRERELEASE"',
@@ -767,6 +777,9 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         }
         if (releaseYaml.contains('--latest')) {
             throw new GradleException('Release workflow must not use --latest explicitly')
+        }
+        if (releaseYaml =~ /(?im)^\s*if:.*\benv(?:\.IS_PRERELEASE|\[['"]IS_PRERELEASE['"]\])/) {
+            throw new GradleException('Stable gate control flow must not use a GITHUB_ENV runtime value')
         }
         if (releaseYaml.contains('0.1.0-alpha.1') || releaseYaml =~ /(?i)GITHUB_(HEAD_)?REF.*release_status/) {
             throw new GradleException('Executable release workflow must not hard-code alpha.1 or classify by branch')
@@ -805,6 +818,17 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         classificationExamples.each { version, expected ->
             if (classifyPublicRelease(version) != expected) {
                 throw new GradleException("Release classification failed for ${version}")
+            }
+        }
+        Map<String, Boolean> stableGateExamples = [
+                '0.1.0-alpha.1': false,
+                '0.1.0-rc.1'   : false,
+                '0.1.0'        : true
+        ]
+        stableGateExamples.each { version, expectedToRun ->
+            boolean runsStableGate = !classifyPublicRelease(version).prerelease
+            if (runsStableGate != expectedToRun) {
+                throw new GradleException("Stable gate control flow is incorrect for ${version}")
             }
         }
         Map<String, Map<String, String>> dynamicExamples = [
@@ -952,7 +976,8 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 || !knownIssuesText.contains('NOT VERIFIED')) {
             throw new GradleException('Stable known-issues document must retain the blocker boundary')
         }
-        Map<String, String> stableGates = parseStableGates(stableGateDocument.asFile.getText('UTF-8'))
+        String stableGateText = stableGateDocument.asFile.getText('UTF-8')
+        Map<String, String> stableGates = parseStableGates(stableGateText)
         if (stableGates.keySet() != requiredStableGateIds) {
             throw new GradleException('Stable gate document does not contain the exact required gate IDs')
         }
@@ -962,6 +987,20 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         Set<String> workflowEnforced = stableGates.findAll { id, status -> status == 'WORKFLOW_ENFORCED' }.keySet()
         if (workflowEnforced != ['published-checksum', 'published-byte-identity'] as Set) {
             throw new GradleException('Post-publication workflow-enforced stable gates changed')
+        }
+        String packwizCandidateRow = stableGateText.readLines().find {
+            it.startsWith('| packwiz-candidate-smoke |')
+        }
+        String expectedPackwizCandidateRow = '| packwiz-candidate-smoke | yes | INCOMPLETE | RC public URL or disposable local HTTP candidate add, refresh, metadata hash, and JAR structure |'
+        if (packwizCandidateRow != expectedPackwizCandidateRow
+                || packwizCandidateRow.contains('/releases/download/v0.1.0/')
+                || packwizCandidateRow.toLowerCase(java.util.Locale.ROOT).contains('post-publication')) {
+            throw new GradleException('Pre-publication packwiz gate must use candidate evidence available before release creation')
+        }
+        if (!stableGateText.contains('Status: **NOT PERFORMED**')
+                || !stableGateText.contains('This is not a pre-publication gate')
+                || !stableGateText.contains('https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0/frontier_protocol-0.1.0.jar')) {
+            throw new GradleException('Post-publication stable packwiz verification contract is missing')
         }
     }
 }
