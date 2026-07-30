@@ -16,14 +16,14 @@ infinite ore extraction are intentionally delegated to other Create addons.
 
 ## Alpha Release
 
-The current development version is **0.1.0-alpha.1**.
+The latest publicly available version is **0.1.0-alpha.1**.
 Tag `v0.1.0-alpha.1` was publicly released as a GitHub prerelease on
 2026-07-30 from source commit
 `fed467ec0cd52a936f06751cd922efcc259914a1`. It is not a stable release.
 Stable `0.1.0` is the current release objective, but it is not available yet.
 The [stable-readiness contract](docs/stable-readiness-0.1.0.md) defines its
 support promises, blocker evidence, required gates, and recommended RC sequence.
-Untagged pull-request and manual workflow builds remain internal alpha candidates.
+Later source candidates and untagged workflow builds are not public releases.
 Back up worlds before testing an alpha build. This candidate establishes the first
 containment integration preview:
 

@@ -95,7 +95,7 @@ public final class Alpha1WorldMigration {
         Path root = arguments.root().toAbsolutePath().normalize();
         deleteRecursively(root);
         Path server = root.resolve("server");
-        prepareServer(server, arguments.alphaJar(), arguments.fixtureBuilderJar());
+        prepareServer(server, arguments.alphaJar(), arguments.fixtureBuilderJar(), arguments.classpathArguments());
         ServerProcessRunner.Result first = launch(server, "alpha-first-start.log");
         require(first.output().stream().anyMatch(line -> line.contains("FRONTIER_PROTOCOL_ALPHA1_FIXTURE_BUILDER_COMPLETE")),
                 "Alpha fixture builder did not report completion");
@@ -148,7 +148,7 @@ public final class Alpha1WorldMigration {
         MigrationWorldInspector.Snapshot before = inspector.inspect(server.resolve("world"), manifest);
         assertSnapshot("pre-migration", before, manifest, null);
 
-        prepareServer(server, arguments.productionJar(), null);
+        prepareServer(server, arguments.productionJar(), null, arguments.classpathArguments());
         ServerProcessRunner.Result firstResult = launch(server, "current-first-start.log");
         verifyConfiguredCapacities(server);
         requireNoFatalMigrationLog(firstResult.output(), "first current-candidate start");
@@ -165,7 +165,8 @@ public final class Alpha1WorldMigration {
         writeMigrationResults(root, manifest, before, first, second);
     }
 
-    private void prepareServer(Path server, Path frontierJar, Path additionalMod) throws IOException {
+    static void prepareServer(Path server, Path frontierJar, Path additionalMod, Path classpathArguments)
+            throws IOException {
         Files.createDirectories(server.resolve("mods"));
         Files.copy(frontierJar, server.resolve("mods").resolve(frontierJar.getFileName()));
         if (additionalMod != null) {
@@ -178,17 +179,12 @@ public final class Alpha1WorldMigration {
                         + "\nonline-mode=false\nserver-ip=127.0.0.1\nserver-port=0\nview-distance=3\nsimulation-distance=3\n"
                         + "max-world-size=256\nenable-query=false\nspawn-protection=0\n",
                 StandardCharsets.UTF_8);
-        writeScenarioClasspath(server);
+        writeScenarioClasspath(server, classpathArguments);
     }
 
     private ServerProcessRunner.Result launch(Path server, String logName) throws Exception {
-        List<String> command = List.of(
-                arguments.javaExecutable().toString(),
-                "-Xmx1G",
-                "@" + server.resolve("run-classpath.txt"),
-                "@" + arguments.vmArguments().toAbsolutePath(),
-                "net.neoforged.devlaunch.Main",
-                "@" + arguments.programArguments().toAbsolutePath());
+        List<String> command = launchCommand(
+                arguments.javaExecutable(), server, arguments.vmArguments(), arguments.programArguments());
         return runner.run(
                 command,
                 server,
@@ -198,8 +194,18 @@ public final class Alpha1WorldMigration {
                 ServerProcessRunner.Expectation.SUCCESS);
     }
 
-    private void writeScenarioClasspath(Path server) throws IOException {
-        List<String> source = Files.readAllLines(arguments.classpathArguments(), StandardCharsets.UTF_8);
+    static List<String> launchCommand(Path javaExecutable, Path server, Path vmArguments, Path programArguments) {
+        return List.of(
+                javaExecutable.toString(),
+                "-Xmx1G",
+                "@" + server.resolve("run-classpath.txt"),
+                "@" + vmArguments.toAbsolutePath(),
+                "net.neoforged.devlaunch.Main",
+                "@" + programArguments.toAbsolutePath());
+    }
+
+    private static void writeScenarioClasspath(Path server, Path classpathArguments) throws IOException {
+        List<String> source = Files.readAllLines(classpathArguments, StandardCharsets.UTF_8);
         require(source.size() == 2 && source.getFirst().equals("-classpath"), "Unexpected ModDev classpath format");
         List<String> entries = new ArrayList<>(List.of(source.get(1).split(Pattern.quote(java.io.File.pathSeparator))));
         entries.removeIf(entry -> entry.replace('\\', '/').endsWith("/build/classes/java/main")
@@ -294,11 +300,20 @@ public final class Alpha1WorldMigration {
                 stabilizers, skeleton.container(), skeleton.cleanup(), skeleton.alphaRoundTripProcedure(), skeleton.excludedData());
     }
 
-    private static void assertSnapshot(
+    static void assertSnapshot(
             String label,
             MigrationWorldInspector.Snapshot snapshot,
             MigrationFixtureManifest manifest,
             MigrationWorldInspector.Snapshot previous) {
+        assertSnapshot(label, snapshot, manifest, previous, true);
+    }
+
+    static void assertSnapshot(
+            String label,
+            MigrationWorldInspector.Snapshot snapshot,
+            MigrationFixtureManifest manifest,
+            MigrationWorldInspector.Snapshot previous,
+            boolean requireStatusDiversity) {
         require(snapshot.stabilizers().size() == 3, label + " does not contain all Stabilizers");
         int totalCells = 0;
         Set<Position> positions = new java.util.HashSet<>();
@@ -335,7 +350,7 @@ public final class Alpha1WorldMigration {
         }
         require(totalCells == manifest.stabilizers().stream().mapToInt(StabilizerExpectation::internalCellCount).sum(),
                 label + " changed total internal Cell count");
-        require(statuses.size() >= 2, label + " no longer exercises two statuses");
+        require(!requireStatusDiversity || statuses.size() >= 2, label + " no longer exercises two statuses");
         require(manifest.stabilizers().stream()
                         .anyMatch(state -> state.internalCellCount() > state.configuredCellCapacity()),
                 "Manifest lacks a genuinely over-capacity inventory");
@@ -370,7 +385,7 @@ public final class Alpha1WorldMigration {
                 label + " differs from the exact cleanup baseline");
     }
 
-    private static void verifyManifestContract(MigrationFixtureManifest manifest) {
+    static void verifyManifestContract(MigrationFixtureManifest manifest) {
         require(manifest.fixtureSchemaVersion() == MigrationFixtureManifest.FIXTURE_SCHEMA_VERSION, "Unknown fixture schema");
         require(manifest.provenance().equals(new Provenance(
                         MigrationFixtureManifest.SOURCE_VERSION,
@@ -393,17 +408,17 @@ public final class Alpha1WorldMigration {
                 "Fixture does not record the mandatory second Alpha start");
     }
 
-    private static MigrationFixtureManifest readManifest(Path manifest) throws IOException {
+    static MigrationFixtureManifest readManifest(Path manifest) throws IOException {
         return GSON.fromJson(Files.readString(manifest, StandardCharsets.UTF_8), MigrationFixtureManifest.class);
     }
 
-    private static void verifyManifestChecksum(Path manifest, Path checksumFile) throws IOException {
+    static void verifyManifestChecksum(Path manifest, Path checksumFile) throws IOException {
         require(Files.isRegularFile(checksumFile), "Fixture manifest checksum is missing");
         String expected = Files.readString(checksumFile, StandardCharsets.UTF_8).trim();
         require(expected.equals(sha256(manifest) + "  fixture-manifest.json"), "Fixture manifest checksum differs");
     }
 
-    private static void verifyArchive(Path archive, MigrationFixtureManifest manifest) throws IOException {
+    static void verifyArchive(Path archive, MigrationFixtureManifest manifest) throws IOException {
         require(Files.isRegularFile(archive), "Fixture archive is missing");
         require(Files.size(archive) == manifest.archiveSize(), "Fixture archive size differs from manifest");
         require(Files.size(archive) <= manifest.archiveSizeCeiling(), "Fixture archive exceeds size ceiling");
@@ -454,7 +469,7 @@ public final class Alpha1WorldMigration {
                 && !lower.endsWith(".log");
     }
 
-    private static void extractArchive(Path archive, Path destination) throws IOException {
+    static void extractArchive(Path archive, Path destination) throws IOException {
         try (ZipFile zip = new ZipFile(archive.toFile())) {
             for (ZipEntry entry : zip.stream().toList()) {
                 Path output = destination.resolve(entry.getName()).normalize();
@@ -471,7 +486,7 @@ public final class Alpha1WorldMigration {
         }
     }
 
-    private static void requireNoFatalMigrationLog(List<String> output, String label) {
+    static void requireNoFatalMigrationLog(List<String> output, String label) {
         String fatal = output.stream().filter(line -> FATAL_LOG.matcher(line).find()).findFirst().orElse(null);
         require(fatal == null, label + " reported migration failure: " + fatal);
     }
@@ -589,7 +604,7 @@ public final class Alpha1WorldMigration {
         };
     }
 
-    private static void verifyConfiguredCapacities(Path server) throws IOException {
+    static void verifyConfiguredCapacities(Path server) throws IOException {
         Path config = server.resolve("config/frontier_protocol-server.toml");
         require(Files.isRegularFile(config), "Frontier Protocol server config was not generated");
         String text = Files.readString(config, StandardCharsets.UTF_8);
@@ -606,7 +621,7 @@ public final class Alpha1WorldMigration {
         }
     }
 
-    private static void deleteRecursively(Path path) throws IOException {
+    static void deleteRecursively(Path path) throws IOException {
         if (!Files.exists(path)) return;
         Files.walkFileTree(path, new SimpleFileVisitor<>() {
             @Override

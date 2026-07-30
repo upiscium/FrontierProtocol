@@ -91,13 +91,32 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Validate RC soak harness
+        id: release-candidate-soak
+        run: >-
+          ./gradlew releaseCandidateSoak
+          -PsoakDurationMinutes=2
+          -PallowShortSoak=true
+          --offline
+
+      - name: Upload failed RC soak harness evidence
+        if: failure() && steps.release-candidate-soak.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc-soak-harness-evidence
+          path: |
+            build/rc-soak/server/rc-soak.log
+            build/rc-soak/rc-soak-results.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Assemble release candidate
         run: ./gradlew verifyReleaseCandidate
 
       - name: Upload release candidate bundle
         uses: actions/upload-artifact@v4
         with:
-          name: frontier_protocol-0.1.0-alpha.1-release-candidate
+          name: frontier_protocol-0.1.0-rc.1-release-candidate
           path: build/release/candidate/*
           if-no-files-found: error
           retention-days: 14

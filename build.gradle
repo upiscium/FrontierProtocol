@@ -20,24 +20,53 @@ group = mod_group_id
 def supportedReleaseStatuses = [
         'internal_alpha_candidate',
         'public_alpha_prerelease',
+        'internal_rc_candidate',
+        'public_rc_prerelease',
+        'internal_stable_candidate',
         'public_stable_release'
 ] as Set
-def defaultReleaseStatus = 'internal_alpha_candidate'
+def classifyRelease = { String candidateVersion ->
+    def semVer = candidateVersion =~ /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/
+    if (!semVer.matches()) {
+        throw new GradleException("Malformed or unsupported SemVer: '${candidateVersion}'")
+    }
+    String prerelease = semVer.group(4)
+    String releaseClass
+    if (prerelease == null) {
+        releaseClass = 'stable'
+    } else {
+        def supportedPrerelease = prerelease =~ /^(alpha|rc)\.(0|[1-9]\d*)$/
+        if (!supportedPrerelease.matches()) {
+            throw new GradleException("Unsupported prerelease class: '${candidateVersion}'")
+        }
+        releaseClass = supportedPrerelease.group(1)
+    }
+    switch (releaseClass) {
+        case 'alpha':
+            return [releaseClass: releaseClass, internalStatus: 'internal_alpha_candidate',
+                    publicStatus: 'public_alpha_prerelease', prerelease: true]
+        case 'rc':
+            return [releaseClass: releaseClass, internalStatus: 'internal_rc_candidate',
+                    publicStatus: 'public_rc_prerelease', prerelease: true]
+        default:
+            return [releaseClass: releaseClass, internalStatus: 'internal_stable_candidate',
+                    publicStatus: 'public_stable_release', prerelease: false]
+    }
+}
+def releaseClassification = classifyRelease(mod_version.toString())
+def defaultReleaseStatus = releaseClassification.internalStatus
 def releaseStatus = providers.gradleProperty('releaseStatus').orElse(defaultReleaseStatus).get()
+def releaseStatusMatchesVersion = { String candidateVersion, String candidateStatus ->
+    Map<String, Object> classification = classifyRelease(candidateVersion)
+    candidateStatus in [classification.internalStatus, classification.publicStatus]
+}
 if (!supportedReleaseStatuses.contains(releaseStatus)) {
     throw new GradleException(
             "Unsupported releaseStatus '${releaseStatus}'. Expected one of: ${supportedReleaseStatuses.sort().join(', ')}")
 }
-def classifyPublicRelease = { String candidateVersion ->
-    def semVer = candidateVersion =~ /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/
-    if (!semVer.matches()) {
-        throw new GradleException("Malformed or unsupported SemVer: '${candidateVersion}'")
-    }
-    boolean prerelease = semVer.group(4) != null
-    [
-            status    : prerelease ? 'public_alpha_prerelease' : 'public_stable_release',
-            prerelease: prerelease
-    ]
+if (!releaseStatusMatchesVersion(mod_version.toString(), releaseStatus)) {
+    throw new GradleException(
+            "releaseStatus '${releaseStatus}' does not match ${releaseClassification.releaseClass} version '${mod_version}'")
 }
 
 sourceSets.main.resources {
@@ -663,6 +692,7 @@ def requiredStableGateIds = [
         'stable-candidate',
         'fresh-world-smoke',
         'alpha1-world-upgrade',
+        'rc-log-volume-soak',
         'english-graphical-smoke',
         'japanese-graphical-smoke',
         'packwiz-candidate-smoke',
@@ -710,6 +740,7 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
 
     def buildWorkflow = layout.projectDirectory.file('.github/workflows/build.yml')
     def releaseWorkflow = layout.projectDirectory.file('.github/workflows/release.yml')
+    def rcSoakWorkflow = layout.projectDirectory.file('.github/workflows/rc-soak.yml')
     def readme = layout.projectDirectory.file('README.md')
     def readmeJa = layout.projectDirectory.file('README.ja.md')
     def changelog = layout.projectDirectory.file('CHANGELOG.md')
@@ -720,10 +751,12 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
     def stableKnownIssues = layout.projectDirectory.file('docs/releases/0.1.0-known-issues.md')
     def stableStartupMatrixRecord = layout.projectDirectory.file('docs/r19-stable-startup-matrix.md')
     def alpha1MigrationRecord = layout.projectDirectory.file('docs/r20-alpha1-world-migration.md')
+    def rcCandidateRecord = layout.projectDirectory.file('docs/r21-rc1-candidate-preparation.md')
+    def rcReleaseNotes = layout.projectDirectory.file('docs/releases/0.1.0-rc.1.md')
     def workflowDirectory = layout.projectDirectory.dir('.github/workflows')
-    inputs.files(buildWorkflow, releaseWorkflow, readme, readmeJa, changelog, alphaRelease, releaseNotes,
+    inputs.files(buildWorkflow, releaseWorkflow, rcSoakWorkflow, readme, readmeJa, changelog, alphaRelease, releaseNotes,
             publicationRecord, stableReadiness, stableKnownIssues, stableStartupMatrixRecord, alpha1MigrationRecord,
-            stableGateDocument)
+            rcCandidateRecord, rcReleaseNotes, stableGateDocument)
     inputs.dir(workflowDirectory)
     inputs.properties([
             mod_version       : mod_version,
@@ -739,6 +772,7 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
     doLast {
         String buildYaml = buildWorkflow.asFile.getText('UTF-8')
         String releaseYaml = releaseWorkflow.asFile.getText('UTF-8')
+        String rcSoakYaml = rcSoakWorkflow.asFile.getText('UTF-8')
         if (!(buildYaml =~ /(?m)^permissions:\s*\n  contents: read\s*$/)) {
             throw new GradleException('Build workflow must retain contents: read')
         }
@@ -769,6 +803,23 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 > buildYaml.indexOf('./gradlew verifyReleaseCandidate')) {
             throw new GradleException('Alpha migration smoke must run after the startup matrix and before packaging')
         }
+        [
+                './gradlew releaseCandidateSoak',
+                '-PsoakDurationMinutes=2',
+                '-PallowShortSoak=true',
+                'build/rc-soak/server/rc-soak.log',
+                'build/rc-soak/rc-soak-results.json'
+        ].each { required ->
+            if (!buildYaml.contains(required)) {
+                throw new GradleException("Build workflow is missing short RC soak validation: ${required}")
+            }
+        }
+        if (buildYaml.indexOf('./gradlew releaseCandidateSoak')
+                < buildYaml.indexOf('./gradlew alpha1WorldUpgradeSmoke --offline')
+                || buildYaml.indexOf('./gradlew releaseCandidateSoak')
+                > buildYaml.indexOf('./gradlew verifyReleaseCandidate')) {
+            throw new GradleException('Short RC soak must run after R20 and before candidate packaging')
+        }
         if (buildYaml.contains('world-fixture.zip')) {
             throw new GradleException('Build workflow must not redundantly upload the committed migration fixture')
         }
@@ -794,12 +845,15 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
                 'gh release view "$GITHUB_REF_NAME"',
                 'release_status="public_alpha_prerelease"',
+                'release_status="public_rc_prerelease"',
                 'release_status="public_stable_release"',
                 'jar_name="frontier_protocol-${mod_version}.jar"',
                 'checksum_name="${jar_name}.sha256"',
                 'release_title="Frontier Protocol ${mod_version}"',
                 'release_notes="docs/releases/${mod_version}.md"',
                 'id: release_metadata',
+                'printf \'mod_version=%s\\n\' "$mod_version" >> "$GITHUB_OUTPUT"',
+                'printf \'version_class=%s\\n\' "$version_class" >> "$GITHUB_OUTPUT"',
                 'printf \'is_prerelease=%s\\n\' "$is_prerelease" >> "$GITHUB_OUTPUT"',
                 'printf \'release_status=%s\\n\' "$release_status" >> "$GITHUB_OUTPUT"',
                 'printf \'jar_name=%s\\n\' "$jar_name" >> "$GITHUB_OUTPUT"',
@@ -807,7 +861,7 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 'printf \'release_title=%s\\n\' "$release_title" >> "$GITHUB_OUTPUT"',
                 'printf \'release_notes=%s\\n\' "$release_notes" >> "$GITHUB_OUTPUT"',
                 './gradlew verifyReleaseCandidate -PreleaseStatus="$RELEASE_STATUS"',
-                "if: steps.release_metadata.outputs.is_prerelease == 'false'",
+                "if: steps.release_metadata.outputs.version_class == 'stable'",
                 './gradlew verifyStableReleaseGates',
                 'release_args+=(--prerelease)',
                 '--argjson prerelease "$IS_PRERELEASE"',
@@ -821,6 +875,25 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         }
         if (releaseYaml.contains('--latest')) {
             throw new GradleException('Release workflow must not use --latest explicitly')
+        }
+        [
+                './gradlew stableStartupMatrix',
+                './gradlew alpha1WorldUpgradeSmoke --offline',
+                "if: steps.release_metadata.outputs.version_class != 'alpha'",
+                'build/stable-startup-matrix/**/*.log',
+                'build/stable-startup-matrix/**/*results*',
+                'build/alpha1-world-upgrade/server/*.log',
+                'build/alpha1-world-upgrade/alpha1-world-upgrade-results.properties'
+        ].each { required ->
+            if (!releaseYaml.contains(required)) {
+                throw new GradleException("Tagged RC/Stable workflow verification is missing: ${required}")
+            }
+        }
+        if (releaseYaml.indexOf('./gradlew stableStartupMatrix')
+                > releaseYaml.indexOf('./gradlew alpha1WorldUpgradeSmoke --offline')
+                || releaseYaml.indexOf('./gradlew alpha1WorldUpgradeSmoke --offline')
+                > releaseYaml.indexOf('./gradlew verifyReleaseCandidate')) {
+            throw new GradleException('Tagged R19/R20 verification must precede candidate assembly')
         }
         if (releaseYaml =~ /(?im)^\s*if:.*\benv(?:\.IS_PRERELEASE|\[['"]IS_PRERELEASE['"]\])/) {
             throw new GradleException('Stable gate control flow must not use a GITHUB_ENV runtime value')
@@ -853,15 +926,52 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         if (releaseYaml.contains('Authorization') || releaseYaml.contains('Accept:')) {
             throw new GradleException('Public asset downloads must not use authenticated GitHub headers')
         }
+        if (!(rcSoakYaml =~ /(?m)^permissions:\s*\n  contents: read\s*$/)
+                || rcSoakYaml.contains('contents: write')
+                || rcSoakYaml.contains('gh release')
+                || rcSoakYaml =~ /(?m)\bgit\s+(?:tag|push)\b/
+                || rcSoakYaml.contains('secrets.')
+                || rcSoakYaml.contains('GH_TOKEN')) {
+            throw new GradleException('RC soak workflow must remain read-only and publication-free')
+        }
+        [
+                'workflow_dispatch:',
+                'commit_sha:',
+                'duration_minutes:',
+                'test "$DURATION_MINUTES" -ge 120',
+                'git merge-base --is-ancestor "$COMMIT_SHA" origin/main',
+                './gradlew clean build',
+                './gradlew alpha1WorldUpgradeSmoke --offline',
+                './gradlew releaseCandidateSoak -PsoakDurationMinutes="$DURATION_MINUTES" --offline',
+                'if: always()',
+                'retention-days: 14'
+        ].each { required ->
+            if (!rcSoakYaml.contains(required)) {
+                throw new GradleException("RC soak workflow contract is missing: ${required}")
+            }
+        }
 
         Map<String, Map<String, Object>> classificationExamples = [
-                '0.1.0-alpha.1': [status: 'public_alpha_prerelease', prerelease: true],
-                '0.1.0-rc.1'   : [status: 'public_alpha_prerelease', prerelease: true],
-                '0.1.0'        : [status: 'public_stable_release', prerelease: false]
+                '0.1.0-alpha.1': [releaseClass: 'alpha', internalStatus: 'internal_alpha_candidate',
+                                  publicStatus: 'public_alpha_prerelease', prerelease: true],
+                '0.1.0-rc.1'   : [releaseClass: 'rc', internalStatus: 'internal_rc_candidate',
+                                  publicStatus: 'public_rc_prerelease', prerelease: true],
+                '0.1.0'        : [releaseClass: 'stable', internalStatus: 'internal_stable_candidate',
+                                  publicStatus: 'public_stable_release', prerelease: false]
         ]
         classificationExamples.each { version, expected ->
-            if (classifyPublicRelease(version) != expected) {
+            if (classifyRelease(version) != expected || classifyRelease("${version}+build.7") != expected) {
                 throw new GradleException("Release classification failed for ${version}")
+            }
+            if (!(expected.internalStatus in supportedReleaseStatuses)
+                    || !(expected.publicStatus in supportedReleaseStatuses)) {
+                throw new GradleException("Release statuses are not supported for ${version}")
+            }
+            supportedReleaseStatuses.each { status ->
+                boolean expectedMatch = status in [expected.internalStatus, expected.publicStatus]
+                if (releaseStatusMatchesVersion(version, status) != expectedMatch) {
+                    throw new GradleException("Status/version matching failed for ${version} and ${status}")
+                }
             }
         }
         Map<String, Boolean> stableGateExamples = [
@@ -870,7 +980,7 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 '0.1.0'        : true
         ]
         stableGateExamples.each { version, expectedToRun ->
-            boolean runsStableGate = !classifyPublicRelease(version).prerelease
+            boolean runsStableGate = classifyRelease(version).releaseClass == 'stable'
             if (runsStableGate != expectedToRun) {
                 throw new GradleException("Stable gate control flow is incorrect for ${version}")
             }
@@ -914,18 +1024,21 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 throw new GradleException("Dynamic release values are incorrect for ${version}: ${actual}")
             }
         }
-        ['1.0', '01.0.0', '0.1.0-', '0.1.0-01', 'v0.1.0', 'branch-main'].each { malformed ->
+        ['1.0', '01.0.0', '0.1.0-', '0.1.0-01', '0.1.0-alpha.01', '0.1.0-rc.01',
+         '0.1.0-beta.1', '0.1.0-preview.1', '0.1.0-rc', '0.1.0-rc.1.extra',
+         'v0.1.0', 'branch-main'].each { malformed ->
             try {
-                classifyPublicRelease(malformed)
+                classifyRelease(malformed)
                 throw new GradleException("Malformed version was accepted: ${malformed}")
             } catch (GradleException expected) {
-                if (!expected.message.startsWith('Malformed or unsupported SemVer:')) throw expected
+                if (!expected.message.startsWith('Malformed or unsupported SemVer:')
+                        && !expected.message.startsWith('Unsupported prerelease class:')) throw expected
             }
         }
 
         Map<String, Object> pinned = inputs.properties
         Map<String, String> expectedVersions = [
-                mod_version       : '0.1.0-alpha.1',
+                mod_version       : '0.1.0-rc.1',
                 minecraft_version : '1.21.1',
                 neo_version       : '21.1.235',
                 create_version    : '6.0.11-295',
@@ -942,9 +1055,12 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         if (supportedReleaseStatuses != [
                 'internal_alpha_candidate',
                 'public_alpha_prerelease',
+                'internal_rc_candidate',
+                'public_rc_prerelease',
+                'internal_stable_candidate',
                 'public_stable_release'
         ] as Set
-                || defaultReleaseStatus != 'internal_alpha_candidate') {
+                || defaultReleaseStatus != 'internal_rc_candidate') {
             throw new GradleException('Release status contract has changed')
         }
 
@@ -1053,6 +1169,38 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         }
         if (!stableGates.values().contains('INCOMPLETE')) {
             throw new GradleException('Unexecuted stable gates must not be marked complete')
+        }
+        if (stableGates['rc-log-volume-soak'] != 'INCOMPLETE'
+                || !stableGateText.contains('| rc-log-volume-soak | yes | INCOMPLETE | At least 120 minutes')) {
+            throw new GradleException('RC log-volume soak must remain an exact incomplete Stable gate')
+        }
+        if (!readinessText.contains('| Normal-operation log volume |')
+                || !readinessText.contains('| NOT VERIFIED | Yes |')) {
+            throw new GradleException('Normal-operation log volume must remain NOT VERIFIED')
+        }
+        String rcRecordText = rcCandidateRecord.asFile.getText('UTF-8')
+        if (!rcRecordText.contains('rc-log-volume-soak`')
+                || !rcRecordText.contains('remains `INCOMPLETE`')
+                || !rcRecordText.contains('was not run')) {
+            throw new GradleException('RC preparation record must preserve the unexecuted evidence boundary')
+        }
+        String rcNotesText = rcReleaseNotes.asFile.getText('UTF-8')
+        [
+                'prerelease candidate',
+                'Minecraft `1.21.1`',
+                'Java `21`',
+                'NeoForge `21.1.235`',
+                'Create artifact `6.0.11-295` / mod `6.0.11`',
+                'Create: The Factory Must Grow `1.2.0`',
+                'Fungal Infection: Spore exactly `2.2.0j`',
+                '0.1.0-alpha.1',
+                'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-rc.1/frontier_protocol-0.1.0-rc.1.jar',
+                'not available',
+                'Stable compatibility guarantees begin only'
+        ].each { required ->
+            if (!rcNotesText.contains(required)) {
+                throw new GradleException("RC release notes are missing: ${required}")
+            }
         }
         Set<String> workflowEnforced = stableGates.findAll { id, status -> status == 'WORKFLOW_ENFORCED' }.keySet()
         if (workflowEnforced != ['published-checksum', 'published-byte-identity'] as Set) {
@@ -1314,6 +1462,7 @@ tasks.register('stableStartupMatrix') {
 def alpha1FixtureDirectory = layout.projectDirectory.dir('src/test/resources/migration/0.1.0-alpha.1')
 def alpha1FixtureGenerationRoot = layout.buildDirectory.dir('alpha1-fixture-generation')
 def alpha1WorldUpgradeRoot = layout.buildDirectory.dir('alpha1-world-upgrade')
+def rcSoakRoot = layout.buildDirectory.dir('rc-soak')
 def alpha1DownloadDirectory = layout.buildDirectory.dir('alpha1-fixture-downloads')
 def alpha1JarFilename = 'frontier_protocol-0.1.0-alpha.1.jar'
 def alpha1JarSha256 = '60cb68f625eab26e8a37fe86eed125c52a1c00efca5dcae85ff3db5085274a8f'
@@ -1427,6 +1576,55 @@ tasks.register('alpha1WorldUpgradeSmoke', JavaExec) { task ->
         args += ['--fixture-directory', alpha1FixtureDirectory.asFile.absolutePath]
     }
     configureAlpha1MigrationJavaExec(task, 'verify', alpha1WorldUpgradeRoot)
+}
+
+def soakModVersion = mod_version.toString()
+tasks.register('releaseCandidateSoak', JavaExec) { task ->
+    group = 'verification'
+    description = 'Runs the retained RC log-volume and persistence soak against the Alpha fixture.'
+    dependsOn tasks.named('testClasses'), productionJar, tasks.named('createDedicatedServerSmokeRuntimeLaunchScript')
+    mustRunAfter tasks.named('alpha1WorldUpgradeSmoke')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.upiscium.frontierprotocol.migration.ReleaseCandidateSoak'
+    javaLauncher = stableStartupMatrixJava
+    def durationMinutes = providers.gradleProperty('soakDurationMinutes').orElse('120')
+    def allowShort = providers.gradleProperty('allowShortSoak').orElse('false')
+    timeout = java.time.Duration.ofMinutes(durationMinutes.get().toLong() + 15L)
+    inputs.files(
+            alpha1FixtureDirectory.file('world-fixture.zip'),
+            alpha1FixtureDirectory.file('fixture-manifest.json'),
+            alpha1FixtureDirectory.file('fixture-manifest.sha256'),
+            stableStartupMatrixClasspathArgs,
+            stableStartupMatrixVmArgs,
+            stableStartupMatrixProgramArgs,
+            productionJarFile)
+    inputs.properties([
+            soak_duration_minutes: durationMinutes,
+            allow_short_soak     : allowShort,
+            mod_version          : soakModVersion,
+            source_commit        : sourceCommit
+    ])
+    outputs.files(
+            rcSoakRoot.map { it.file('server/rc-soak.log') },
+            rcSoakRoot.map { it.file('rc-soak-results.json') })
+    outputs.upToDateWhen { false }
+    doFirst {
+        boolean shortMode = allowShort.get() == 'true'
+        args = [
+                '--root', rcSoakRoot.get().asFile.absolutePath,
+                '--fixture-directory', alpha1FixtureDirectory.asFile.absolutePath,
+                '--production-jar', productionJarFile.get().asFile.absolutePath,
+                '--java', stableStartupMatrixJava.get().executablePath.asFile.absolutePath,
+                '--classpath-args', stableStartupMatrixClasspathArgs.get().asFile.absolutePath,
+                '--vm-args', stableStartupMatrixVmArgs.get().asFile.absolutePath,
+                '--program-args', stableStartupMatrixProgramArgs.get().asFile.absolutePath,
+                '--mod-version', soakModVersion,
+                '--source-commit', sourceCommit.get(),
+                '--duration-minutes', durationMinutes.get(),
+                '--warmup-seconds', shortMode ? '10' : '300',
+                '--allow-short-soak', allowShort.get()
+        ]
+    }
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

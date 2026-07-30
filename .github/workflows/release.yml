@@ -42,18 +42,19 @@ jobs:
           fi
 
           version_without_build="${mod_version%%+*}"
-          if [[ "$version_without_build" == *-* ]]; then
-            prerelease="${version_without_build#*-}"
-            IFS='.' read -ra identifiers <<< "$prerelease"
-            for identifier in "${identifiers[@]}"; do
-              if [[ "$identifier" =~ ^[0-9]+$ && "$identifier" != "0" && "$identifier" == 0* ]]; then
-                echo "Malformed numeric prerelease identifier: $identifier" >&2
-                exit 1
-              fi
-            done
+          if [[ "$version_without_build" =~ -alpha\.(0|[1-9][0-9]*)$ ]]; then
+            version_class="alpha"
             release_status="public_alpha_prerelease"
             is_prerelease="true"
+          elif [[ "$version_without_build" =~ -rc\.(0|[1-9][0-9]*)$ ]]; then
+            version_class="rc"
+            release_status="public_rc_prerelease"
+            is_prerelease="true"
+          elif [[ "$version_without_build" == *-* ]]; then
+            echo "Unsupported prerelease class: $mod_version" >&2
+            exit 1
           else
+            version_class="stable"
             release_status="public_stable_release"
             is_prerelease="false"
           fi
@@ -74,6 +75,8 @@ jobs:
             printf 'RELEASE_TITLE=%s\n' "$release_title"
             printf 'RELEASE_NOTES=%s\n' "$release_notes"
           } >> "$GITHUB_ENV"
+          printf 'mod_version=%s\n' "$mod_version" >> "$GITHUB_OUTPUT"
+          printf 'version_class=%s\n' "$version_class" >> "$GITHUB_OUTPUT"
           printf 'is_prerelease=%s\n' "$is_prerelease" >> "$GITHUB_OUTPUT"
           printf 'release_status=%s\n' "$release_status" >> "$GITHUB_OUTPUT"
           printf 'jar_name=%s\n' "$jar_name" >> "$GITHUB_OUTPUT"
@@ -118,8 +121,40 @@ jobs:
       - name: Run dedicated-server smoke
         run: ./gradlew dedicatedServerSmoke
 
+      - name: Run Stable startup matrix
+        id: stable-startup-matrix
+        if: steps.release_metadata.outputs.version_class != 'alpha'
+        run: ./gradlew stableStartupMatrix
+
+      - name: Upload failed Stable startup matrix evidence
+        if: failure() && steps.stable-startup-matrix.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tagged-stable-startup-matrix-evidence
+          path: |
+            build/stable-startup-matrix/**/*.log
+            build/stable-startup-matrix/**/*results*
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Run Alpha world migration smoke
+        id: alpha1-world-upgrade-smoke
+        if: steps.release_metadata.outputs.version_class != 'alpha'
+        run: ./gradlew alpha1WorldUpgradeSmoke --offline
+
+      - name: Upload failed Alpha world migration evidence
+        if: failure() && steps.alpha1-world-upgrade-smoke.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tagged-alpha1-world-upgrade-evidence
+          path: |
+            build/alpha1-world-upgrade/server/*.log
+            build/alpha1-world-upgrade/alpha1-world-upgrade-results.properties
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Require completed stable gates
-        if: steps.release_metadata.outputs.is_prerelease == 'false'
+        if: steps.release_metadata.outputs.version_class == 'stable'
         run: ./gradlew verifyStableReleaseGates
 
       - name: Verify public release candidate

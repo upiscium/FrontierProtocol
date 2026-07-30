@@ -38,7 +38,13 @@ public final class ServerProcessRunner {
             boolean terminatedAfterFailure,
             int exitCode,
             String terminalFailure,
-            List<String> output) {}
+            List<String> output,
+            List<TimedLine> timedOutput,
+            Duration measuredWarmup,
+            Duration measuredSteadyState,
+            long steadyStateStartedAtNanos) {}
+
+    public record TimedLine(String text, long observedAtNanos) {}
 
     public Result run(
             List<String> command,
@@ -48,6 +54,23 @@ public final class ServerProcessRunner {
             Duration shutdownTimeout,
             Expectation expectation)
             throws Exception {
+        return run(command, workingDirectory, logFile, startupTimeout, Duration.ZERO, Duration.ZERO,
+                shutdownTimeout, expectation);
+    }
+
+    public Result run(
+            List<String> command,
+            Path workingDirectory,
+            Path logFile,
+            Duration startupTimeout,
+            Duration warmupDuration,
+            Duration steadyStateDuration,
+            Duration shutdownTimeout,
+            Expectation expectation)
+            throws Exception {
+        if (warmupDuration.isNegative() || steadyStateDuration.isNegative()) {
+            throw new IllegalArgumentException("Observation durations must not be negative");
+        }
         Files.createDirectories(workingDirectory);
         Files.createDirectories(logFile.getParent());
 
@@ -57,11 +80,15 @@ public final class ServerProcessRunner {
         AtomicReference<String> terminalFailure = new AtomicReference<>();
         AtomicReference<Throwable> readerFailure = new AtomicReference<>();
         List<String> output = new ArrayList<>();
+        List<TimedLine> timedOutput = new ArrayList<>();
         ArrayDeque<String> tail = new ArrayDeque<>(80);
         Process process = null;
         Thread reader = null;
         Thread shutdownHook = null;
         Throwable failure = null;
+        Duration measuredWarmup = Duration.ZERO;
+        Duration measuredSteadyState = Duration.ZERO;
+        long steadyStateStartedAtNanos = 0L;
         try {
             process = new ProcessBuilder(command)
                     .directory(workingDirectory.toFile())
@@ -80,6 +107,7 @@ public final class ServerProcessRunner {
                         writer.flush();
                         synchronized (output) {
                             output.add(line);
+                            timedOutput.add(new TimedLine(line, System.nanoTime()));
                         }
                         synchronized (tail) {
                             if (tail.size() == 80) {
@@ -116,6 +144,13 @@ public final class ServerProcessRunner {
                 if (expectation == Expectation.TERMINAL_FAILURE) {
                     throw new IllegalStateException("Server reached Done when a terminal startup failure was required");
                 }
+                long warmupStart = System.nanoTime();
+                waitForObservation(process, terminalFailure, readerFailure, warmupDuration, "warm-up");
+                measuredWarmup = Duration.ofNanos(System.nanoTime() - warmupStart);
+                long steadyStateStart = System.nanoTime();
+                steadyStateStartedAtNanos = steadyStateStart;
+                waitForObservation(process, terminalFailure, readerFailure, steadyStateDuration, "steady-state");
+                measuredSteadyState = Duration.ofNanos(System.nanoTime() - steadyStateStart);
                 process.outputWriter(StandardCharsets.UTF_8).append("stop\n").flush();
                 if (!process.waitFor(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
                     throw new IllegalStateException("Server did not stop within " + shutdownTimeout.toSeconds() + " seconds");
@@ -174,7 +209,11 @@ public final class ServerProcessRunner {
                     terminatedAfterFailure.get(),
                     process.exitValue(),
                     terminalFailure.get(),
-                    List.copyOf(output));
+                    List.copyOf(output),
+                    List.copyOf(timedOutput),
+                    measuredWarmup,
+                    measuredSteadyState,
+                    steadyStateStartedAtNanos);
         }
     }
 
@@ -198,6 +237,9 @@ public final class ServerProcessRunner {
             if (terminalFailure.get() != null && expectation == Expectation.TERMINAL_FAILURE) {
                 break;
             }
+            if (terminalFailure.get() != null && expectation == Expectation.SUCCESS) {
+                throw new IllegalStateException("Server reported terminal startup failure: " + terminalFailure.get());
+            }
             if (!process.isAlive()) {
                 Thread.sleep(100);
                 if (terminalFailure.get() == null) {
@@ -212,6 +254,29 @@ public final class ServerProcessRunner {
                         + expectation.name().toLowerCase(Locale.ROOT));
             }
             Thread.sleep(100);
+        }
+    }
+
+    private static void waitForObservation(
+            Process process,
+            AtomicReference<String> terminalFailure,
+            AtomicReference<Throwable> readerFailure,
+            Duration duration,
+            String phase)
+            throws Exception {
+        long deadline = System.nanoTime() + duration.toNanos();
+        while (System.nanoTime() < deadline) {
+            if (readerFailure.get() != null) {
+                throw new IllegalStateException("Server log reader failed during " + phase, readerFailure.get());
+            }
+            if (terminalFailure.get() != null) {
+                throw new IllegalStateException("Server reported terminal failure during " + phase + ": "
+                        + terminalFailure.get());
+            }
+            if (!process.isAlive()) {
+                throw new IllegalStateException("Server exited during " + phase + " with status " + process.exitValue());
+            }
+            Thread.sleep(Math.min(100L, Math.max(1L, duration.toMillis())));
         }
     }
 
