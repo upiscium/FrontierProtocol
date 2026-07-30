@@ -107,8 +107,11 @@ jobs:
           set -euo pipefail
           release_json="$RUNNER_TEMP/published-release.json"
           published_dir="$(mktemp -d "$RUNNER_TEMP/published-assets.XXXXXX")"
+          anonymous_dir="$(mktemp -d "$RUNNER_TEMP/anonymous-assets.XXXXXX")"
           expected_assets="$RUNNER_TEMP/expected-published-assets.txt"
           actual_assets="$RUNNER_TEMP/actual-published-assets.txt"
+          expected_jar_url="https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar"
+          expected_checksum_url="https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar.sha256"
 
           gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" > "$release_json"
           jq -e --arg tag "$GITHUB_REF_NAME" \
@@ -121,6 +124,39 @@ jobs:
             release-manifest.json | sort > "$expected_assets"
           jq -r '.assets[].name' "$release_json" | sort > "$actual_assets"
           diff -u "$expected_assets" "$actual_assets"
+
+          jar_url="$(jq --exit-status --raw-output \
+            '.assets[] | select(.name == "frontier_protocol-0.1.0-alpha.1.jar") | .browser_download_url' \
+            "$release_json")"
+          checksum_url="$(jq --exit-status --raw-output \
+            '.assets[] | select(.name == "frontier_protocol-0.1.0-alpha.1.jar.sha256") | .browser_download_url' \
+            "$release_json")"
+          test "$jar_url" = "$expected_jar_url"
+          test "$checksum_url" = "$expected_checksum_url"
+
+          download_public_asset() {
+            env -u GH_TOKEN -u GITHUB_TOKEN curl --fail --location \
+              --silent \
+              --show-error \
+              --retry 5 \
+              --retry-all-errors \
+              --retry-delay 2 \
+              --output "$1" \
+              "$2"
+          }
+          download_public_asset \
+            "$anonymous_dir/frontier_protocol-0.1.0-alpha.1.jar" \
+            "$jar_url"
+          download_public_asset \
+            "$anonymous_dir/frontier_protocol-0.1.0-alpha.1.jar.sha256" \
+            "$checksum_url"
+          (
+            cd "$anonymous_dir"
+            sha256sum --check frontier_protocol-0.1.0-alpha.1.jar.sha256
+          )
+          cmp \
+            build/release/candidate/frontier_protocol-0.1.0-alpha.1.jar \
+            "$anonymous_dir/frontier_protocol-0.1.0-alpha.1.jar"
 
           gh release download "$GITHUB_REF_NAME" --dir "$published_dir"
           find "$published_dir" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort > "$actual_assets"

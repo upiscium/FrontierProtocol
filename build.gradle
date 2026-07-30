@@ -701,6 +701,36 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
             throw new GradleException("Release upload assets differ from the four-file contract: ${uploadedAssets}")
         }
 
+        int publicDownloadStart = releaseYaml.indexOf('anonymous_dir=')
+        int cliDownloadStart = releaseYaml.indexOf('gh release download', publicDownloadStart)
+        if (publicDownloadStart < 0 || cliDownloadStart < 0) {
+            throw new GradleException('Anonymous public asset verification is missing')
+        }
+        String publicDownload = releaseYaml.substring(publicDownloadStart, cliDownloadStart)
+        [
+                'select(.name == "frontier_protocol-0.1.0-alpha.1.jar") | .browser_download_url',
+                'select(.name == "frontier_protocol-0.1.0-alpha.1.jar.sha256") | .browser_download_url',
+                'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar',
+                'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar.sha256',
+                'test "$jar_url" = "$expected_jar_url"',
+                'test "$checksum_url" = "$expected_checksum_url"',
+                'env -u GH_TOKEN -u GITHUB_TOKEN curl --fail --location',
+                '--retry 5',
+                '--retry-all-errors',
+                '--retry-delay 2',
+                'sha256sum --check frontier_protocol-0.1.0-alpha.1.jar.sha256',
+                'cmp',
+                'build/release/candidate/frontier_protocol-0.1.0-alpha.1.jar',
+                '"$anonymous_dir/frontier_protocol-0.1.0-alpha.1.jar"'
+        ].each { required ->
+            if (!publicDownload.contains(required)) {
+                throw new GradleException("Public asset verification is missing: ${required}")
+            }
+        }
+        if (publicDownload.contains('Authorization') || publicDownload.contains('Accept:')) {
+            throw new GradleException('Public asset downloads must not use authenticated GitHub headers')
+        }
+
         Map<String, Object> pinned = inputs.properties
         Map<String, String> expectedVersions = [
                 mod_version       : '0.1.0-alpha.1',
