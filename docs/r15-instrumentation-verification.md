@@ -60,19 +60,31 @@ dependency-originated and are unrelated to R15.
 A second Xvfb launch with Fancy graphics also completed resource, atlas, and all
 77 Flywheel shader-source loads without a Frontier Protocol error. This verifies
 both graphics modes reach renderer startup; it is not a substitute for the
-in-world panel matrix below.
+separate local in-world verification below.
 
-Automated X11 input reached the world but did not produce a deterministic
-close-up fixture matrix, so the following visual checks remain manual Draft-PR
-verification items and are not claimed as completed by the launch smoke:
+## Local in-world verification
 
-- Tier 1, Tier 2, and Tier 3 in `OFFLINE`, `ACTIVE`, and `GRACE_PERIOD`.
-- Red OFFLINE and green ACTIVE/GRACE_PERIOD panels.
-- All four horizontal Stabilizer facings and representative wall, floor, and
-  ceiling Nixie attachments.
-- Detach and reattach, including restoration of normal number rendering.
-- ComputerCraft precedence when the optional runtime is available.
-- Fast and Fancy graphics.
+On 2026-07-30, the user completed the requested local in-world verification on
+the review branch and reported no issue. The following checks passed:
+
+- Tier 1 Nixie integration.
+- Tier 2 Nixie integration.
+- Tier 3 Nixie integration.
+- `OFFLINE` displays red.
+- `ACTIVE` displays green.
+- `GRACE_PERIOD` displays green.
+- Horizontal Stabilizer facings.
+- Representative wall attachment.
+- Representative floor attachment.
+- Representative ceiling attachment.
+- Detaching restores the standard Nixie numeric/redstone display.
+- Reattaching restores the train-signal panel.
+- Fast graphics.
+- Fancy graphics.
+- No visible rendering or behavior defect was observed.
+
+ComputerCraft precedence was not exercised because the optional runtime was
+unavailable.
 
 No custom renderer, texture, model, packet, or persistent Nixie NBT is introduced.
 The integration runs after Create's normal Nixie tick handling, uses
