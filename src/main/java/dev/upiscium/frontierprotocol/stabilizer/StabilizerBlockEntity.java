@@ -57,6 +57,7 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         protected void onContentsChanged(int slot) {
             StabilizerBlockEntity.this.setChanged();
             displaySyncPolicy.markDirty();
+            updateComparatorOutput();
         }
     };
     private StabilizerStateMachine machine = new StabilizerStateMachine();
@@ -72,6 +73,7 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
     private StabilizerDisplaySnapshot lastObservedDisplaySnapshot;
     private StabilizerDisplaySnapshot clientDisplaySnapshot;
     private boolean displaySnapshotInvalid;
+    private int lastComparatorLevel = -1;
 
     public StabilizerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STABILIZER.get(), pos, state);
@@ -105,6 +107,7 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         }
 
         StabilizerTierDefinition definition = definition();
+        updateComparatorOutput(definition);
         boolean powered = hasNetwork()
                 && !isOverStressed()
                 && isRpmSufficient(getSpeed(), definition.minimumRpm());
@@ -143,6 +146,11 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
 
     int cellRemainingTicks() {
         return machine.cellRemainingTicks();
+    }
+
+    int comparatorSignal() {
+        return StabilizerComparatorSignal.calculate(
+                inventory.getStackInSlot(0).getCount(), definition().cellCapacity());
     }
 
     public StabilizerDisplaySnapshot displaySnapshot() {
@@ -194,6 +202,19 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         if (stack.isEmpty() || !inventory.isItemValid(0, stack)) return;
         stack.shrink(1);
         inventory.setStackInSlot(0, stack);
+    }
+
+    private void updateComparatorOutput() {
+        updateComparatorOutput(definition());
+    }
+
+    private void updateComparatorOutput(StabilizerTierDefinition definition) {
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        int comparatorLevel = StabilizerComparatorSignal.calculate(
+                inventory.getStackInSlot(0).getCount(), definition.cellCapacity());
+        if (comparatorLevel == lastComparatorLevel) return;
+        lastComparatorLevel = comparatorLevel;
+        serverLevel.updateNeighbourForOutputSignal(worldPosition, getBlockState().getBlock());
     }
 
     private StabilizerDisplaySnapshot createDisplaySnapshot(StabilizerTierDefinition definition) {
@@ -421,6 +442,8 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         needsEvaluation = true;
         displaySyncPolicy.markDirty();
         lastObservedDisplaySnapshot = null;
+        lastComparatorLevel = -1;
+        updateComparatorOutput();
     }
 
     @Override
@@ -496,6 +519,8 @@ public final class StabilizerBlockEntity extends KineticBlockEntity {
         registeredCoverage = null;
         registeredProfile = null;
         needsEvaluation = true;
+        lastComparatorLevel = -1;
+        updateComparatorOutput();
     }
 
     private enum CleanupRegistration {
