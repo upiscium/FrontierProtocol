@@ -630,11 +630,14 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
     def buildWorkflow = layout.projectDirectory.file('.github/workflows/build.yml')
     def releaseWorkflow = layout.projectDirectory.file('.github/workflows/release.yml')
     def readme = layout.projectDirectory.file('README.md')
+    def readmeJa = layout.projectDirectory.file('README.ja.md')
     def changelog = layout.projectDirectory.file('CHANGELOG.md')
     def alphaRelease = layout.projectDirectory.file('docs/alpha-release.md')
     def releaseNotes = layout.projectDirectory.file('docs/releases/0.1.0-alpha.1.md')
+    def publicationRecord = layout.projectDirectory.file('docs/releases/0.1.0-alpha.1-publication.md')
     def workflowDirectory = layout.projectDirectory.dir('.github/workflows')
-    inputs.files(buildWorkflow, releaseWorkflow, readme, changelog, alphaRelease, releaseNotes)
+    inputs.files(buildWorkflow, releaseWorkflow, readme, readmeJa, changelog, alphaRelease, releaseNotes,
+            publicationRecord)
     inputs.dir(workflowDirectory)
     inputs.properties([
             mod_version       : mod_version,
@@ -760,6 +763,53 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                     || !content.contains(expectedUrl)) {
                 throw new GradleException("${documentation.asFile.name} lacks the immutable release URL contract")
             }
+        }
+
+        String readmeText = readme.asFile.getText('UTF-8')
+        String readmeJaText = readmeJa.asFile.getText('UTF-8')
+        def publicJarUrlPattern = ~/https:\/\/github\.com\/upiscium\/FrontierProtocol\/releases\/download\/[^\s"']+\/frontier_protocol-[^\s"']+\.jar/
+        Set<String> readmeUrls = (readmeText =~ publicJarUrlPattern).collect { it.toString() }.toSet()
+        Set<String> readmeJaUrls = (readmeJaText =~ publicJarUrlPattern).collect { it.toString() }.toSet()
+        if (readmeUrls != [expectedUrl] as Set || readmeJaUrls != readmeUrls) {
+            throw new GradleException('English and Japanese READMEs must retain the same immutable public JAR URL')
+        }
+
+        String alphaReleaseText = alphaRelease.asFile.getText('UTF-8')
+        if (alphaReleaseText =~ /(?i)tag.{0,40}(is|are|remain|remains)\s+unset/
+                || alphaReleaseText =~ /(?i)release date.{0,40}(is|are|remain|remains)\s+unset/) {
+            throw new GradleException('Alpha release documentation must not claim the tag or release date is unset')
+        }
+        if (!alphaReleaseText.contains('2026-07-30')) {
+            throw new GradleException('Alpha release documentation must retain the publication date')
+        }
+
+        String publicationText = publicationRecord.asFile.getText('UTF-8')
+        [
+                'Publication date: `2026-07-30`',
+                'Source commit: `fed467ec0cd52a936f06751cd922efcc259914a1`',
+                'GitHub release: public prerelease',
+                'Draft: false',
+                'Stable/latest-stable: false',
+                'Release manifest status: `public_alpha_prerelease`',
+                expectedUrl
+        ].each { required ->
+            if (!publicationText.contains(required)) {
+                throw new GradleException("Publication record is missing required contract: ${required}")
+            }
+        }
+        [
+                'frontier_protocol-0.1.0-alpha.1.jar',
+                'frontier_protocol-0.1.0-alpha.1.jar.sha256',
+                'release-manifest.json',
+                'LICENSE'
+        ].each { assetName ->
+            if (!publicationText.contains("- `${assetName}`")) {
+                throw new GradleException("Publication record is missing release asset: ${assetName}")
+            }
+        }
+        if (publicationText =~ /(?im)^- (Stable|Latest-stable):\s*(true|yes)\s*$/
+                || publicationText =~ /(?i)\b(is|as)\s+a stable release\b/) {
+            throw new GradleException('Publication record must not call the alpha a stable release')
         }
         if (!changelog.asFile.getText('UTF-8').contains('GitHub prerelease')) {
             throw new GradleException('Changelog must document GitHub prerelease distribution')

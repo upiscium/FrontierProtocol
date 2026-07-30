@@ -2,7 +2,10 @@
 
 All notable changes to Frontier Protocol are documented in this file.
 
-## [0.1.0-alpha.1] - Unreleased
+## [0.1.0-alpha.1] - 2026-07-30
+
+Published as a public GitHub prerelease from source commit
+`fed467ec0cd52a936f06751cd922efcc259914a1`. This is not a stable release.
 
 ### Added
 
@@ -56,6 +59,7 @@ All notable changes to Frontier Protocol are documented in this file.
 - Added a tag-driven GitHub prerelease workflow that independently verifies and publishes the exact four-file release candidate without replacing existing releases or assets.
 - Selected permanent, immutable GitHub Release assets as the packwiz distribution channel while retaining Actions artifacts as temporary internal verification bundles.
 - Added post-publication checksum, byte-identity, manifest, release-state, and exact asset-set verification for the `v0.1.0-alpha.1` GitHub prerelease.
+- Recorded the completed alpha publication and disposable packwiz public-URL smoke verification.
 
 ### Compatibility
 
