@@ -1,10 +1,10 @@
 # Frontier Protocol 0.1.0-alpha.1
 
-## Candidate status
+## Candidate and prerelease status
 
-This is an internal alpha release candidate of the rebuilt Frontier Protocol design. It is intended for internal compatibility testing and integration validation. Worlds should be backed up before testing, and upgrading Spore independently is unsupported until its mutation paths are re-audited.
+The untagged build is an internal alpha release candidate of the rebuilt Frontier Protocol design. The reviewed `v0.1.0-alpha.1` tag from `main` publishes the same independently verified files as a public GitHub alpha prerelease. Neither form is a stable release. Both are intended for modpack compatibility testing and integration validation. Worlds should be backed up before testing, and upgrading Spore independently is unsupported until its mutation paths are re-audited.
 
-The candidate artifact produced by the build is `frontier_protocol-0.1.0-alpha.1.jar`. It has not been approved for public distribution. Frontier Protocol is licensed under [BSD-3-Clause](../LICENSE); selecting a license does not change this build's internal-alpha status.
+The production artifact is `frontier_protocol-0.1.0-alpha.1.jar`. Frontier Protocol is licensed under [BSD-3-Clause](../LICENSE); that license applies only to Frontier Protocol material and does not replace dependency or retained third-party licenses.
 
 The verified GitHub Actions artifact is:
 
@@ -25,12 +25,33 @@ After extracting the Actions artifact, verify the production JAR with:
 sha256sum --check frontier_protocol-0.1.0-alpha.1.jar.sha256
 ```
 
-The Actions artifact ZIP digest covers the outer transport archive and is not the JAR checksum. Use the bundled `.sha256` file to verify the JAR. `release-manifest.json` records the source commit and required dependency versions. The standalone `LICENSE` and the copy packaged at the JAR root are byte-identical to the repository license. Dependency mod JARs are not bundled, and their separate licenses are not replaced by Frontier Protocol's license. This artifact is an internal alpha candidate and the workflow does not publish it as a GitHub Release or to an external distribution service. See [Licensing and Provenance](licensing.md) for the distribution audit.
+The Actions artifact ZIP digest covers the outer transport archive and is not the JAR checksum. Use the bundled `.sha256` file to verify the JAR. `release-manifest.json` records the source commit and required dependency versions. The standalone `LICENSE` and the copy packaged at the JAR root are byte-identical to the repository license. Dependency mod JARs are not bundled, and their separate licenses are not replaced by Frontier Protocol's license. The Actions artifact is a temporary 14-day internal verification bundle, not a public distribution endpoint or packwiz URL. See [Licensing and Provenance](licensing.md) for the distribution audit.
 
-## Publication status
+## GitHub prerelease distribution
 
-Public distribution of 0.1.0-alpha.1 has been deferred.
-This version is currently used for internal testing and integration validation only.
+GitHub Releases is the selected public distribution channel. After the reviewed
+tag is pushed from `main`, the tag-driven workflow publishes exactly the JAR,
+checksum, manifest, and standalone license as permanent prerelease assets. The
+tag and release date remain unset until that actual publication occurs.
+
+The immutable `v0.1.0-alpha.1` JAR URL is:
+
+```text
+https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar
+```
+
+Use the tag-specific URL from a modpack root:
+
+```bash
+packwiz url add --meta-folder mods "Frontier Protocol" \
+  "https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar"
+```
+
+packwiz stores the direct URL and calculated file hash in its generated `.pw.toml`
+metadata. Actions artifact URLs must not be used because those bundles expire.
+Future versions use new immutable tags and URLs; the `v0.1.0-alpha.1` assets must
+not be replaced or mutated. This channel remains an alpha prerelease channel,
+not a stable or latest-stable release.
 
 The accepted Stabilizer consumable model is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), with the current TFMG Compound materials in [ADR 0004](adr/0004-tfmg-compound-production.md). The common tier architecture is recorded in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md), and the finite Grace contract in [ADR 0005](adr/0005-per-cell-grace-budget.md). Operational display architecture is recorded in [ADR 0003](adr/0003-operational-display-and-client-visualization.md), with current behavior documented in [R9 Balance Hardening](r9-balance-hardening.md).
 
@@ -77,7 +98,7 @@ At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress,
 
 ## Verification status
 
-Current automated verification includes passing unit tests and all 40 GameTests. RecipeManager validation covers the exact five serializers, ingredients, patterns, outputs, and absence of crafting bypasses. Physical tests additionally cover a Basin with no heat source and heat level `NONE`, Tier 1/2/3 Mechanical Crafter execution, prior-tier consumption, two default-duration Tier 2/Tier 3 Cell rollovers through Chest/Chute logistics without ACTIVE or suppression interruption, dual-side shaft attachment with front/back rejection for all three directional Stabilizers, and kinetic-network disconnection and reconnection after Create wrench rotation.
+Current automated verification includes passing unit tests and all 42 GameTests. RecipeManager validation covers the exact five serializers, ingredients, patterns, outputs, and absence of crafting bypasses. Physical tests additionally cover a Basin with no heat source and heat level `NONE`, Tier 1/2/3 Mechanical Crafter execution, prior-tier consumption, two default-duration Tier 2/Tier 3 Cell rollovers through Chest/Chute logistics without ACTIVE or suppression interruption, dual-side shaft attachment with front/back rejection for all three directional Stabilizers, and kinetic-network disconnection and reconnection after Create wrench rotation.
 
 R9 verification launched the production dedicated server with the manually updated development Grace values. Create, TFMG, Spore, and Frontier Protocol loaded, 3593 recipes were accepted, and the server reached `Done` without config, Mixin, or client-class errors. Automated verification now launches the dedicated server in an isolated build directory, detects the canonical `Done` ready state, sends the normal console `stop` command, and requires shutdown within the configured timeout with exit status 0. Its retained log is `build/dedicated-server-smoke/dedicated-server.log`.
 
@@ -93,12 +114,12 @@ Final asset status: Tier 1 FINAL; Tier 2 FINAL; Tier 3 FINAL; Compound FINAL; Ce
 
 The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mixins.json`, and the Spore integration classes. The automated dedicated-server smoke verifies startup readiness, normal stop handling, zero-status exit, and absence of crash, dependency, Mixin-application, and client-class errors. The client smoke used a graphical display; a `glfwInit` failure when `DISPLAY` is unavailable would not constitute a successful client smoke test.
 
-## Future publication checklist
+## Publication checklist
 
-- Decide the distribution channel.
+- [x] Select GitHub Releases as the distribution channel.
 - [x] Adopt BSD-3-Clause and confirm its distribution terms.
 - [x] Add and verify the required `LICENSE` document in source, JAR, and candidate bundle.
-- Confirm the release branch and default branch.
+- [x] Confirm `main` as the release branch and default branch.
 - [x] Run a clean build.
 - [x] Run the complete GameTest suite.
 - [x] Complete a dedicated-server smoke test.
@@ -111,5 +132,5 @@ The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mix
 - [x] Complete the focused R9 client Grace lifecycle smoke.
 - [x] Verify client reconnect and dedicated-server lifecycle persistence.
 - [x] Inspect the production JAR contents and generated metadata.
-- Set the actual release date.
+- Set the actual release date when the tag is published.
 - Prepare an icon or screenshots only if required by the selected channel.
