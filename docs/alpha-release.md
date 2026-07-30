@@ -4,6 +4,10 @@
 
 The untagged build is an internal alpha release candidate of the rebuilt Frontier Protocol design. The reviewed `v0.1.0-alpha.1` tag from `main` was publicly released as a GitHub alpha prerelease on 2026-07-30 from source commit `fed467ec0cd52a936f06751cd922efcc259914a1`. Neither form is a stable release. Both are intended for modpack compatibility testing and integration validation. Worlds should be backed up before testing, and upgrading Spore independently is unsupported until its mutation paths are re-audited.
 
+`0.1.0-alpha.1` remains the latest published prerelease. Stable `0.1.0` is the
+current release objective but is not available; its support contract and gates
+are defined in [Stable Readiness for 0.1.0](stable-readiness-0.1.0.md).
+
 The production artifact is `frontier_protocol-0.1.0-alpha.1.jar`. Frontier Protocol is licensed under [BSD-3-Clause](../LICENSE); that license applies only to Frontier Protocol material and does not replace dependency or retained third-party licenses.
 
 The verified GitHub Actions artifact is:
@@ -86,15 +90,18 @@ At defaults, Tier 1/2/3 require 32/64/128 absolute RPM, impose 16/64/256 Stress,
 
 ## Alpha boundaries
 
-- Existing infected terrain, structures, nests, active hazards, and Block Entities are not restored, removed, replaced, or frozen. Cleanup is an explicit allowlist of audited non-Block-Entity foliage and replaces it only with air or retained water.
-- All tiers and Stabilization Cells have Create production recipes. Compound cannot power a Stabilizer directly; the bundled consumable tag accepts only Cells, while datapacks may explicitly extend that public tag. The common consumable decision is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), and the shared tier architecture in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md).
-- R9 fixes the current recipe quantities and operating values for this internal candidate. Future changes require a new balance decision.
-- Stabilization Compound and Stabilization Cell have final custom 32x32 RGBA item art. Tier 1, Tier 2, and Tier 3 use final static Copper, Andesite, and Brass Create-casing machine art; see [Asset Status](placeholder-assets.md), [R10 Final Item Assets](r10-item-assets.md), and [R11 Stabilizer Casing Redesign](r11-stabilizer-casing-redesign.md).
-- Hostile mob movement, combat, block breaking, and explosions are not containment responsibilities.
-- Spore random ticks, scheduled ticks, and existing infected block-entity state continue normally.
-- World-generation features outside the selected runtime Spore spread paths are not globally intercepted.
-- R9 adds no Block Entity GUI, persistent HUD, particles, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, multiblock, moving-contraption suppression, chunk loading, terrain restoration, or nest or mob handling. R10 changes Compound and Cell item art. R11 replaces block placeholders with static models and adds the three Block Items to the vanilla Functional Blocks tab without adding gameplay scope.
-- No Minecraft-wide `Level#setBlock` hook is used.
+- **Supported limitation:** Existing infected terrain, structures, nests, active hazards, and Block Entities are not restored, removed, replaced, or frozen. Cleanup is an explicit allowlist of audited non-Block-Entity foliage and replaces it only with air or retained water.
+- **Supported limitation:** All tiers and Stabilization Cells have Create production recipes. Compound cannot power a Stabilizer directly; the bundled consumable tag accepts only Cells, while datapacks may explicitly extend that public tag. The common consumable decision is recorded in [ADR 0001](adr/0001-stabilizer-consumable-and-production-model.md), and the shared tier architecture in [ADR 0002](adr/0002-common-stabilizer-tier-architecture.md).
+- **Supported limitation:** R9 fixes the current recipe quantities and operating values. Future changes require a new balance decision.
+- **Supported limitation:** Stabilization Compound and Stabilization Cell have final custom 32x32 RGBA item art. Tier 1, Tier 2, and Tier 3 use final static Copper, Andesite, and Brass Create-casing machine art; see [Asset Status](placeholder-assets.md), [R10 Final Item Assets](r10-item-assets.md), and [R11 Stabilizer Casing Redesign](r11-stabilizer-casing-redesign.md).
+- **Supported limitation:** Hostile mob movement, combat, block breaking, and explosions are not containment responsibilities.
+- **Supported limitation:** Spore random ticks, scheduled ticks, and existing infected block-entity state continue normally.
+- **Supported limitation:** World-generation features outside the selected runtime Spore spread paths are not globally intercepted.
+- **Future feature:** Block Entity GUI, persistent HUD, particles, custom creative tab, tier-specific Cells, Empty/Spent Cells or returns, new custom materials, multiblock, moving-contraption suppression, chunk loading, terrain restoration, and nest or mob handling are not implemented or promised for stable 0.1.0.
+- **Supported limitation:** No Minecraft-wide `Level#setBlock` hook is used.
+
+The complete stable classification, support contract, blocker evidence audit, and
+required gates are in that stable-readiness document.
 
 ## Verification status
 

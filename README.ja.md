@@ -19,6 +19,9 @@ Create動力で稼働する封じ込め設備を追加し、ディメンショ�
 tag `v0.1.0-alpha.1`は、source commit
 `fed467ec0cd52a936f06751cd922efcc259914a1`から2026-07-30に公開GitHub
 prereleaseとしてリリースされました。stable releaseではありません。
+stable `0.1.0`は現在のrelease目標ですが、まだ利用できません。
+[stable-readiness contract](docs/stable-readiness-0.1.0.md)に、support保証、blocker
+evidence、必須gate、および推奨RC sequenceを定義しています。
 tagなしのpull requestおよびmanual workflowビルドは、引き続き内部Alpha候補です。
 Alphaビルドをテストする前にワールドをバックアップしてください。この候補では、
 最初の封じ込め統合プレビューとして次の機能を提供します。
