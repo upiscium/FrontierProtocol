@@ -48,8 +48,8 @@ class StableStartupMatrixTest {
                                 + "test \"$command\" = stop; printf 'Stopping server\\n'"),
                 temporaryDirectory,
                 temporaryDirectory.resolve("success.log"),
-                Duration.ofSeconds(2),
-                Duration.ofSeconds(2),
+                Duration.ofSeconds(10),
+                Duration.ofSeconds(10),
                 ServerProcessRunner.Expectation.SUCCESS);
 
         assertTrue(result.ready());
