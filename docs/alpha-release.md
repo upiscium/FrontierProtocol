@@ -2,7 +2,7 @@
 
 ## Candidate and prerelease status
 
-The untagged build is an internal alpha release candidate of the rebuilt Frontier Protocol design. The reviewed `v0.1.0-alpha.1` tag from `main` publishes the same independently verified files as a public GitHub alpha prerelease. Neither form is a stable release. Both are intended for modpack compatibility testing and integration validation. Worlds should be backed up before testing, and upgrading Spore independently is unsupported until its mutation paths are re-audited.
+The untagged build is an internal alpha release candidate of the rebuilt Frontier Protocol design. The reviewed `v0.1.0-alpha.1` tag from `main` was publicly released as a GitHub alpha prerelease on 2026-07-30 from source commit `fed467ec0cd52a936f06751cd922efcc259914a1`. Neither form is a stable release. Both are intended for modpack compatibility testing and integration validation. Worlds should be backed up before testing, and upgrading Spore independently is unsupported until its mutation paths are re-audited.
 
 The production artifact is `frontier_protocol-0.1.0-alpha.1.jar`. Frontier Protocol is licensed under [BSD-3-Clause](../LICENSE); that license applies only to Frontier Protocol material and does not replace dependency or retained third-party licenses.
 
@@ -29,10 +29,10 @@ The Actions artifact ZIP digest covers the outer transport archive and is not th
 
 ## GitHub prerelease distribution
 
-GitHub Releases is the selected public distribution channel. After the reviewed
-tag is pushed from `main`, the tag-driven workflow publishes exactly the JAR,
-checksum, manifest, and standalone license as permanent prerelease assets. The
-tag and release date remain unset until that actual publication occurs.
+GitHub Releases is the public distribution channel. The reviewed tag was pushed
+from `main`, and the tag-driven workflow published exactly the JAR, checksum,
+manifest, and standalone license as permanent prerelease assets. The public
+prerelease is non-draft and remains neither stable nor latest-stable.
 
 The immutable `v0.1.0-alpha.1` JAR URL is:
 
@@ -132,5 +132,5 @@ The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mix
 - [x] Complete the focused R9 client Grace lifecycle smoke.
 - [x] Verify client reconnect and dedicated-server lifecycle persistence.
 - [x] Inspect the production JAR contents and generated metadata.
-- Set the actual release date when the tag is published.
+- [x] Publish tag `v0.1.0-alpha.1` and record the 2026-07-30 release date.
 - Prepare an icon or screenshots only if required by the selected channel.

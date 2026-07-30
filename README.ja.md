@@ -16,7 +16,9 @@ Create動力で稼働する封じ込め設備を追加し、ディメンショ�
 ## Alphaリリース
 
 現在の開発バージョンは **0.1.0-alpha.1** です。
-tag付きビルドはGitHub prereleaseとして公開されていますが、stable releaseではありません。
+tag `v0.1.0-alpha.1`は、source commit
+`fed467ec0cd52a936f06751cd922efcc259914a1`から2026-07-30に公開GitHub
+prereleaseとしてリリースされました。stable releaseではありません。
 tagなしのpull requestおよびmanual workflowビルドは、引き続き内部Alpha候補です。
 Alphaビルドをテストする前にワールドをバックアップしてください。この候補では、
 最初の封じ込め統合プレビューとして次の機能を提供します。
@@ -95,10 +97,10 @@ over-capacity状態なら`15`です。このsignalはinventory計測専用であ
 
 ## 配布
 
-公開配布先にはGitHub Releasesを採用しています。pull requestおよびmanual Build workflowの
-artifactは、14日間だけ保持される内部検証用bundleであり、packwizの取得先ではありません。
+公開配布先はGitHub Releasesです。pull requestおよびmanual Build workflowのartifactは、
+14日間だけ保持される内部検証用bundleであり、packwizの取得先ではありません。
 tag-driven release workflowは、検証済みの4つのcandidate fileを永続的なGitHub prerelease
-assetとして公開します。
+assetとして公開しました。
 
 `v0.1.0-alpha.1`の変更しないJAR URLは次のとおりです。
 
