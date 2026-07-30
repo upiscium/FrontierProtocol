@@ -86,7 +86,7 @@ the follow-up produces retained evidence.
 | Area | Evidence | Result | Blocker | Follow-up |
 | --- | --- | --- | --- | --- |
 | Fresh-world startup | `dedicatedServerSmoke` deletes its server directory, reaches canonical `Done`, and stops cleanly. | PASS | No | Repeat on the final RC/stable candidate. |
-| Initial-spawn initialization | Unit/GameTests cover saved center and suppression, but no retained final-candidate fresh-world observation covers complete initialization. | NOT VERIFIED | Yes | Create a fresh final-candidate world and retain center/suppression evidence. |
+| Initial-spawn initialization | [R19 startup matrix](r19-stable-startup-matrix.md) directly inspects schema 2 SavedData after two clean starts and retains one initialized Overworld center. | PASS | No | Repeat the same automated procedure on the final candidate for the separate ledger gate. |
 | Upgrade from a 0.1.0-alpha.1 world | Schema inspection shows no change since alpha.1; no retained copied-world upgrade run exists. | NOT VERIFIED | Yes | Back up an alpha.1 world, load it on the RC, and verify all persisted state. |
 | Dedicated-server restart persistence | [R9 manual verification](r9-balance-hardening.md) records status, Cell time, and Grace across normal restart. | PASS | No | Repeat with an alpha.1 world on the RC. |
 | Client reconnect synchronization | [R9](r9-balance-hardening.md) records reconnect restoration; display sync has unit/GameTest coverage. | PASS | No | Repeat focused RC smoke. |
@@ -104,8 +104,8 @@ the follow-up produces retained evidence.
 | Cleanup cursor persistence | `InfectionCleanupSavedDataTest`, cursor tests, and cleanup reload GameTests. | PASS | No | Include in alpha-world upgrade smoke. |
 | Global cleanup budgets | `CleanupBudgetTest`, round-robin/index tests, and cleanup service GameTests. | PASS | No | Run final candidate suite. |
 | Spore descriptors/call counts | Exact 2.2.0j audit, complete descriptors, `require` counts, and Spore integration GameTests. | PASS | No | Re-audit before any Spore expansion. |
-| Missing dependency failure messages | Required metadata ranges are verified in the production JAR; user-facing failures were not retained. | NOT VERIFIED | Yes | Launch once each without Create, TFMG, and Spore and retain clear loader diagnostics. |
-| Malformed config handling | Config ranges exist and some runtime updates are tested; malformed-file startup behavior is not retained. | NOT VERIFIED | Yes | Test malformed TOML and out-of-range values on a disposable server. |
+| Missing dependency failure messages | [R19 startup matrix](r19-stable-startup-matrix.md) launches the production JAR without Create, TFMG, and Spore in turn and retains clear requester/range diagnostics before world creation. | PASS | No | Preserve the required metadata and rerun on dependency changes. |
+| Malformed config handling | [R19 startup matrix](r19-stable-startup-matrix.md) records named malformed-TOML recreation and safe range correction for capacity, RPM, duration, radius, and cleanup budget values. | PASS | No | Preserve the matrix in normal CI. |
 | Datagen cleanliness | Build workflow runs `runData` and requires a clean generated-resource status. | PASS | No | Repeat after final version bump. |
 | Production-JAR contents | `verifyReleaseJar` checks required metadata/classes/assets/licenses and forbidden nested/dependency content. | PASS | No | Run on final candidate. |
 | English and Japanese text | [R8 graphical verification](r8-graphical-verification.md), R10/R11 records, and language/resource tests. | PASS | No | Complete both final-candidate graphical gates. |
@@ -116,7 +116,8 @@ the follow-up produces retained evidence.
 | Duplication risks | Physical crafting and continuous Cell rollover assert consumption/output counts and no duplicate Cell consumption. | PASS | No | Exercise upgrade and RC soak. |
 | Item-loss risks | Over-capacity retention and upgrade recipes are tested; alpha-world migration has not been run. | NOT VERIFIED | Yes | Verify inventory and placed-machine drops before/after alpha-world upgrade. |
 | World-corruption risks | Saved-data validation exists, but no real alpha.1 world upgrade evidence exists. | NOT VERIFIED | Yes | Use a backup copy and compare load/save/reload behavior. |
-| Crash-loop risks | Dedicated smoke starts/stops cleanly; malformed config and upgraded-world recovery are unverified. | NOT VERIFIED | Yes | Test malformed config recovery and upgraded-world second restart. |
+| Malformed-config crash-loop recovery | [R19 startup matrix](r19-stable-startup-matrix.md) shows NeoForge recreates the invalid file and reaches `Done` in the same isolated directory. | PASS | No | Preserve the matrix in normal CI. |
+| Upgraded-world restart recovery | No real copied `0.1.0-alpha.1` world has completed upgrade, save, and second restart. | NOT VERIFIED | Yes | Verify on a backup copy during the alpha-world migration issue. |
 | Silent suppression-bypass risks | Required Mixin call counts fail startup on drift; target-path and lifecycle GameTests cover audited Spore 2.2.0j. | PASS | No | Preserve exact Spore pin and repeat RC suite. |
 | Cross-dimension contamination | Dimension-local indexes, unit tests, and Nether/Overworld GameTests. | PASS | No | Run final candidate suite. |
 
