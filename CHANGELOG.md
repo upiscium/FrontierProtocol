@@ -53,6 +53,9 @@ All notable changes to Frontier Protocol are documented in this file.
 - Documented source and asset provenance while preserving the NeoForge MDK, Gradle wrapper, and audited Create fixture terms.
 - Added binary Create Nixie Tube status panels for all Stabilizer tiers: OFFLINE is red, while ACTIVE and GRACE_PERIOD are green because both suppress infection.
 - Added vanilla comparator output for normalized stored Cell fullness, including change-only updates after insertion, consumption, reload, drops, and live capacity changes.
+- Added a tag-driven GitHub prerelease workflow that independently verifies and publishes the exact four-file release candidate without replacing existing releases or assets.
+- Selected permanent, immutable GitHub Release assets as the packwiz distribution channel while retaining Actions artifacts as temporary internal verification bundles.
+- Added post-publication checksum, byte-identity, manifest, release-state, and exact asset-set verification for the `v0.1.0-alpha.1` GitHub prerelease.
 
 ### Compatibility
 

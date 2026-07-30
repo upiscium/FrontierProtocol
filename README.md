@@ -25,7 +25,9 @@ Frontier Protocolは、Fungal Infection: SporeとCreateを統合するNeoForge�
 ## Alpha Release
 
 The current development version is **0.1.0-alpha.1**.
-This build is an internal alpha release candidate and has not been publicly published.
+This build remains an internal alpha release candidate until the reviewed
+`v0.1.0-alpha.1` tag is pushed from `main`. The tag-driven release workflow then
+publishes it as a GitHub prerelease, not as a stable release.
 Back up worlds before testing an alpha build. This candidate establishes the first
 containment integration preview:
 
@@ -96,8 +98,9 @@ runtime, and the Stabilizer emits no direct weak or strong redstone power. See
 
 The initial Overworld spawn center is persisted and has permanent infection suppression with a default radius of two chunks, covering 5x5 chunks. Changing world spawn later does not move it. It needs no Cell or rotation and performs no progressive cleanup. It does not remove existing nests or stop hostile mobs; it is an initial refuge, not a complete safe zone. See [R8 Operational UX](docs/r8-operational-ux.md), [ADR 0003](docs/adr/0003-operational-display-and-client-visualization.md), and [Quest Integration](docs/quest-integration.md).
 
-現在の開発versionは **0.1.0-alpha.1** です。このbuildは内部Alphaリリース候補で、
-一般公開は延期されており、まだ公開配布されていません。テスト前にワールドを
+現在の開発versionは **0.1.0-alpha.1** です。このbuildは`main`から検証済みの
+`v0.1.0-alpha.1` tagが作成されるまでは内部Alphaリリース候補です。tag作成後は
+GitHub prereleaseとして公開されますが、stable releaseではありません。テスト前にワールドを
 バックアップしてください。本候補は初期スポーン周辺の永久抑制、初期地形の
 鉱石生成抑制、Create動力を使う3段階のStabilizer、およびSpore 2.2.0jの監査済み
 環境拡散経路との統合を提供します。ACTIVE中のStabilizerは、ロード済みチャンク内の
@@ -113,6 +116,30 @@ Stabilizerへ直接取り付けたCreate Nixie Tubeは、抑制停止中に赤�
 表示します。GRACE_PERIOD中も抑制は継続するため緑です。この表示は二値であり、
 詳細診断にはEngineer's Gogglesを使用します。Comparator出力は保存Cell数をTierの
 設定容量に対して正規化した満杯度で、運転状態や残り運転時間を表しません。
+
+## Distribution
+
+GitHub Releases is the selected public distribution channel. Pull-request and
+manual Build workflow artifacts remain temporary, 14-day internal verification
+bundles. They are not packwiz endpoints. A tag-driven release publishes the four
+verified candidate files as permanent GitHub prerelease assets.
+
+The immutable JAR URL for `v0.1.0-alpha.1` is:
+
+```text
+https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar
+```
+
+Add it from a modpack root with:
+
+```bash
+packwiz url add --meta-folder mods "Frontier Protocol" \
+  "https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar"
+```
+
+packwiz stores this direct URL and its calculated file hash in the generated
+`.pw.toml` metadata. Future versions receive new immutable version tags and URLs.
+The `v0.1.0-alpha.1` assets must never be replaced or mutated.
 
 ## Requirements
 
@@ -141,7 +168,7 @@ the horizontal rotation axis derived perpendicular to `FACING`.
 They use no custom Block Entity Renderer or dynamic block parts. See
 [`docs/placeholder-assets.md`](docs/placeholder-assets.md) and
 [R11 Stabilizer Casing Redesign](docs/r11-stabilizer-casing-redesign.md).
-The project logo and public distribution remain pending.
+The project logo remains pending.
 
 ## License
 
