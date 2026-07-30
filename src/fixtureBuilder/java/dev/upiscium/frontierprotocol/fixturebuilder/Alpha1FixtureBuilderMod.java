@@ -51,7 +51,7 @@ public final class Alpha1FixtureBuilderMod {
                 0,
                 0,
                 0,
-                8);
+                16);
         placeStabilizer(
                 level,
                 TIER_2_POS,

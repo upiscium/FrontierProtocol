@@ -68,8 +68,15 @@ class Alpha1WorldMigrationTest {
                         "frontier_protocol:tier_2_stabilizer",
                         "frontier_protocol:tier_3_stabilizer"),
                 manifest.stabilizers().stream().map(MigrationFixtureManifest.StabilizerExpectation::blockId).toList());
-        assertEquals(24, manifest.stabilizers().stream().mapToInt(MigrationFixtureManifest.StabilizerExpectation::internalCellCount).sum());
-        assertTrue(manifest.stabilizers().stream().anyMatch(MigrationFixtureManifest.StabilizerExpectation::overCapacityBoundary));
+        assertEquals(32, manifest.stabilizers().stream().mapToInt(MigrationFixtureManifest.StabilizerExpectation::internalCellCount).sum());
+        MigrationFixtureManifest.StabilizerExpectation tier1 = manifest.stabilizers().getFirst();
+        assertEquals(16, tier1.internalCellCount());
+        assertEquals(8, tier1.configuredCellCapacity());
+        assertTrue(tier1.internalCellCount() > tier1.configuredCellCapacity());
+        assertEquals(List.of(8, 32, 64),
+                manifest.stabilizers().stream()
+                        .map(MigrationFixtureManifest.StabilizerExpectation::configuredCellCapacity)
+                        .toList());
         assertTrue(manifest.stabilizers().stream().allMatch(state -> state.cellRemainingTicks() >= 0
                 && state.graceRemainingTicks() >= 0
                 && state.registeredChunkRadius() >= 0));
@@ -104,6 +111,30 @@ class Alpha1WorldMigrationTest {
     }
 
     @Test
+    void cleanupContractRequiresEveryBaselineFieldExactly() {
+        MigrationFixtureManifest.CleanupExpectation expected = new MigrationFixtureManifest.CleanupExpectation(
+                1, 7, -3, 2, 321, false, true, -4, 24);
+        MigrationWorldInspector.CleanupState baseline = cleanup(1, 2, 321, false, true, -4, 24);
+
+        assertTrue(Alpha1WorldMigration.cleanupMatchesExpected(baseline, expected));
+        assertFalse(Alpha1WorldMigration.cleanupMatchesExpected(cleanup(1, 0, 0, false, true, -4, 24), expected));
+        assertFalse(Alpha1WorldMigration.cleanupMatchesExpected(cleanup(1, 2, 321, false, false, -4, 24), expected));
+        assertFalse(Alpha1WorldMigration.cleanupMatchesExpected(cleanup(1, 2, 321, true, true, -4, 24), expected));
+        assertFalse(Alpha1WorldMigration.cleanupMatchesExpected(cleanup(1, 2, 321, false, true, -3, 24), expected));
+        assertFalse(Alpha1WorldMigration.cleanupMatchesExpected(cleanup(1, 2, 321, false, true, -4, 23), expected));
+        assertFalse(Alpha1WorldMigration.cleanupMatchesExpected(cleanup(2, 2, 321, false, true, -4, 24), expected));
+        assertFalse(Alpha1WorldMigration.cleanupMatchesExpected(
+                new MigrationWorldInspector.CleanupState(1, 8, -3, 2, 321, false, true, -4, 24), expected));
+        assertFalse(Alpha1WorldMigration.cleanupMatchesExpected(null, expected));
+    }
+
+    @Test
+    void persistedVanillaSeedMustMatchManifest() {
+        assertTrue(Alpha1WorldMigration.persistedSeedMatches(8675309L, 8675309L));
+        assertFalse(Alpha1WorldMigration.persistedSeedMatches(8675310L, 8675309L));
+    }
+
+    @Test
     void stableLedgerAndSoakRemainIncomplete() throws Exception {
         Path project = Path.of(System.getProperty("frontierProtocol.projectDir"));
         String gates = Files.readString(project.resolve("docs/releases/0.1.0-stable-gates.md"));
@@ -117,6 +148,18 @@ class Alpha1WorldMigrationTest {
 
     private static MigrationFixtureManifest readManifest(Path path) throws Exception {
         return new Gson().fromJson(Files.readString(path, StandardCharsets.UTF_8), MigrationFixtureManifest.class);
+    }
+
+    private static MigrationWorldInspector.CleanupState cleanup(
+            int schema,
+            int sectionIndex,
+            int localBlockIndex,
+            boolean completed,
+            boolean restartRequired,
+            int minSection,
+            int sectionCount) {
+        return new MigrationWorldInspector.CleanupState(
+                schema, 7, -3, sectionIndex, localBlockIndex, completed, restartRequired, minSection, sectionCount);
     }
 
     private static Path fixtureDirectory() {

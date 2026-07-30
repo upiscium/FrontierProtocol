@@ -1,5 +1,5 @@
 {
-  "fixtureSchemaVersion": 1,
+  "fixtureSchemaVersion": 2,
   "provenance": {
     "sourceModVersion": "0.1.0-alpha.1",
     "sourceTag": "v0.1.0-alpha.1",
@@ -20,8 +20,8 @@
   },
   "levelSeed": 8675309,
   "archiveFilename": "world-fixture.zip",
-  "archiveSha256": "fbb996b918c34a317bda9eb84a6d3d87bb836fc9e523b779ff1fdf5c780ae886",
-  "archiveSize": 1240514,
+  "archiveSha256": "a587e88e4b12174eac370cb1c126b73146bd5cf19822b28c8f4069b2693319bc",
+  "archiveSize": 1248269,
   "archiveSizeCeiling": 16777216,
   "spawn": {
     "schemaVersion": 2,
@@ -40,12 +40,12 @@
       "blockEntityId": "frontier_protocol:stabilizer",
       "facing": "north",
       "tier": "tier_1",
-      "internalCellCount": 8,
+      "internalCellCount": 16,
       "status": "offline",
       "cellRemainingTicks": 0,
       "graceRemainingTicks": 0,
       "registeredChunkRadius": 0,
-      "overCapacityBoundary": true
+      "configuredCellCapacity": 8
     },
     {
       "position": {
@@ -62,7 +62,7 @@
       "cellRemainingTicks": 1800,
       "graceRemainingTicks": 1000,
       "registeredChunkRadius": 1,
-      "overCapacityBoundary": false
+      "configuredCellCapacity": 32
     },
     {
       "position": {
@@ -79,7 +79,7 @@
       "cellRemainingTicks": 1200,
       "graceRemainingTicks": 2000,
       "registeredChunkRadius": 2,
-      "overCapacityBoundary": false
+      "configuredCellCapacity": 64
     }
   ],
   "container": {
@@ -91,11 +91,11 @@
     "blockId": "minecraft:chest",
     "blockEntityId": "minecraft:chest",
     "items": {
-      "frontier_protocol:tier_3_stabilizer": 3,
-      "frontier_protocol:tier_2_stabilizer": 2,
-      "frontier_protocol:tier_1_stabilizer": 1,
+      "frontier_protocol:stabilization_compound": 11,
       "frontier_protocol:stabilization_cell": 13,
-      "frontier_protocol:stabilization_compound": 11
+      "frontier_protocol:tier_1_stabilizer": 1,
+      "frontier_protocol:tier_2_stabilizer": 2,
+      "frontier_protocol:tier_3_stabilizer": 3
     }
   },
   "cleanup": {

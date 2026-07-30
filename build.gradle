@@ -1038,7 +1038,7 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         [
                 'alpha1WorldUpgradeSmoke --offline',
                 '60cb68f625eab26e8a37fe86eed125c52a1c00efca5dcae85ff3db5085274a8f',
-                'fbb996b918c34a317bda9eb84a6d3d87bb836fc9e523b779ff1fdf5c780ae886',
+                'a587e88e4b12174eac370cb1c126b73146bd5cf19822b28c8f4069b2693319bc',
                 'alpha1-world-upgrade` Stable gate remains `INCOMPLETE',
                 'long-running RC log-volume soak remains `NOT VERIFIED`'
         ].each { required ->

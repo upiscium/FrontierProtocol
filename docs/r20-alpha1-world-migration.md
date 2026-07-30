@@ -16,10 +16,10 @@ not from a locally rebuilt approximation.
 | Checksum URL | `https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar.sha256` |
 | Published JAR SHA-256 | `60cb68f625eab26e8a37fe86eed125c52a1c00efca5dcae85ff3db5085274a8f` |
 | Fixture archive | `world-fixture.zip` |
-| Fixture archive SHA-256 | `fbb996b918c34a317bda9eb84a6d3d87bb836fc9e523b779ff1fdf5c780ae886` |
-| Fixture archive size | `1,240,514` bytes |
+| Fixture archive SHA-256 | `a587e88e4b12174eac370cb1c126b73146bd5cf19822b28c8f4069b2693319bc` |
+| Fixture archive size | `1,248,269` bytes |
 | Enforced size ceiling | `16,777,216` bytes |
-| Manifest SHA-256 | `e9b80d9fc5789b0d50a4ebb57a91eadd0cd159dadb61b3a98a88e2cac9944259` |
+| Manifest SHA-256 | `c170474775fb937307ed382ef17ba2b1689adac9b30ef6b957da920b214266d4` |
 | Fixed level seed | `8675309` |
 
 The fixture runtime used Java `21`, Minecraft `1.21.1`, NeoForge `21.1.235`,
@@ -54,13 +54,14 @@ no Alpha JAR, dependency JAR, personal account data, local path, or IP address.
 
 The documented blocks are in Overworld chunk `(1,5)` at Y `100`.
 
-| Machine | Position | Facing | Status | Cells | Cell ticks | Grace ticks | Registered radius |
+| Machine | Position | Facing | Status | Cells / capacity | Cell ticks | Grace ticks | Registered radius |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: |
-| Tier 1 | `(20,100,84)` | north | `offline` | 8 | 0 | 0 | 0 |
-| Tier 2 | `(22,100,84)` | east | `grace_period` | 4 | 1800 | 1000 | 1 |
-| Tier 3 | `(24,100,84)` | south | `grace_period` | 12 | 1200 | 2000 | 2 |
+| Tier 1 | `(20,100,84)` | north | `offline` | 16 / 8 | 0 | 0 | 0 |
+| Tier 2 | `(22,100,84)` | east | `grace_period` | 4 / 32 | 1800 | 1000 | 1 |
+| Tier 3 | `(24,100,84)` | south | `grace_period` | 12 / 64 | 1200 | 2000 | 2 |
 
-Tier 1 is exactly at its configured capacity boundary. All three Block IDs are
+Tier 1 is genuinely over capacity: the Alpha runtime loaded, saved, restarted,
+and retained 16 Cells against configured capacity 8. All three Block IDs are
 `frontier_protocol:tier_{1,2,3}_stabilizer`, all Block Entities are
 `frontier_protocol:stabilizer`, and schema-1 tier values match block identity.
 
@@ -74,7 +75,7 @@ The chest at `(20,100,87)` records these exact stacks:
 | `frontier_protocol:tier_2_stabilizer` | 2 |
 | `frontier_protocol:tier_3_stabilizer` | 3 |
 
-The total documented Cell contract is 37: 24 internal Cells plus 13 chest
+The total documented Cell contract is 45: 32 internal Cells plus 13 chest
 Cells. No Frontier Protocol dropped-item entity exists in the fixture or either
 migrated save.
 
@@ -91,16 +92,22 @@ provenance, checks the archive allowlist before extraction, directly inspects
 the source world, installs the current packaged production JAR, and performs two
 current-candidate starts against the same migrated world.
 
-| State | Tier 1 | Tier 2 | Tier 3 | Chest items | Spawn | Cleanup cursor |
+| State | Tier 1 | Tier 2 | Tier 3 | Chest items | Seed / spawn | Cleanup state |
 | --- | --- | --- | --- | --- | --- | --- |
-| Pre-migration | `offline`, 8 Cells, 0/0 ticks | `grace_period`, 4 Cells, 1800/1000 ticks | `grace_period`, 12 Cells, 1200/2000 ticks | exact | schema 2, `(1,5)` | schema 1, `2/321` |
-| First current save | unchanged | unchanged | unchanged | exact | unchanged | unchanged |
-| Second current save | unchanged | unchanged | unchanged | exact | unchanged | unchanged |
+| Pre-migration | `offline`, 16/8 Cells, 0/0 ticks | `grace_period`, 4/32 Cells, 1800/1000 ticks | `grace_period`, 12/64 Cells, 1200/2000 ticks | exact | `8675309`; schema 2, `(1,5)` | exact schema 1 baseline, `2/321` |
+| First current save | exact, still over capacity | exact | exact | exact | unchanged | exact across all fields |
+| Second current save | exact, still over capacity | exact | exact | exact | unchanged | exact across all fields |
 
 The short unpowered starts produced no legitimate Cell consumption or timer
 movement. The harness nevertheless permits only non-increasing Cell/Grace
 timers and rejects refill, negative values, unknown status, tier/radius changes,
-inventory loss/duplication, and capacity-boundary truncation.
+inventory loss/duplication, and over-capacity truncation.
+
+Because the fixture contains no ACTIVE Stabilizer, cleanup cannot legitimately
+advance. Every snapshot requires exact equality for schema, chunk coordinates,
+cursor, completion, restart-required state, minimum section, and section count.
+The persisted level seed is read from vanilla `Data.WorldGenSettings.seed` in
+`level.dat`; manifest text and `server.properties` are not treated as evidence.
 
 After each save, direct inspection reads `level.dat`, every occupied Overworld
 block/entity/POI region chunk, all documented block-state palettes and Block

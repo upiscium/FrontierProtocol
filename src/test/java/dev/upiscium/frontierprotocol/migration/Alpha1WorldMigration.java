@@ -101,6 +101,7 @@ public final class Alpha1WorldMigration {
                 "Alpha fixture builder did not report completion");
         Files.delete(server.resolve("mods").resolve(arguments.fixtureBuilderJar().getFileName()));
         ServerProcessRunner.Result second = launch(server, "alpha-second-start.log");
+        verifyConfiguredCapacities(server);
         requireNoFatalMigrationLog(first.output(), "first Alpha start");
         requireNoFatalMigrationLog(second.output(), "second Alpha start");
         require(!Files.exists(server.resolve("crash-reports")), "Alpha fixture generation created a crash report");
@@ -149,11 +150,13 @@ public final class Alpha1WorldMigration {
 
         prepareServer(server, arguments.productionJar(), null);
         ServerProcessRunner.Result firstResult = launch(server, "current-first-start.log");
+        verifyConfiguredCapacities(server);
         requireNoFatalMigrationLog(firstResult.output(), "first current-candidate start");
         MigrationWorldInspector.Snapshot first = inspector.inspect(server.resolve("world"), manifest);
         assertSnapshot("first migrated save", first, manifest, before);
 
         ServerProcessRunner.Result secondResult = launch(server, "current-second-start.log");
+        verifyConfiguredCapacities(server);
         requireNoFatalMigrationLog(secondResult.output(), "second current-candidate start");
         MigrationWorldInspector.Snapshot second = inspector.inspect(server.resolve("world"), manifest);
         assertSnapshot("second migrated save", second, manifest, first);
@@ -234,11 +237,11 @@ public final class Alpha1WorldMigration {
     private static MigrationFixtureManifest skeletonManifest(String archiveHash, long archiveSize) {
         List<StabilizerExpectation> stabilizers = List.of(
                 new StabilizerExpectation(STABILIZER_POSITIONS.get(0), "frontier_protocol:tier_1_stabilizer",
-                        "frontier_protocol:stabilizer", "north", "tier_1", 8, "offline", 0, 0, 0, true),
+                        "frontier_protocol:stabilizer", "north", "tier_1", 16, "offline", 0, 0, 0, 8),
                 new StabilizerExpectation(STABILIZER_POSITIONS.get(1), "frontier_protocol:tier_2_stabilizer",
-                        "frontier_protocol:stabilizer", "east", "tier_2", 4, "grace_period", 0, 0, 1, false),
+                        "frontier_protocol:stabilizer", "east", "tier_2", 4, "grace_period", 0, 0, 1, 32),
                 new StabilizerExpectation(STABILIZER_POSITIONS.get(2), "frontier_protocol:tier_3_stabilizer",
-                        "frontier_protocol:stabilizer", "south", "tier_3", 12, "grace_period", 0, 0, 2, false));
+                        "frontier_protocol:stabilizer", "south", "tier_3", 12, "grace_period", 0, 0, 2, 64));
         return new MigrationFixtureManifest(
                 MigrationFixtureManifest.FIXTURE_SCHEMA_VERSION,
                 new Provenance(
@@ -281,7 +284,7 @@ public final class Alpha1WorldMigration {
                     actual.cellRemainingTicks(),
                     actual.graceRemainingTicks(),
                     expected.registeredChunkRadius(),
-                    expected.overCapacityBoundary());
+                    expected.configuredCellCapacity());
         }).toList();
         MigrationWorldInspector.SpawnState spawn = baseline.spawn();
         return new MigrationFixtureManifest(
@@ -311,6 +314,8 @@ public final class Alpha1WorldMigration {
             require(Set.of("offline", "active", "grace_period").contains(actual.status()), label + " has unknown status");
             require(actual.cellRemainingTicks() >= 0 && actual.graceRemainingTicks() >= 0, label + " has negative timer");
             require(actual.registeredChunkRadius() == expected.registeredChunkRadius(), label + " changed registered radius");
+            require(expected.configuredCellCapacity() == expectedCapacity(expected.tier()),
+                    label + " changed configured capacity contract for " + expected.tier());
             int cells = actual.inventory().getOrDefault("frontier_protocol:stabilization_cell", 0);
             require(cells == expected.internalCellCount(), label + " changed internal Cell count");
             require(actual.inventory().size() == 1, label + " contains an unexpected Stabilizer item stack");
@@ -331,8 +336,12 @@ public final class Alpha1WorldMigration {
         require(totalCells == manifest.stabilizers().stream().mapToInt(StabilizerExpectation::internalCellCount).sum(),
                 label + " changed total internal Cell count");
         require(statuses.size() >= 2, label + " no longer exercises two statuses");
-        require(manifest.stabilizers().stream().anyMatch(StabilizerExpectation::overCapacityBoundary),
-                "Manifest lacks capacity-boundary inventory");
+        require(manifest.stabilizers().stream()
+                        .anyMatch(state -> state.internalCellCount() > state.configuredCellCapacity()),
+                "Manifest lacks a genuinely over-capacity inventory");
+
+        require(persistedSeedMatches(snapshot.persistedLevelSeed(), manifest.levelSeed()),
+                label + " changed the persisted vanilla level seed");
 
         require(snapshot.container().position().equals(manifest.container().position()), label + " moved container");
         require(snapshot.container().blockId().equals(manifest.container().blockId()), label + " changed container block");
@@ -357,13 +366,8 @@ public final class Alpha1WorldMigration {
         require(cleanup.minSection() == manifest.cleanup().minSection()
                         && cleanup.sectionCount() == manifest.cleanup().sectionCount(),
                 label + " changed cleanup dimension bounds");
-        if (previous == null) {
-            require(cleanup.equals(new MigrationWorldInspector.CleanupState(
-                            manifest.cleanup().schemaVersion(), manifest.cleanup().chunkX(), manifest.cleanup().chunkZ(),
-                            manifest.cleanup().sectionIndex(), manifest.cleanup().localBlockIndex(), manifest.cleanup().completed(),
-                            manifest.cleanup().restartRequired(), manifest.cleanup().minSection(), manifest.cleanup().sectionCount())),
-                    label + " differs from recorded cleanup baseline");
-        }
+        require(cleanupMatchesExpected(cleanup, manifest.cleanup()),
+                label + " differs from the exact cleanup baseline");
     }
 
     private static void verifyManifestContract(MigrationFixtureManifest manifest) {
@@ -508,10 +512,13 @@ public final class Alpha1WorldMigration {
 
     private static void appendSnapshot(
             Map<String, String> results, MigrationWorldInspector.Snapshot snapshot, String prefix) {
+        results.put(prefix + ".levelSeed", Long.toString(snapshot.persistedLevelSeed()));
         for (MigrationWorldInspector.StabilizerState state : snapshot.stabilizers()) {
             String tier = state.tier().replace("tier_", "tier");
             results.put(prefix + "." + tier + ".cells",
                     Integer.toString(state.inventory().getOrDefault("frontier_protocol:stabilization_cell", 0)));
+            results.put(prefix + "." + tier + ".configuredCapacity",
+                    Integer.toString(expectedCapacity(state.tier())));
             results.put(prefix + "." + tier + ".status", state.status());
             results.put(prefix + "." + tier + ".cellTicks", Integer.toString(state.cellRemainingTicks()));
             results.put(prefix + "." + tier + ".graceTicks", Integer.toString(state.graceRemainingTicks()));
@@ -519,8 +526,11 @@ public final class Alpha1WorldMigration {
         results.put(prefix + ".container.items", snapshot.container().items().toString());
         results.put(prefix + ".spawn.center",
                 snapshot.spawn().centerChunkX() + "," + snapshot.spawn().centerChunkZ());
-        results.put(prefix + ".cleanup.cursor",
-                snapshot.cleanup().sectionIndex() + "," + snapshot.cleanup().localBlockIndex());
+        MigrationWorldInspector.CleanupState cleanup = snapshot.cleanup();
+        results.put(prefix + ".cleanup.state",
+                cleanup.schemaVersion() + "," + cleanup.chunkX() + "," + cleanup.chunkZ() + ","
+                        + cleanup.sectionIndex() + "," + cleanup.localBlockIndex() + "," + cleanup.completed() + ","
+                        + cleanup.restartRequired() + "," + cleanup.minSection() + "," + cleanup.sectionCount());
     }
 
     private static void writeResults(Path output, Map<String, String> results, Path root) throws IOException {
@@ -550,6 +560,50 @@ public final class Alpha1WorldMigration {
 
     static boolean timerMovedMonotonically(int previous, int current) {
         return previous >= 0 && current >= 0 && current <= previous;
+    }
+
+    static boolean persistedSeedMatches(long persistedSeed, long expectedSeed) {
+        return persistedSeed == expectedSeed;
+    }
+
+    static boolean cleanupMatchesExpected(
+            MigrationWorldInspector.CleanupState actual, CleanupExpectation expected) {
+        return actual != null
+                && actual.schemaVersion() == expected.schemaVersion()
+                && actual.chunkX() == expected.chunkX()
+                && actual.chunkZ() == expected.chunkZ()
+                && actual.sectionIndex() == expected.sectionIndex()
+                && actual.localBlockIndex() == expected.localBlockIndex()
+                && actual.completed() == expected.completed()
+                && actual.restartRequired() == expected.restartRequired()
+                && actual.minSection() == expected.minSection()
+                && actual.sectionCount() == expected.sectionCount();
+    }
+
+    private static int expectedCapacity(String tier) {
+        return switch (tier) {
+            case "tier_1" -> 8;
+            case "tier_2" -> 32;
+            case "tier_3" -> 64;
+            default -> throw new IllegalStateException("Unknown Stabilizer tier " + tier);
+        };
+    }
+
+    private static void verifyConfiguredCapacities(Path server) throws IOException {
+        Path config = server.resolve("config/frontier_protocol-server.toml");
+        require(Files.isRegularFile(config), "Frontier Protocol server config was not generated");
+        String text = Files.readString(config, StandardCharsets.UTF_8);
+        Map<String, Integer> expected = Map.of(
+                "tier1CellCapacity", 8,
+                "tier2CellCapacity", 32,
+                "tier3CellCapacity", 64);
+        for (Map.Entry<String, Integer> entry : expected.entrySet()) {
+            var matcher = Pattern.compile(
+                            "(?m)^\\s*" + Pattern.quote(entry.getKey()) + "\\s*=\\s*(\\d+)\\s*$")
+                    .matcher(text);
+            require(matcher.find() && Integer.parseInt(matcher.group(1)) == entry.getValue(),
+                    "Configured capacity differs for " + entry.getKey());
+        }
     }
 
     private static void deleteRecursively(Path path) throws IOException {

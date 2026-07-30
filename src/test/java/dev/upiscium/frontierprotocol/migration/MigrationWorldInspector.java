@@ -30,6 +30,12 @@ final class MigrationWorldInspector {
         require(Files.isRegularFile(world.resolve("level.dat")), "level.dat is missing");
         CompoundTag level = readCompressed(world.resolve("level.dat"));
         require(level.contains("Data", Tag.TAG_COMPOUND), "level.dat has no Data compound");
+        CompoundTag levelData = level.getCompound("Data");
+        require(levelData.contains("WorldGenSettings", Tag.TAG_COMPOUND),
+                "level.dat has no vanilla WorldGenSettings compound");
+        CompoundTag worldGenSettings = levelData.getCompound("WorldGenSettings");
+        require(worldGenSettings.contains("seed", Tag.TAG_LONG), "level.dat has no vanilla world seed");
+        long persistedLevelSeed = worldGenSettings.getLong("seed");
 
         verifyAllRegionChunks(world.resolve("region"), false);
         verifyAllRegionChunks(world.resolve("entities"), true);
@@ -107,7 +113,7 @@ final class MigrationWorldInspector {
                 expectedCleanup.getInt("minSection"),
                 expectedCleanup.getInt("sectionCount"));
 
-        return new Snapshot(List.copyOf(stabilizers), container, spawnState, cleanupState);
+        return new Snapshot(persistedLevelSeed, List.copyOf(stabilizers), container, spawnState, cleanupState);
     }
 
     private static CompoundTag uncheckedChunk(Path world, int chunkX, int chunkZ) {
@@ -299,6 +305,7 @@ final class MigrationWorldInspector {
             int sectionCount) {}
 
     record Snapshot(
+            long persistedLevelSeed,
             List<StabilizerState> stabilizers,
             ContainerState container,
             SpawnState spawn,

@@ -18,7 +18,7 @@ record MigrationFixtureManifest(
         CleanupExpectation cleanup,
         List<String> alphaRoundTripProcedure,
         List<String> excludedData) {
-    static final int FIXTURE_SCHEMA_VERSION = 1;
+    static final int FIXTURE_SCHEMA_VERSION = 2;
     static final String SOURCE_VERSION = "0.1.0-alpha.1";
     static final String SOURCE_TAG = "v0.1.0-alpha.1";
     static final String SOURCE_COMMIT = "fed467ec0cd52a936f06751cd922efcc259914a1";
@@ -71,7 +71,7 @@ record MigrationFixtureManifest(
             int cellRemainingTicks,
             int graceRemainingTicks,
             int registeredChunkRadius,
-            boolean overCapacityBoundary) {}
+            int configuredCellCapacity) {}
 
     record ContainerExpectation(Position position, String blockId, String blockEntityId, Map<String, Integer> items) {}
 
