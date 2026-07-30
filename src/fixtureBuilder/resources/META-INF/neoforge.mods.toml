@@ -1,0 +1,16 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="BSD-3-Clause"
+
+[[mods]]
+modId="frontier_protocol_fixture_builder"
+version="1"
+displayName="Frontier Protocol Alpha Fixture Builder"
+description="Generation-only migration fixture builder."
+
+[[dependencies.frontier_protocol_fixture_builder]]
+modId="frontier_protocol"
+type="required"
+versionRange="[0.1.0-alpha.1]"
+ordering="AFTER"
+side="SERVER"

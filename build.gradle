@@ -50,6 +50,13 @@ sourceSets.main.resources {
     exclude("**/.cache/**") // datagen cache contents
 }
 
+sourceSets {
+    fixtureBuilder {
+        compileClasspath += sourceSets.main.output + configurations.compileClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
 def generatedGameTestResources = layout.buildDirectory.dir('generated/gametestResources')
 def createGameTestJar = configurations.compileClasspath.elements.map { files ->
     def artifact = files.find { it.asFile.name.startsWith('create-1.21.1-') }
@@ -246,6 +253,13 @@ dependencies {
 
 def productionJar = tasks.named('jar', Jar)
 def productionJarFile = productionJar.flatMap { it.archiveFile }
+def fixtureBuilderJar = tasks.register('fixtureBuilderJar', Jar) {
+    group = 'fixture generation'
+    description = 'Builds the generation-only Alpha migration fixture helper.'
+    archiveClassifier = 'alpha1-fixture-builder'
+    from sourceSets.fixtureBuilder.output
+}
+def fixtureBuilderJarFile = fixtureBuilderJar.flatMap { it.archiveFile }
 def repositoryLicense = layout.projectDirectory.file('LICENSE')
 def createLicenseNotice = layout.projectDirectory.file('src/main/resources/META-INF/LICENSES/Create-LICENSE.md')
 def neoForgeMdkTemplateNotice = layout.projectDirectory.file('TEMPLATE_LICENSE.txt')
@@ -705,9 +719,11 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
     def stableReadiness = layout.projectDirectory.file('docs/stable-readiness-0.1.0.md')
     def stableKnownIssues = layout.projectDirectory.file('docs/releases/0.1.0-known-issues.md')
     def stableStartupMatrixRecord = layout.projectDirectory.file('docs/r19-stable-startup-matrix.md')
+    def alpha1MigrationRecord = layout.projectDirectory.file('docs/r20-alpha1-world-migration.md')
     def workflowDirectory = layout.projectDirectory.dir('.github/workflows')
     inputs.files(buildWorkflow, releaseWorkflow, readme, readmeJa, changelog, alphaRelease, releaseNotes,
-            publicationRecord, stableReadiness, stableKnownIssues, stableStartupMatrixRecord, stableGateDocument)
+            publicationRecord, stableReadiness, stableKnownIssues, stableStartupMatrixRecord, alpha1MigrationRecord,
+            stableGateDocument)
     inputs.dir(workflowDirectory)
     inputs.properties([
             mod_version       : mod_version,
@@ -737,6 +753,24 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
             if (!buildYaml.contains(required)) {
                 throw new GradleException("Build workflow is missing Stable startup matrix integration: ${required}")
             }
+        }
+        [
+                './gradlew alpha1WorldUpgradeSmoke --offline',
+                'build/alpha1-world-upgrade/server/*.log',
+                'build/alpha1-world-upgrade/alpha1-world-upgrade-results.properties'
+        ].each { required ->
+            if (!buildYaml.contains(required)) {
+                throw new GradleException("Build workflow is missing Alpha migration integration: ${required}")
+            }
+        }
+        if (buildYaml.indexOf('./gradlew alpha1WorldUpgradeSmoke --offline')
+                < buildYaml.indexOf('./gradlew stableStartupMatrix')
+                || buildYaml.indexOf('./gradlew alpha1WorldUpgradeSmoke --offline')
+                > buildYaml.indexOf('./gradlew verifyReleaseCandidate')) {
+            throw new GradleException('Alpha migration smoke must run after the startup matrix and before packaging')
+        }
+        if (buildYaml.contains('world-fixture.zip')) {
+            throw new GradleException('Build workflow must not redundantly upload the committed migration fixture')
         }
 
         Set<String> writeEnabledWorkflows = workflowDirectory.asFile.listFiles()
@@ -998,6 +1032,18 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         ].each { required ->
             if (!startupMatrixText.contains(required)) {
                 throw new GradleException("Stable startup matrix record is missing: ${required}")
+            }
+        }
+        String migrationText = alpha1MigrationRecord.asFile.getText('UTF-8')
+        [
+                'alpha1WorldUpgradeSmoke --offline',
+                '60cb68f625eab26e8a37fe86eed125c52a1c00efca5dcae85ff3db5085274a8f',
+                'a587e88e4b12174eac370cb1c126b73146bd5cf19822b28c8f4069b2693319bc',
+                'alpha1-world-upgrade` Stable gate remains `INCOMPLETE',
+                'long-running RC log-volume soak remains `NOT VERIFIED`'
+        ].each { required ->
+            if (!migrationText.contains(required)) {
+                throw new GradleException("Alpha migration record is missing: ${required}")
             }
         }
         String stableGateText = stableGateDocument.asFile.getText('UTF-8')
@@ -1263,6 +1309,124 @@ tasks.register('stableStartupMatrix') {
     group = 'verification'
     description = 'Runs the isolated Stable dedicated-server startup and recovery matrix.'
     dependsOn freshWorldInitializationSmoke, dependencyFailureSmoke, serverConfigRecoverySmoke
+}
+
+def alpha1FixtureDirectory = layout.projectDirectory.dir('src/test/resources/migration/0.1.0-alpha.1')
+def alpha1FixtureGenerationRoot = layout.buildDirectory.dir('alpha1-fixture-generation')
+def alpha1WorldUpgradeRoot = layout.buildDirectory.dir('alpha1-world-upgrade')
+def alpha1DownloadDirectory = layout.buildDirectory.dir('alpha1-fixture-downloads')
+def alpha1JarFilename = 'frontier_protocol-0.1.0-alpha.1.jar'
+def alpha1JarSha256 = '60cb68f625eab26e8a37fe86eed125c52a1c00efca5dcae85ff3db5085274a8f'
+def alpha1JarUrl = "https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/${alpha1JarFilename}"
+def alpha1ChecksumUrl = "${alpha1JarUrl}.sha256"
+def allowAlpha1FixtureNetwork = providers.gradleProperty('allowAlpha1FixtureNetwork')
+def promoteAlpha1Fixture = providers.gradleProperty('promoteAlpha1Fixture')
+
+def downloadAlpha1MigrationAssets = tasks.register('downloadAlpha1MigrationAssets') {
+    group = 'fixture generation'
+    description = 'Explicitly downloads and verifies immutable Alpha fixture-generation assets.'
+    outputs.files(
+            alpha1DownloadDirectory.map { it.file(alpha1JarFilename) },
+            alpha1DownloadDirectory.map { it.file("${alpha1JarFilename}.sha256") })
+    outputs.upToDateWhen { false }
+
+    doLast {
+        if (allowAlpha1FixtureNetwork.orNull != 'true') {
+            throw new GradleException(
+                    'Alpha fixture download is disabled; rerun with -PallowAlpha1FixtureNetwork=true')
+        }
+        File directory = alpha1DownloadDirectory.get().asFile
+        directory.mkdirs()
+        File jar = new File(directory, alpha1JarFilename)
+        File checksum = new File(directory, "${alpha1JarFilename}.sha256")
+        new URI(alpha1JarUrl).toURL().withInputStream { input -> jar.withOutputStream { input.transferTo(it) } }
+        new URI(alpha1ChecksumUrl).toURL().withInputStream { input -> checksum.withOutputStream { input.transferTo(it) } }
+        String checksumText = checksum.getText('UTF-8').trim()
+        if (checksumText != "${alpha1JarSha256}  ${alpha1JarFilename}") {
+            throw new GradleException('Published Alpha checksum asset differs from the pinned provenance')
+        }
+        String actual = java.security.MessageDigest.getInstance('SHA-256')
+                .digest(java.nio.file.Files.readAllBytes(jar.toPath())).encodeHex().toString()
+        if (actual != alpha1JarSha256) throw new GradleException('Published Alpha JAR checksum verification failed')
+    }
+}
+
+def configureAlpha1MigrationJavaExec = { JavaExec task, String mode, Provider<Directory> root ->
+    task.classpath = sourceSets.test.runtimeClasspath
+    task.mainClass = 'dev.upiscium.frontierprotocol.migration.Alpha1WorldMigration'
+    task.javaLauncher = stableStartupMatrixJava
+    task.timeout = java.time.Duration.ofMinutes(10)
+    task.doFirst {
+        task.args = [
+                '--mode', mode,
+                '--root', root.get().asFile.absolutePath,
+                '--java', stableStartupMatrixJava.get().executablePath.asFile.absolutePath,
+                '--classpath-args', stableStartupMatrixClasspathArgs.get().asFile.absolutePath,
+                '--vm-args', stableStartupMatrixVmArgs.get().asFile.absolutePath,
+                '--program-args', stableStartupMatrixProgramArgs.get().asFile.absolutePath,
+                '--production-jar', productionJarFile.get().asFile.absolutePath
+        ]
+    }
+}
+
+tasks.register('generateAlpha1MigrationFixture', JavaExec) { task ->
+    group = 'fixture generation'
+    description = 'Network-enabled explicit generation of the twice-Alpha-round-tripped world fixture.'
+    dependsOn downloadAlpha1MigrationAssets, fixtureBuilderJar, tasks.named('testClasses'), productionJar,
+            tasks.named('createDedicatedServerSmokeRuntimeLaunchScript')
+    outputs.dir(alpha1FixtureGenerationRoot.map { it.dir('promotable') })
+    outputs.upToDateWhen { false }
+    doFirst {
+        args += [
+                '--alpha-jar', alpha1DownloadDirectory.get().file(alpha1JarFilename).asFile.absolutePath,
+                '--fixture-builder-jar', fixtureBuilderJarFile.get().asFile.absolutePath
+        ]
+    }
+    configureAlpha1MigrationJavaExec(task, 'generate', alpha1FixtureGenerationRoot)
+}
+
+tasks.register('promoteAlpha1MigrationFixture') {
+    group = 'fixture generation'
+    description = 'Explicitly promotes already-generated fixture files into tracked test resources.'
+    doLast {
+        if (promoteAlpha1Fixture.orNull != 'true') {
+            throw new GradleException('Fixture promotion is disabled; rerun with -PpromoteAlpha1Fixture=true')
+        }
+        File source = alpha1FixtureGenerationRoot.get().dir('promotable').asFile
+        File destination = alpha1FixtureDirectory.asFile
+        ['world-fixture.zip', 'fixture-manifest.json', 'fixture-manifest.sha256'].each { name ->
+            File input = new File(source, name)
+            if (!input.isFile()) throw new GradleException("Generated fixture is missing ${name}")
+        }
+        destination.mkdirs()
+        ['world-fixture.zip', 'fixture-manifest.json', 'fixture-manifest.sha256'].each { name ->
+            java.nio.file.Files.copy(
+                    new File(source, name).toPath(),
+                    new File(destination, name).toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
+}
+
+tasks.register('alpha1WorldUpgradeSmoke', JavaExec) { task ->
+    group = 'verification'
+    description = 'Offline verification of the committed Alpha world through two current-candidate starts.'
+    dependsOn tasks.named('testClasses'), productionJar, tasks.named('createDedicatedServerSmokeRuntimeLaunchScript')
+    mustRunAfter tasks.named('stableStartupMatrix')
+    inputs.files(
+            alpha1FixtureDirectory.file('world-fixture.zip'),
+            alpha1FixtureDirectory.file('fixture-manifest.json'),
+            alpha1FixtureDirectory.file('fixture-manifest.sha256'),
+            stableStartupMatrixClasspathArgs,
+            stableStartupMatrixVmArgs,
+            stableStartupMatrixProgramArgs,
+            productionJarFile)
+    outputs.file(alpha1WorldUpgradeRoot.map { it.file('alpha1-world-upgrade-results.properties') })
+    outputs.upToDateWhen { false }
+    doFirst {
+        args += ['--fixture-directory', alpha1FixtureDirectory.asFile.absolutePath]
+    }
+    configureAlpha1MigrationJavaExec(task, 'verify', alpha1WorldUpgradeRoot)
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

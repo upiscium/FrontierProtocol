@@ -96,7 +96,7 @@ class StableStartupMatrixTest {
     }
 
     @Test
-    void migrationSoakAndFinalCandidateGatesRemainIncomplete() throws Exception {
+    void migrationEvidencePassesWhileSoakAndFinalCandidateGatesRemainIncomplete() throws Exception {
         java.nio.file.Path project = java.nio.file.Path.of(System.getProperty("frontierProtocol.projectDir"));
         String readiness = Files.readString(project.resolve("docs/stable-readiness-0.1.0.md"));
         String gates = Files.readString(project.resolve("docs/releases/0.1.0-stable-gates.md"));
@@ -106,8 +106,10 @@ class StableStartupMatrixTest {
         assertTrue(readiness.contains("| Normal-operation log volume |"));
         assertTrue(readiness.lines()
                 .filter(line -> line.contains("Upgrade from a 0.1.0-alpha.1 world")
-                        || line.contains("Upgraded-world restart recovery")
-                        || line.contains("Normal-operation log volume"))
+                        || line.contains("Upgraded-world restart recovery"))
+                .allMatch(line -> line.contains("PASS")));
+        assertTrue(readiness.lines()
+                .filter(line -> line.contains("Normal-operation log volume"))
                 .allMatch(line -> line.contains("NOT VERIFIED")));
         assertTrue(gates.contains("| fresh-world-smoke | yes | INCOMPLETE |"));
         assertTrue(gates.contains("| alpha1-world-upgrade | yes | INCOMPLETE |"));

@@ -76,6 +76,21 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Run Alpha world migration smoke
+        id: alpha1-world-upgrade-smoke
+        run: ./gradlew alpha1WorldUpgradeSmoke --offline
+
+      - name: Upload failed Alpha world migration evidence
+        if: failure() && steps.alpha1-world-upgrade-smoke.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpha1-world-upgrade-evidence
+          path: |
+            build/alpha1-world-upgrade/server/*.log
+            build/alpha1-world-upgrade/alpha1-world-upgrade-results.properties
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Assemble release candidate
         run: ./gradlew verifyReleaseCandidate
 
