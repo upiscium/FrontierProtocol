@@ -48,6 +48,9 @@ All notable changes to Frontier Protocol are documented in this file.
 - Added SHA-256 and source/dependency manifest generation.
 - Bundled the verified production JAR and metadata in the CI artifact.
 - Added a timeout-bounded dedicated-server smoke that detects readiness, sends a normal stop command, verifies zero-status exit, and retains its log.
+- Adopted BSD-3-Clause for Frontier Protocol source code and original assets, with the authoritative license packaged in the JAR and release candidate.
+- Expanded the verified release candidate to exactly four files by adding a byte-identical standalone `LICENSE`.
+- Documented source and asset provenance while preserving the NeoForge MDK, Gradle wrapper, and audited Create fixture terms.
 
 ### Compatibility
 

@@ -120,7 +120,16 @@ the horizontal rotation axis derived perpendicular to `FACING`.
 They use no custom Block Entity Renderer or dynamic block parts. See
 [`docs/placeholder-assets.md`](docs/placeholder-assets.md) and
 [R11 Stabilizer Casing Redesign](docs/r11-stabilizer-casing-redesign.md).
-The project logo, licensing decisions, and public distribution remain pending.
+The project logo and public distribution remain pending.
+
+## License
+
+Frontier Protocol source code and original assets are licensed under the
+[BSD 3-Clause License](LICENSE). Third-party projects and dependency content
+retain their own licenses; they are not relicensed by Frontier Protocol. See
+the [licensing and provenance audit](docs/licensing.md) for the exact scope and
+the notices retained for repository templates and the audited Create GameTest
+fixture.
 
 ## Development
 

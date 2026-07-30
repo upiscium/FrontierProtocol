@@ -4,7 +4,7 @@
 
 This is an internal alpha release candidate of the rebuilt Frontier Protocol design. It is intended for internal compatibility testing and integration validation. Worlds should be backed up before testing, and upgrading Spore independently is unsupported until its mutation paths are re-audited.
 
-The candidate artifact produced by the build is `frontier_protocol-0.1.0-alpha.1.jar`. It has not been approved for public distribution. Frontier Protocol remains **All Rights Reserved**.
+The candidate artifact produced by the build is `frontier_protocol-0.1.0-alpha.1.jar`. It has not been approved for public distribution. Frontier Protocol is licensed under [BSD-3-Clause](../LICENSE); selecting a license does not change this build's internal-alpha status.
 
 The verified GitHub Actions artifact is:
 
@@ -17,6 +17,7 @@ It contains exactly:
 - `frontier_protocol-0.1.0-alpha.1.jar`
 - `frontier_protocol-0.1.0-alpha.1.jar.sha256`
 - `release-manifest.json`
+- `LICENSE`
 
 After extracting the Actions artifact, verify the production JAR with:
 
@@ -24,7 +25,7 @@ After extracting the Actions artifact, verify the production JAR with:
 sha256sum --check frontier_protocol-0.1.0-alpha.1.jar.sha256
 ```
 
-The Actions artifact ZIP digest covers the outer transport archive and is not the JAR checksum. Use the bundled `.sha256` file to verify the JAR. `release-manifest.json` records the source commit and required dependency versions. Dependency mod JARs are not bundled. This artifact is an internal alpha candidate and the workflow does not publish it as a GitHub Release or to an external distribution service.
+The Actions artifact ZIP digest covers the outer transport archive and is not the JAR checksum. Use the bundled `.sha256` file to verify the JAR. `release-manifest.json` records the source commit and required dependency versions. The standalone `LICENSE` and the copy packaged at the JAR root are byte-identical to the repository license. Dependency mod JARs are not bundled, and their separate licenses are not replaced by Frontier Protocol's license. This artifact is an internal alpha candidate and the workflow does not publish it as a GitHub Release or to an external distribution service. See [Licensing and Provenance](licensing.md) for the distribution audit.
 
 ## Publication status
 
@@ -95,8 +96,8 @@ The built JAR must contain `META-INF/neoforge.mods.toml`, `frontier_protocol.mix
 ## Future publication checklist
 
 - Decide the distribution channel.
-- Confirm the license and distribution terms.
-- Add any required `LICENSE` document before publication.
+- [x] Adopt BSD-3-Clause and confirm its distribution terms.
+- [x] Add and verify the required `LICENSE` document in source, JAR, and candidate bundle.
 - Confirm the release branch and default branch.
 - [x] Run a clean build.
 - [x] Run the complete GameTest suite.

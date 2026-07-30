@@ -223,6 +223,18 @@ dependencies {
 
 def productionJar = tasks.named('jar', Jar)
 def productionJarFile = productionJar.flatMap { it.archiveFile }
+def repositoryLicense = layout.projectDirectory.file('LICENSE')
+def createLicenseNotice = layout.projectDirectory.file('src/main/resources/META-INF/LICENSES/Create-LICENSE.md')
+def canonicalLicenseSha256 = '08f5b811516c01ae6bdda845ed9f7284da0e909bccf554769e104db4b681ba4c'
+def activeLicenseClaimFiles = files(
+        'README.md',
+        'CHANGELOG.md',
+        'gradle.properties',
+        'src/main/templates/META-INF/neoforge.mods.toml',
+        fileTree('docs') { include '**/*.md' })
+productionJar.configure {
+    from(repositoryLicense)
+}
 def releaseRoot = layout.buildDirectory.dir('release')
 def releaseMetadataDir = layout.buildDirectory.dir('release/metadata')
 def releaseCandidateDir = layout.buildDirectory.dir('release/candidate')
@@ -241,9 +253,16 @@ def verifyReleaseJar = tasks.register('verifyReleaseJar') {
     description = 'Verifies production JAR contents and expanded mod metadata.'
     dependsOn productionJar
     inputs.file(productionJarFile)
+    inputs.file(repositoryLicense)
+    inputs.file(createLicenseNotice)
+    inputs.files(activeLicenseClaimFiles)
     inputs.properties([
             mod_id                 : mod_id,
+            mod_license            : mod_license,
             mod_version            : mod_version,
+            canonical_license_sha256: canonicalLicenseSha256,
+            repository_license_path: repositoryLicense.asFile.absolutePath,
+            create_notice_path     : createLicenseNotice.asFile.absolutePath,
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
             create_mod_version     : create_mod_version,
@@ -253,11 +272,32 @@ def verifyReleaseJar = tasks.register('verifyReleaseJar') {
 
     doLast {
         Map<String, Object> releaseProperties = inputs.properties
-        File jarFile = inputs.files.singleFile
+        File jarFile = inputs.files.files.find { it.name.endsWith('.jar') }
+        File repositoryLicenseFile = new File(releaseProperties.repository_license_path.toString())
+        File createNoticeFile = new File(releaseProperties.create_notice_path.toString())
+        byte[] repositoryLicenseBytes = java.nio.file.Files.readAllBytes(repositoryLicenseFile.toPath())
+        String repositoryLicenseSha256 = java.security.MessageDigest.getInstance('SHA-256')
+                .digest(repositoryLicenseBytes).encodeHex().toString()
+        if (repositoryLicenseSha256 != releaseProperties.canonical_license_sha256) {
+            throw new GradleException('Repository LICENSE does not match the canonical BSD-3-Clause contract')
+        }
+        inputs.files.files.findAll { file ->
+            file.isFile()
+                    && file != jarFile
+                    && file != repositoryLicenseFile
+                    && file != createNoticeFile
+        }.each { file ->
+            String text = file.getText('UTF-8')
+            if (text =~ /(?is)(Frontier Protocol.{0,120}All Rights Reserved|All Rights Reserved.{0,120}Frontier Protocol|mod_license\s*=\s*All Rights Reserved)/) {
+                throw new GradleException("Active All Rights Reserved project claim remains in ${file}")
+            }
+        }
         new java.util.zip.ZipFile(jarFile).withCloseable { jar ->
             Set<String> entries = jar.entries().collect { it.name }.toSet()
             Set<String> requiredEntries = [
+                    'LICENSE',
                     'META-INF/neoforge.mods.toml',
+                    'META-INF/LICENSES/Create-LICENSE.md',
                     'frontier_protocol.mixins.json',
                     'assets/frontier_protocol/lang/en_us.json',
                     'assets/frontier_protocol/lang/ja_jp.json',
@@ -317,11 +357,23 @@ def verifyReleaseJar = tasks.register('verifyReleaseJar') {
                 throw new GradleException("Production JAR contains forbidden entries: ${forbidden.sort()}")
             }
 
+            byte[] packagedLicense = jar.getInputStream(jar.getEntry('LICENSE')).readAllBytes()
+            if (!java.util.Arrays.equals(packagedLicense, repositoryLicenseBytes)) {
+                throw new GradleException('Production JAR LICENSE differs from the repository LICENSE')
+            }
+            byte[] packagedCreateNotice = jar.getInputStream(
+                    jar.getEntry('META-INF/LICENSES/Create-LICENSE.md')).readAllBytes()
+            if (!java.util.Arrays.equals(
+                    packagedCreateNotice, java.nio.file.Files.readAllBytes(createNoticeFile.toPath()))) {
+                throw new GradleException('Production JAR does not preserve the audited Create license notice')
+            }
+
             String metadata = jar.getInputStream(jar.getEntry('META-INF/neoforge.mods.toml'))
                     .getText(java.nio.charset.StandardCharsets.UTF_8.name())
             if (metadata.contains('${')) throw new GradleException('Production metadata contains an unexpanded template')
             [
                     "modId=\"${releaseProperties.mod_id}\"",
+                    "license=\"${releaseProperties.mod_license}\"",
                     "version=\"${releaseProperties.mod_version}\"",
                     "versionRange=\"${releaseProperties.minecraft_version_range}\"",
                     "versionRange=\"[${releaseProperties.neo_version},)\"",
@@ -443,18 +495,20 @@ def generateReleaseManifest = tasks.register('generateReleaseManifest') {
 
 def assembleReleaseCandidate = tasks.register('assembleReleaseCandidate', Sync) {
     group = 'build'
-    description = 'Assembles the verified three-file Release Candidate bundle.'
+    description = 'Assembles the verified four-file Release Candidate bundle.'
     dependsOn productionJar, generateReleaseChecksum, generateReleaseManifest
     inputs.property('jar_name', productionJarFile.map { it.asFile.name })
+    inputs.file(repositoryLicense)
     into releaseCandidateDir
     from productionJarFile
     from releaseChecksum
     from releaseManifest
+    from repositoryLicense
 
     doLast {
         File candidateDirectory = outputs.files.singleFile
         String jarName = inputs.properties.jar_name
-        Set<String> expected = [jarName, "${jarName}.sha256", 'release-manifest.json']
+        Set<String> expected = [jarName, "${jarName}.sha256", 'release-manifest.json', 'LICENSE']
         Set<String> actual = candidateDirectory.listFiles().findAll { it.isFile() }.collect { it.name }.toSet()
         if (actual != expected || candidateDirectory.listFiles().any { it.isDirectory() }) {
             throw new GradleException("Unexpected Release Candidate contents: ${actual.sort()}")
@@ -467,7 +521,9 @@ tasks.register('verifyReleaseCandidate') {
     description = 'Verifies the candidate checksum, manifest, and exact file set.'
     dependsOn assembleReleaseCandidate
     inputs.dir(releaseCandidateDir)
+    inputs.file(repositoryLicense)
     inputs.property('candidate_directory', releaseCandidateDir.map { it.asFile.absolutePath })
+    inputs.property('repository_license_path', repositoryLicense.asFile.absolutePath)
     inputs.property('jar_name', productionJarFile.map { it.asFile.name })
     inputs.properties([
             mod_id            : mod_id,
@@ -487,10 +543,15 @@ tasks.register('verifyReleaseCandidate') {
         Map<String, Object> releaseProperties = inputs.properties
         File candidateDirectory = new File(releaseProperties.candidate_directory.toString())
         String jarName = releaseProperties.jar_name
-        Set<String> expected = [jarName, "${jarName}.sha256", 'release-manifest.json']
+        Set<String> expected = [jarName, "${jarName}.sha256", 'release-manifest.json', 'LICENSE']
         Set<String> actual = candidateDirectory.listFiles().findAll { it.isFile() }.collect { it.name }.toSet()
         if (actual != expected || candidateDirectory.listFiles().any { it.isDirectory() }) {
             throw new GradleException("Unexpected Release Candidate contents: ${actual.sort()}")
+        }
+        if (java.nio.file.Files.mismatch(
+                new File(candidateDirectory, 'LICENSE').toPath(),
+                new File(releaseProperties.repository_license_path.toString()).toPath()) != -1L) {
+            throw new GradleException('Release Candidate LICENSE differs from the repository LICENSE')
         }
 
         File jarFile = new File(candidateDirectory, jarName)
