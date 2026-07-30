@@ -61,6 +61,21 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Run Stable startup matrix
+        id: stable-startup-matrix
+        run: ./gradlew stableStartupMatrix
+
+      - name: Upload failed Stable startup matrix evidence
+        if: failure() && steps.stable-startup-matrix.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: stable-startup-matrix-evidence
+          path: |
+            build/stable-startup-matrix/**/*.log
+            build/stable-startup-matrix/*-results.properties
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Assemble release candidate
         run: ./gradlew verifyReleaseCandidate
 

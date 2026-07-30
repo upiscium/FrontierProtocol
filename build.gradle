@@ -704,9 +704,10 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
     def publicationRecord = layout.projectDirectory.file('docs/releases/0.1.0-alpha.1-publication.md')
     def stableReadiness = layout.projectDirectory.file('docs/stable-readiness-0.1.0.md')
     def stableKnownIssues = layout.projectDirectory.file('docs/releases/0.1.0-known-issues.md')
+    def stableStartupMatrixRecord = layout.projectDirectory.file('docs/r19-stable-startup-matrix.md')
     def workflowDirectory = layout.projectDirectory.dir('.github/workflows')
     inputs.files(buildWorkflow, releaseWorkflow, readme, readmeJa, changelog, alphaRelease, releaseNotes,
-            publicationRecord, stableReadiness, stableKnownIssues, stableGateDocument)
+            publicationRecord, stableReadiness, stableKnownIssues, stableStartupMatrixRecord, stableGateDocument)
     inputs.dir(workflowDirectory)
     inputs.properties([
             mod_version       : mod_version,
@@ -727,6 +728,15 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         }
         if (buildYaml.contains('contents: write')) {
             throw new GradleException('Build workflow must not receive contents: write')
+        }
+        [
+                './gradlew stableStartupMatrix',
+                'build/stable-startup-matrix/**/*.log',
+                'build/stable-startup-matrix/*-results.properties'
+        ].each { required ->
+            if (!buildYaml.contains(required)) {
+                throw new GradleException("Build workflow is missing Stable startup matrix integration: ${required}")
+            }
         }
 
         Set<String> writeEnabledWorkflows = workflowDirectory.asFile.listFiles()
@@ -976,6 +986,20 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 || !knownIssuesText.contains('NOT VERIFIED')) {
             throw new GradleException('Stable known-issues document must retain the blocker boundary')
         }
+        String startupMatrixText = stableStartupMatrixRecord.asFile.getText('UTF-8')
+        [
+                'stableStartupMatrix',
+                'freshWorldInitializationSmoke',
+                'dependencyFailureSmoke',
+                'serverConfigRecoverySmoke',
+                '0.1.0-alpha.1',
+                'real `0.1.0-alpha.1` world upgrade',
+                'long-running RC log-volume soak'
+        ].each { required ->
+            if (!startupMatrixText.contains(required)) {
+                throw new GradleException("Stable startup matrix record is missing: ${required}")
+            }
+        }
         String stableGateText = stableGateDocument.asFile.getText('UTF-8')
         Map<String, String> stableGates = parseStableGates(stableGateText)
         if (stableGates.keySet() != requiredStableGateIds) {
@@ -1009,6 +1033,7 @@ tasks.named('test', Test).configure {
     useJUnitPlatform()
     dependsOn productionJar, verifyReleaseSafeguards
     systemProperty 'frontierProtocol.testJar', productionJarFile.get().asFile.absolutePath
+    systemProperty 'frontierProtocol.projectDir', layout.projectDirectory.asFile.absolutePath
 }
 
 tasks.register('dedicatedServerSmoke') {
@@ -1175,6 +1200,69 @@ tasks.register('dedicatedServerSmoke') {
         }
         logger.lifecycle("Dedicated-server smoke log retained at: ${logFile}")
     }
+}
+
+def stableStartupMatrixRoot = layout.buildDirectory.dir('stable-startup-matrix')
+def stableStartupMatrixClasspathArgs = layout.buildDirectory.file(
+        'moddev/dedicatedServerSmokeRuntimeRunClasspath.txt')
+def stableStartupMatrixVmArgs = layout.buildDirectory.file(
+        'moddev/dedicatedServerSmokeRuntimeRunVmArgs.txt')
+def stableStartupMatrixProgramArgs = layout.buildDirectory.file(
+        'moddev/dedicatedServerSmokeRuntimeRunProgramArgs.txt')
+def stableStartupMatrixJava = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(21)
+}
+def registerStableStartupScenario = { String taskName, String scenario, String taskDescription ->
+    tasks.register(taskName, JavaExec) {
+        group = 'verification'
+        description = taskDescription
+        dependsOn tasks.named('testClasses'), productionJar, tasks.named('createDedicatedServerSmokeRuntimeLaunchScript')
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = 'dev.upiscium.frontierprotocol.startup.StableStartupMatrix'
+        javaLauncher = stableStartupMatrixJava
+        timeout = java.time.Duration.ofMinutes(10)
+        inputs.files(
+                stableStartupMatrixClasspathArgs,
+                stableStartupMatrixVmArgs,
+                stableStartupMatrixProgramArgs,
+                productionJarFile)
+        inputs.property('scenario', scenario)
+        outputs.file(stableStartupMatrixRoot.map { it.file("${scenario}-results.properties") })
+        outputs.upToDateWhen { false }
+
+        doFirst {
+            args = [
+                    '--scenario', scenario,
+                    '--root', stableStartupMatrixRoot.get().asFile.absolutePath,
+                    '--java', stableStartupMatrixJava.get().executablePath.asFile.absolutePath,
+                    '--classpath-args', stableStartupMatrixClasspathArgs.get().asFile.absolutePath,
+                    '--vm-args', stableStartupMatrixVmArgs.get().asFile.absolutePath,
+                    '--program-args', stableStartupMatrixProgramArgs.get().asFile.absolutePath,
+                    '--production-jar', productionJarFile.get().asFile.absolutePath
+            ]
+        }
+    }
+}
+
+def freshWorldInitializationSmoke = registerStableStartupScenario(
+        'freshWorldInitializationSmoke',
+        'fresh',
+        'Starts one fresh world twice and verifies its persisted initial-spawn center.')
+def dependencyFailureSmoke = registerStableStartupScenario(
+        'dependencyFailureSmoke',
+        'dependencies',
+        'Verifies actionable loader diagnostics for each omitted required dependency.')
+def serverConfigRecoverySmoke = registerStableStartupScenario(
+        'serverConfigRecoverySmoke',
+        'config',
+        'Verifies malformed and out-of-range server config handling and recovery.')
+dependencyFailureSmoke.configure { mustRunAfter freshWorldInitializationSmoke }
+serverConfigRecoverySmoke.configure { mustRunAfter dependencyFailureSmoke }
+
+tasks.register('stableStartupMatrix') {
+    group = 'verification'
+    description = 'Runs the isolated Stable dedicated-server startup and recovery matrix.'
+    dependsOn freshWorldInitializationSmoke, dependencyFailureSmoke, serverConfigRecoverySmoke
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
