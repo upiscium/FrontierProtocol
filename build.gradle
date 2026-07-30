@@ -17,12 +17,27 @@ tasks.named('wrapper', Wrapper).configure {
 version = mod_version
 group = mod_group_id
 
-def supportedReleaseStatuses = ['internal_alpha_candidate', 'public_alpha_prerelease'] as Set
+def supportedReleaseStatuses = [
+        'internal_alpha_candidate',
+        'public_alpha_prerelease',
+        'public_stable_release'
+] as Set
 def defaultReleaseStatus = 'internal_alpha_candidate'
 def releaseStatus = providers.gradleProperty('releaseStatus').orElse(defaultReleaseStatus).get()
 if (!supportedReleaseStatuses.contains(releaseStatus)) {
     throw new GradleException(
             "Unsupported releaseStatus '${releaseStatus}'. Expected one of: ${supportedReleaseStatuses.sort().join(', ')}")
+}
+def classifyPublicRelease = { String candidateVersion ->
+    def semVer = candidateVersion =~ /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/
+    if (!semVer.matches()) {
+        throw new GradleException("Malformed or unsupported SemVer: '${candidateVersion}'")
+    }
+    boolean prerelease = semVer.group(4) != null
+    [
+            status    : prerelease ? 'public_alpha_prerelease' : 'public_stable_release',
+            prerelease: prerelease
+    ]
 }
 
 sourceSets.main.resources {
@@ -623,6 +638,58 @@ tasks.register('verifyReleaseCandidate') {
     }
 }
 
+def stableGateDocument = layout.projectDirectory.file('docs/releases/0.1.0-stable-gates.md')
+def requiredStableGateIds = [
+        'unit-tests',
+        'asset-tests',
+        'clean-datagen',
+        'clean-build',
+        'all-gametests',
+        'dedicated-server-smoke',
+        'stable-candidate',
+        'fresh-world-smoke',
+        'alpha1-world-upgrade',
+        'english-graphical-smoke',
+        'japanese-graphical-smoke',
+        'packwiz-smoke',
+        'published-checksum',
+        'published-byte-identity',
+        'support-contract',
+        'known-issues',
+        'changelog',
+        'stable-release-notes',
+        'license-provenance'
+] as Set
+def parseStableGates = { String text ->
+    Map<String, String> gates = [:]
+    text.eachLine { line ->
+        def row = line =~ /^\| ([a-z0-9-]+) \| yes \| (COMPLETE|INCOMPLETE|WORKFLOW_ENFORCED) \|/
+        if (row.find()) gates[row.group(1)] = row.group(2)
+    }
+    gates
+}
+
+tasks.register('verifyStableReleaseGates') {
+    group = 'verification'
+    description = 'Fails unless every required pre-publication stable gate is complete.'
+    inputs.file(stableGateDocument)
+
+    doLast {
+        Map<String, String> gates = parseStableGates(stableGateDocument.asFile.getText('UTF-8'))
+        if (gates.keySet() != requiredStableGateIds) {
+            throw new GradleException("Stable gate IDs differ from the required contract: ${gates.keySet().sort()}")
+        }
+        Set<String> workflowEnforced = gates.findAll { id, status -> status == 'WORKFLOW_ENFORCED' }.keySet()
+        if (workflowEnforced != ['published-checksum', 'published-byte-identity'] as Set) {
+            throw new GradleException('Only post-publication checksum and byte identity may be workflow-enforced')
+        }
+        Map<String, String> incomplete = gates.findAll { id, status -> status == 'INCOMPLETE' }
+        if (!incomplete.isEmpty()) {
+            throw new GradleException("Stable release gates are incomplete: ${incomplete.keySet().sort()}")
+        }
+    }
+}
+
 def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
     group = 'verification'
     description = 'Statically verifies release workflow, documentation, and pinned release inputs.'
@@ -635,9 +702,11 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
     def alphaRelease = layout.projectDirectory.file('docs/alpha-release.md')
     def releaseNotes = layout.projectDirectory.file('docs/releases/0.1.0-alpha.1.md')
     def publicationRecord = layout.projectDirectory.file('docs/releases/0.1.0-alpha.1-publication.md')
+    def stableReadiness = layout.projectDirectory.file('docs/stable-readiness-0.1.0.md')
+    def stableKnownIssues = layout.projectDirectory.file('docs/releases/0.1.0-known-issues.md')
     def workflowDirectory = layout.projectDirectory.dir('.github/workflows')
     inputs.files(buildWorkflow, releaseWorkflow, readme, readmeJa, changelog, alphaRelease, releaseNotes,
-            publicationRecord)
+            publicationRecord, stableReadiness, stableKnownIssues, stableGateDocument)
     inputs.dir(workflowDirectory)
     inputs.properties([
             mod_version       : mod_version,
@@ -673,65 +742,117 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         [
                 'fetch-tags: true',
                 'test "$GITHUB_REF_NAME" = "v${mod_version}"',
+                'test -f "$release_notes"',
                 'git fetch --no-tags origin main:refs/remotes/origin/main',
                 'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
                 'gh release view "$GITHUB_REF_NAME"',
-                './gradlew verifyReleaseCandidate -PreleaseStatus=public_alpha_prerelease'
+                'release_status="public_alpha_prerelease"',
+                'release_status="public_stable_release"',
+                'jar_name="frontier_protocol-${mod_version}.jar"',
+                'checksum_name="${jar_name}.sha256"',
+                'release_title="Frontier Protocol ${mod_version}"',
+                'release_notes="docs/releases/${mod_version}.md"',
+                './gradlew verifyReleaseCandidate -PreleaseStatus="$RELEASE_STATUS"',
+                "if: env.IS_PRERELEASE == 'false'",
+                './gradlew verifyStableReleaseGates',
+                'release_args+=(--prerelease)',
+                '--argjson prerelease "$IS_PRERELEASE"',
+                '.prerelease == $prerelease and .draft == false',
+                '--arg release_status "$RELEASE_STATUS"',
+                '.release_status == $release_status'
         ].each { required ->
             if (!releaseYaml.contains(required)) {
                 throw new GradleException("Release workflow is missing required validation: ${required}")
             }
         }
         if (releaseYaml.contains('--latest')) {
-            throw new GradleException('Alpha prerelease workflow must not use --latest')
+            throw new GradleException('Release workflow must not use --latest explicitly')
         }
-
-        int createStart = releaseYaml.indexOf('gh release create "$GITHUB_REF_NAME"')
-        int verifyTag = releaseYaml.indexOf('--verify-tag', createStart)
-        if (createStart < 0 || verifyTag < 0) {
-            throw new GradleException('Release creation command is missing')
+        if (releaseYaml.contains('0.1.0-alpha.1') || releaseYaml =~ /(?i)GITHUB_(HEAD_)?REF.*release_status/) {
+            throw new GradleException('Executable release workflow must not hard-code alpha.1 or classify by branch')
         }
-        String createCommand = releaseYaml.substring(createStart, verifyTag)
-        List<String> uploadedAssets = (createCommand =~ /build\/release\/candidate\/[A-Za-z0-9._-]+/)
-                .collect { it.toString() }
-        List<String> expectedAssets = [
-                'build/release/candidate/frontier_protocol-0.1.0-alpha.1.jar',
-                'build/release/candidate/frontier_protocol-0.1.0-alpha.1.jar.sha256',
-                'build/release/candidate/release-manifest.json',
-                'build/release/candidate/LICENSE'
-        ]
-        if (uploadedAssets != expectedAssets) {
-            throw new GradleException("Release upload assets differ from the four-file contract: ${uploadedAssets}")
-        }
-
-        int publicDownloadStart = releaseYaml.indexOf('anonymous_dir=')
-        int cliDownloadStart = releaseYaml.indexOf('gh release download', publicDownloadStart)
-        if (publicDownloadStart < 0 || cliDownloadStart < 0) {
-            throw new GradleException('Anonymous public asset verification is missing')
-        }
-        String publicDownload = releaseYaml.substring(publicDownloadStart, cliDownloadStart)
         [
-                'select(.name == "frontier_protocol-0.1.0-alpha.1.jar") | .browser_download_url',
-                'select(.name == "frontier_protocol-0.1.0-alpha.1.jar.sha256") | .browser_download_url',
-                'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar',
-                'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar.sha256',
+                '"build/release/candidate/${JAR_NAME}"',
+                '"build/release/candidate/${CHECKSUM_NAME}"',
+                'build/release/candidate/release-manifest.json',
+                'build/release/candidate/LICENSE',
+                'https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${JAR_NAME}',
+                '--arg name "$JAR_NAME"',
+                '--arg name "$CHECKSUM_NAME"',
                 'test "$jar_url" = "$expected_jar_url"',
                 'test "$checksum_url" = "$expected_checksum_url"',
                 'env -u GH_TOKEN -u GITHUB_TOKEN curl --fail --location',
                 '--retry 5',
                 '--retry-all-errors',
                 '--retry-delay 2',
-                'sha256sum --check frontier_protocol-0.1.0-alpha.1.jar.sha256',
-                'cmp',
-                'build/release/candidate/frontier_protocol-0.1.0-alpha.1.jar',
-                '"$anonymous_dir/frontier_protocol-0.1.0-alpha.1.jar"'
+                'sha256sum --check "$CHECKSUM_NAME"',
+                'cmp "build/release/candidate/$JAR_NAME" "$anonymous_dir/$JAR_NAME"',
+                'gh release download "$GITHUB_REF_NAME"'
         ].each { required ->
-            if (!publicDownload.contains(required)) {
-                throw new GradleException("Public asset verification is missing: ${required}")
+            if (!releaseYaml.contains(required)) {
+                throw new GradleException("Generic release asset contract is missing: ${required}")
             }
         }
-        if (publicDownload.contains('Authorization') || publicDownload.contains('Accept:')) {
+        if (releaseYaml.contains('Authorization') || releaseYaml.contains('Accept:')) {
             throw new GradleException('Public asset downloads must not use authenticated GitHub headers')
+        }
+
+        Map<String, Map<String, Object>> classificationExamples = [
+                '0.1.0-alpha.1': [status: 'public_alpha_prerelease', prerelease: true],
+                '0.1.0-rc.1'   : [status: 'public_alpha_prerelease', prerelease: true],
+                '0.1.0'        : [status: 'public_stable_release', prerelease: false]
+        ]
+        classificationExamples.each { version, expected ->
+            if (classifyPublicRelease(version) != expected) {
+                throw new GradleException("Release classification failed for ${version}")
+            }
+        }
+        Map<String, Map<String, String>> dynamicExamples = [
+                '0.1.0-alpha.1': [
+                        tag     : 'v0.1.0-alpha.1',
+                        jar     : 'frontier_protocol-0.1.0-alpha.1.jar',
+                        checksum: 'frontier_protocol-0.1.0-alpha.1.jar.sha256',
+                        title   : 'Frontier Protocol 0.1.0-alpha.1',
+                        notes   : 'docs/releases/0.1.0-alpha.1.md',
+                        url     : 'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar'
+                ],
+                '0.1.0-rc.1': [
+                        tag     : 'v0.1.0-rc.1',
+                        jar     : 'frontier_protocol-0.1.0-rc.1.jar',
+                        checksum: 'frontier_protocol-0.1.0-rc.1.jar.sha256',
+                        title   : 'Frontier Protocol 0.1.0-rc.1',
+                        notes   : 'docs/releases/0.1.0-rc.1.md',
+                        url     : 'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-rc.1/frontier_protocol-0.1.0-rc.1.jar'
+                ],
+                '0.1.0': [
+                        tag     : 'v0.1.0',
+                        jar     : 'frontier_protocol-0.1.0.jar',
+                        checksum: 'frontier_protocol-0.1.0.jar.sha256',
+                        title   : 'Frontier Protocol 0.1.0',
+                        notes   : 'docs/releases/0.1.0.md',
+                        url     : 'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0/frontier_protocol-0.1.0.jar'
+                ]
+        ]
+        dynamicExamples.each { version, expected ->
+            Map<String, String> actual = [
+                    tag     : "v${version}",
+                    jar     : "frontier_protocol-${version}.jar",
+                    checksum: "frontier_protocol-${version}.jar.sha256",
+                    title   : "Frontier Protocol ${version}",
+                    notes   : "docs/releases/${version}.md",
+                    url     : "https://github.com/upiscium/FrontierProtocol/releases/download/v${version}/frontier_protocol-${version}.jar"
+            ]
+            if (actual != expected) {
+                throw new GradleException("Dynamic release values are incorrect for ${version}: ${actual}")
+            }
+        }
+        ['1.0', '01.0.0', '0.1.0-', '0.1.0-01', 'v0.1.0', 'branch-main'].each { malformed ->
+            try {
+                classifyPublicRelease(malformed)
+                throw new GradleException("Malformed version was accepted: ${malformed}")
+            } catch (GradleException expected) {
+                if (!expected.message.startsWith('Malformed or unsupported SemVer:')) throw expected
+            }
         }
 
         Map<String, Object> pinned = inputs.properties
@@ -750,7 +871,11 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 throw new GradleException("${propertyName} must remain ${expectedValue}")
             }
         }
-        if (supportedReleaseStatuses != ['internal_alpha_candidate', 'public_alpha_prerelease'] as Set
+        if (supportedReleaseStatuses != [
+                'internal_alpha_candidate',
+                'public_alpha_prerelease',
+                'public_stable_release'
+        ] as Set
                 || defaultReleaseStatus != 'internal_alpha_candidate') {
             throw new GradleException('Release status contract has changed')
         }
@@ -813,6 +938,30 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         }
         if (!changelog.asFile.getText('UTF-8').contains('GitHub prerelease')) {
             throw new GradleException('Changelog must document GitHub prerelease distribution')
+        }
+
+        String readinessText = stableReadiness.asFile.getText('UTF-8')
+        ['0.1.0-rc.1', 'public_stable_release', 'NOT VERIFIED', 'Blocker evidence audit',
+         '0.1.0-alpha.1', 'Stable release sequence'].each { required ->
+        if (!readinessText.contains(required)) {
+                throw new GradleException("Stable readiness contract is missing: ${required}")
+            }
+        }
+        String knownIssuesText = stableKnownIssues.asFile.getText('UTF-8')
+        if (!knownIssuesText.contains('No issue is currently accepted')
+                || !knownIssuesText.contains('NOT VERIFIED')) {
+            throw new GradleException('Stable known-issues document must retain the blocker boundary')
+        }
+        Map<String, String> stableGates = parseStableGates(stableGateDocument.asFile.getText('UTF-8'))
+        if (stableGates.keySet() != requiredStableGateIds) {
+            throw new GradleException('Stable gate document does not contain the exact required gate IDs')
+        }
+        if (!stableGates.values().contains('INCOMPLETE')) {
+            throw new GradleException('Unexecuted stable gates must not be marked complete')
+        }
+        Set<String> workflowEnforced = stableGates.findAll { id, status -> status == 'WORKFLOW_ENFORCED' }.keySet()
+        if (workflowEnforced != ['published-checksum', 'published-byte-identity'] as Set) {
+            throw new GradleException('Post-publication workflow-enforced stable gates changed')
         }
     }
 }

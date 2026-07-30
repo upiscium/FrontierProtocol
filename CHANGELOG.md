@@ -6,6 +6,8 @@ All notable changes to Frontier Protocol are documented in this file.
 
 Published as a public GitHub prerelease from source commit
 `fed467ec0cd52a936f06751cd922efcc259914a1`. This is not a stable release.
+It remains the latest published prerelease while unavailable stable `0.1.0` is
+the current release objective.
 
 ### Added
 
@@ -60,6 +62,8 @@ Published as a public GitHub prerelease from source commit
 - Selected permanent, immutable GitHub Release assets as the packwiz distribution channel while retaining Actions artifacts as temporary internal verification bundles.
 - Added post-publication checksum, byte-identity, manifest, release-state, and exact asset-set verification for the `v0.1.0-alpha.1` GitHub prerelease.
 - Recorded the completed alpha publication and disposable packwiz public-URL smoke verification.
+- Defined the future `0.1.0` stable support contract, blocker evidence audit, incomplete publication gates, and recommended `0.1.0-rc.1` sequence.
+- Generalized release classification and publication checks for SemVer prereleases and stable releases without changing the current alpha version.
 
 ### Compatibility
 

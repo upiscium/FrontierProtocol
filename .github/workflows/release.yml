@@ -29,13 +29,50 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Read and validate release version
+      - name: Read and classify release version
+        shell: bash
         run: |
           set -euo pipefail
           mod_version="$(awk -F= '$1 == "mod_version" { print $2 }' gradle.properties)"
-          test -n "$mod_version"
+          semver_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+)(\.[0-9A-Za-z-]+)*)?(\+([0-9A-Za-z-]+)(\.[0-9A-Za-z-]+)*)?$'
+          if [[ ! "$mod_version" =~ $semver_pattern ]]; then
+            echo "Malformed or unsupported SemVer: $mod_version" >&2
+            exit 1
+          fi
+
+          version_without_build="${mod_version%%+*}"
+          if [[ "$version_without_build" == *-* ]]; then
+            prerelease="${version_without_build#*-}"
+            IFS='.' read -ra identifiers <<< "$prerelease"
+            for identifier in "${identifiers[@]}"; do
+              if [[ "$identifier" =~ ^[0-9]+$ && "$identifier" != "0" && "$identifier" == 0* ]]; then
+                echo "Malformed numeric prerelease identifier: $identifier" >&2
+                exit 1
+              fi
+            done
+            release_status="public_alpha_prerelease"
+            is_prerelease="true"
+          else
+            release_status="public_stable_release"
+            is_prerelease="false"
+          fi
+
+          jar_name="frontier_protocol-${mod_version}.jar"
+          checksum_name="${jar_name}.sha256"
+          release_title="Frontier Protocol ${mod_version}"
+          release_notes="docs/releases/${mod_version}.md"
           test "$GITHUB_REF_NAME" = "v${mod_version}"
-          printf 'MOD_VERSION=%s\n' "$mod_version" >> "$GITHUB_ENV"
+          test -f "$release_notes"
+
+          {
+            printf 'MOD_VERSION=%s\n' "$mod_version"
+            printf 'RELEASE_STATUS=%s\n' "$release_status"
+            printf 'IS_PRERELEASE=%s\n' "$is_prerelease"
+            printf 'JAR_NAME=%s\n' "$jar_name"
+            printf 'CHECKSUM_NAME=%s\n' "$checksum_name"
+            printf 'RELEASE_TITLE=%s\n' "$release_title"
+            printf 'RELEASE_NOTES=%s\n' "$release_notes"
+          } >> "$GITHUB_ENV"
 
       - name: Require tagged commit on main
         run: |
@@ -74,8 +111,12 @@ jobs:
       - name: Run dedicated-server smoke
         run: ./gradlew dedicatedServerSmoke
 
-      - name: Verify public prerelease candidate
-        run: ./gradlew verifyReleaseCandidate -PreleaseStatus=public_alpha_prerelease
+      - name: Require completed stable gates
+        if: env.IS_PRERELEASE == 'false'
+        run: ./gradlew verifyStableReleaseGates
+
+      - name: Verify public release candidate
+        run: ./gradlew verifyReleaseCandidate -PreleaseStatus="$RELEASE_STATUS"
 
       - name: Require exact candidate contents
         run: |
@@ -83,26 +124,34 @@ jobs:
           expected="$RUNNER_TEMP/expected-candidate-files.txt"
           actual="$RUNNER_TEMP/actual-candidate-files.txt"
           printf '%s\n' \
-            frontier_protocol-0.1.0-alpha.1.jar \
-            frontier_protocol-0.1.0-alpha.1.jar.sha256 \
+            "$JAR_NAME" \
+            "$CHECKSUM_NAME" \
             LICENSE \
             release-manifest.json | sort > "$expected"
           find build/release/candidate -mindepth 1 -maxdepth 1 -printf '%f\n' | sort > "$actual"
           diff -u "$expected" "$actual"
 
-      - name: Create GitHub prerelease
+      - name: Create GitHub release
+        shell: bash
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            build/release/candidate/frontier_protocol-0.1.0-alpha.1.jar \
-            build/release/candidate/frontier_protocol-0.1.0-alpha.1.jar.sha256 \
-            build/release/candidate/release-manifest.json \
-            build/release/candidate/LICENSE \
-            --verify-tag \
-            --title "Frontier Protocol 0.1.0-alpha.1" \
-            --notes-file docs/releases/0.1.0-alpha.1.md \
-            --prerelease
+          set -euo pipefail
+          assets=(
+            "build/release/candidate/${JAR_NAME}"
+            "build/release/candidate/${CHECKSUM_NAME}"
+            build/release/candidate/release-manifest.json
+            build/release/candidate/LICENSE
+          )
+          release_args=(
+            --verify-tag
+            --title "$RELEASE_TITLE"
+            --notes-file "$RELEASE_NOTES"
+          )
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            release_args+=(--prerelease)
+          fi
+          gh release create "$GITHUB_REF_NAME" "${assets[@]}" "${release_args[@]}"
 
-      - name: Verify published prerelease
+      - name: Verify published release
         run: |
           set -euo pipefail
           release_json="$RUNNER_TEMP/published-release.json"
@@ -110,26 +159,28 @@ jobs:
           anonymous_dir="$(mktemp -d "$RUNNER_TEMP/anonymous-assets.XXXXXX")"
           expected_assets="$RUNNER_TEMP/expected-published-assets.txt"
           actual_assets="$RUNNER_TEMP/actual-published-assets.txt"
-          expected_jar_url="https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar"
-          expected_checksum_url="https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar.sha256"
+          expected_jar_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${JAR_NAME}"
+          expected_checksum_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${CHECKSUM_NAME}"
 
           gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" > "$release_json"
-          jq -e --arg tag "$GITHUB_REF_NAME" \
-            '.tag_name == $tag and .prerelease == true and .draft == false' \
+          jq -e \
+            --arg tag "$GITHUB_REF_NAME" \
+            --argjson prerelease "$IS_PRERELEASE" \
+            '.tag_name == $tag and .prerelease == $prerelease and .draft == false' \
             "$release_json" >/dev/null
           printf '%s\n' \
-            frontier_protocol-0.1.0-alpha.1.jar \
-            frontier_protocol-0.1.0-alpha.1.jar.sha256 \
+            "$JAR_NAME" \
+            "$CHECKSUM_NAME" \
             LICENSE \
             release-manifest.json | sort > "$expected_assets"
           jq -r '.assets[].name' "$release_json" | sort > "$actual_assets"
           diff -u "$expected_assets" "$actual_assets"
 
-          jar_url="$(jq --exit-status --raw-output \
-            '.assets[] | select(.name == "frontier_protocol-0.1.0-alpha.1.jar") | .browser_download_url' \
+          jar_url="$(jq --exit-status --raw-output --arg name "$JAR_NAME" \
+            '.assets[] | select(.name == $name) | .browser_download_url' \
             "$release_json")"
-          checksum_url="$(jq --exit-status --raw-output \
-            '.assets[] | select(.name == "frontier_protocol-0.1.0-alpha.1.jar.sha256") | .browser_download_url' \
+          checksum_url="$(jq --exit-status --raw-output --arg name "$CHECKSUM_NAME" \
+            '.assets[] | select(.name == $name) | .browser_download_url' \
             "$release_json")"
           test "$jar_url" = "$expected_jar_url"
           test "$checksum_url" = "$expected_checksum_url"
@@ -144,44 +195,36 @@ jobs:
               --output "$1" \
               "$2"
           }
-          download_public_asset \
-            "$anonymous_dir/frontier_protocol-0.1.0-alpha.1.jar" \
-            "$jar_url"
-          download_public_asset \
-            "$anonymous_dir/frontier_protocol-0.1.0-alpha.1.jar.sha256" \
-            "$checksum_url"
+          download_public_asset "$anonymous_dir/$JAR_NAME" "$jar_url"
+          download_public_asset "$anonymous_dir/$CHECKSUM_NAME" "$checksum_url"
           (
             cd "$anonymous_dir"
-            sha256sum --check frontier_protocol-0.1.0-alpha.1.jar.sha256
+            sha256sum --check "$CHECKSUM_NAME"
           )
-          cmp \
-            build/release/candidate/frontier_protocol-0.1.0-alpha.1.jar \
-            "$anonymous_dir/frontier_protocol-0.1.0-alpha.1.jar"
+          cmp "build/release/candidate/$JAR_NAME" "$anonymous_dir/$JAR_NAME"
 
           gh release download "$GITHUB_REF_NAME" --dir "$published_dir"
           find "$published_dir" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort > "$actual_assets"
           diff -u "$expected_assets" "$actual_assets"
           (
             cd "$published_dir"
-            sha256sum --check frontier_protocol-0.1.0-alpha.1.jar.sha256
+            sha256sum --check "$CHECKSUM_NAME"
           )
-          cmp \
-            build/release/candidate/frontier_protocol-0.1.0-alpha.1.jar \
-            "$published_dir/frontier_protocol-0.1.0-alpha.1.jar"
+          cmp "build/release/candidate/$JAR_NAME" "$published_dir/$JAR_NAME"
           jq -e \
             --arg version "$MOD_VERSION" \
             --arg commit "$GITHUB_SHA" \
+            --arg release_status "$RELEASE_STATUS" \
             '.mod.version == $version and .source.git_commit == $commit and
-              .release_status == "public_alpha_prerelease"' \
+              .release_status == $release_status' \
             "$published_dir/release-manifest.json" >/dev/null
 
       - name: Write packwiz installation summary
         run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
-          https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar
-
-          ```bash
-          packwiz url add --meta-folder mods "Frontier Protocol" \
-            "https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar"
-          ```
-          EOF
+          jar_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${JAR_NAME}"
+          {
+            printf '%s\n\n' "$jar_url"
+            printf '%s\n' '```bash'
+            printf 'packwiz url add --meta-folder mods "Frontier Protocol" \\\n  "%s"\n' "$jar_url"
+            printf '%s\n' '```'
+          } >> "$GITHUB_STEP_SUMMARY"
