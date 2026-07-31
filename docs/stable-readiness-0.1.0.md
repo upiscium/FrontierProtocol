@@ -2,9 +2,9 @@
 
 ## Status and platform contract
 
-`0.1.0` is the current stable release objective. `0.1.0-rc.1` is the latest
-published prerelease. Stable `0.1.0` remains unpublished and blocked until every
-required gate in
+The latest public prerelease is `0.1.0-rc.1`. Current source is the unpublished
+`0.1.0` internal Stable candidate. The Stable GitHub Release is not published
+and remains blocked until every required gate in
 [`0.1.0-stable-gates.md`](releases/0.1.0-stable-gates.md) is complete.
 
 The future target is version `0.1.0`, tag `v0.1.0`, title
@@ -126,9 +126,10 @@ the follow-up produces retained evidence.
 1. `0.1.0-rc.1` version preparation, prerelease publication, retained soak, and
    public Packwiz candidate smoke are complete; see the
    [RC publication record](releases/0.1.0-rc.1-publication.md).
-2. Fix demonstrated RC blockers and complete every remaining final-candidate gate.
-3. Bump to `0.1.0`.
-4. Freeze stable release notes and documentation.
+2. The source version is prepared as the unpublished `0.1.0` internal Stable
+   candidate.
+3. Collect exact-main automated evidence and complete both graphical smoke gates.
+4. Complete every remaining final-candidate gate and freeze release notes and documentation.
 5. Publish `v0.1.0` as a non-draft, non-prerelease release.
 6. Perform post-publication packwiz, checksum, and byte-identity verification.
 
@@ -138,8 +139,8 @@ future stable URL.
 
 Post-publication stable packwiz procedure:
 
-1. After `v0.1.0` is published, run `packwiz url add` against
-   `https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0/frontier_protocol-0.1.0.jar`.
+1. After `v0.1.0` is published, run `packwiz url add` against the Stable JAR URL
+   documented in [`0.1.0.md`](releases/0.1.0.md).
 2. Verify the generated URL, hash format, and non-empty hash.
 3. Run `packwiz refresh` and confirm that it preserves the stable URL.
 4. Record the result and JAR-structure checks in the stable publication record.

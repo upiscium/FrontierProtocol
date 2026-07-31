@@ -753,10 +753,12 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
     def alpha1MigrationRecord = layout.projectDirectory.file('docs/r20-alpha1-world-migration.md')
     def rcCandidateRecord = layout.projectDirectory.file('docs/r21-rc1-candidate-preparation.md')
     def rcReleaseNotes = layout.projectDirectory.file('docs/releases/0.1.0-rc.1.md')
+    def stableCandidateRecord = layout.projectDirectory.file('docs/r23-stable-candidate-preparation.md')
+    def stableReleaseNotes = layout.projectDirectory.file('docs/releases/0.1.0.md')
     def workflowDirectory = layout.projectDirectory.dir('.github/workflows')
     inputs.files(buildWorkflow, releaseWorkflow, rcSoakWorkflow, readme, readmeJa, changelog, alphaRelease, releaseNotes,
             publicationRecord, stableReadiness, stableKnownIssues, stableStartupMatrixRecord, alpha1MigrationRecord,
-            rcCandidateRecord, rcReleaseNotes, stableGateDocument)
+            rcCandidateRecord, rcReleaseNotes, stableCandidateRecord, stableReleaseNotes, stableGateDocument)
     inputs.dir(workflowDirectory)
     inputs.properties([
             mod_version       : mod_version,
@@ -778,6 +780,24 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         }
         if (buildYaml.contains('contents: write')) {
             throw new GradleException('Build workflow must not receive contents: write')
+        }
+        [
+                'name: Read candidate version',
+                'id: candidate_metadata',
+                "sed -n 's/^mod_version=//p' gradle.properties",
+                "printf 'mod_version=%s\\n' \"\$mod_version\" >> \"\$GITHUB_OUTPUT\"",
+                'name: frontier_protocol-${{ steps.candidate_metadata.outputs.mod_version }}-release-candidate'
+        ].each { required ->
+            if (!buildYaml.contains(required)) {
+                throw new GradleException("Build workflow lacks generic candidate naming: ${required}")
+            }
+        }
+        if (buildYaml.contains('frontier_protocol-0.1.0-release-candidate')
+                || buildYaml.contains('frontier_protocol-0.1.0-rc.1-release-candidate')
+                || buildYaml.contains('contents: write')
+                || buildYaml.contains('gh release')
+                || buildYaml =~ /(?m)\bgit\s+(?:tag|push)\b/) {
+            throw new GradleException('Build workflow must remain version-generic and publication-free')
         }
         [
                 './gradlew stableStartupMatrix',
@@ -1038,7 +1058,7 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
 
         Map<String, Object> pinned = inputs.properties
         Map<String, String> expectedVersions = [
-                mod_version       : '0.1.0-rc.1',
+                mod_version       : '0.1.0',
                 minecraft_version : '1.21.1',
                 neo_version       : '21.1.235',
                 create_version    : '6.0.11-295',
@@ -1060,7 +1080,9 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 'internal_stable_candidate',
                 'public_stable_release'
         ] as Set
-                || defaultReleaseStatus != 'internal_rc_candidate') {
+                || releaseClassification != [releaseClass: 'stable', internalStatus: 'internal_stable_candidate',
+                                             publicStatus: 'public_stable_release', prerelease: false]
+                || defaultReleaseStatus != 'internal_stable_candidate') {
             throw new GradleException('Release status contract has changed')
         }
 
@@ -1080,7 +1102,8 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         [readmeText, readmeJaText].each { content ->
             if (!content.contains('v0.1.0-rc.1')
                     || !content.contains('frontier_protocol-0.1.0-rc.1.jar')
-                    || !content.contains(readmeUrl)) {
+                    || !content.contains(readmeUrl)
+                    || !content.contains('0.1.0 internal Stable candidate')) {
                 throw new GradleException('README lacks the current immutable release URL contract')
             }
         }
@@ -1128,20 +1151,37 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 || publicationText =~ /(?i)\b(is|as)\s+a stable release\b/) {
             throw new GradleException('Publication record must not call the alpha a stable release')
         }
-        if (!changelog.asFile.getText('UTF-8').contains('GitHub prerelease')) {
+        String changelogText = changelog.asFile.getText('UTF-8')
+        if (!changelogText.contains('GitHub prerelease')
+                || !changelogText.contains('## [0.1.0] - Unreleased')
+                || changelogText.indexOf('## [0.1.0] - Unreleased') > changelogText.indexOf('## [0.1.0-rc.1]')) {
             throw new GradleException('Changelog must document GitHub prerelease distribution')
         }
 
         String readinessText = stableReadiness.asFile.getText('UTF-8')
-        ['0.1.0-rc.1', 'public_stable_release', 'NOT VERIFIED', 'Blocker evidence audit',
-         '0.1.0-alpha.1', 'Stable release sequence'].each { required ->
+        ['0.1.0-rc.1', 'unpublished', '0.1.0` internal Stable candidate', 'not published',
+         'public_stable_release', 'Blocker evidence audit', '0.1.0-alpha.1', 'Stable release sequence'].each { required ->
         if (!readinessText.contains(required)) {
                 throw new GradleException("Stable readiness contract is missing: ${required}")
             }
         }
         String knownIssuesText = stableKnownIssues.asFile.getText('UTF-8')
-        if (!knownIssuesText.contains('No issue is currently accepted')
-                || !knownIssuesText.contains('NOT VERIFIED')) {
+        [
+                'No issue is currently accepted',
+                'exact final-candidate automated reruns',
+                'English graphical smoke',
+                'Japanese graphical smoke',
+                'final changelog freeze',
+                'final release-notes freeze',
+                'final license and provenance verification',
+                'Stable candidate verification',
+                'Stable publication'
+        ].each { required ->
+            if (!knownIssuesText.contains(required)) {
+                throw new GradleException("Stable known-issues document is missing blocker: ${required}")
+            }
+        }
+        if (knownIssuesText.contains('long-running RC log-volume soak remains `NOT VERIFIED`')) {
             throw new GradleException('Stable known-issues document must retain the blocker boundary')
         }
         String startupMatrixText = stableStartupMatrixRecord.asFile.getText('UTF-8')
@@ -1210,6 +1250,72 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 throw new GradleException("RC release notes are missing: ${required}")
             }
         }
+        String stableNotesText = stableReleaseNotes.asFile.getText('UTF-8')
+        String stableUrl = 'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0/frontier_protocol-0.1.0.jar'
+        [
+                'unpublished internal Stable candidate',
+                'Minecraft `1.21.1`',
+                'Java `21`',
+                'NeoForge `21.1.235`',
+                'Create artifact `6.0.11-295` / mod `6.0.11`',
+                'Create: The Factory Must Grow `1.2.0`',
+                'Fungal Infection: Spore exactly `2.2.0j`',
+                'permanent initial-spawn suppression',
+                'Tier 1, Tier 2, and Tier 3',
+                'common Stabilization Cell',
+                'dimension-local and overlap-safe',
+                'bounded cleanup',
+                "Engineer's Goggles",
+                'range overlays',
+                'Nixie status output',
+                'comparator Cell-buffer output',
+                'Ponder scenes',
+                'five documented Create production recipes',
+                'hostile mobs',
+                'restore terrain',
+                'nests',
+                'moving contraptions',
+                'load chunks',
+                'machine GUI',
+                'Back up worlds',
+                '0.1.0-alpha.1',
+                'R19 startup matrix',
+                'R20 migration matrix',
+                'RC publication record',
+                'Issue #27',
+                stableUrl,
+                'not a current installation endpoint',
+                'Stable compatibility guarantees',
+                'publication remains blocked'
+        ].each { required ->
+            if (!stableNotesText.contains(required)) {
+                throw new GradleException("Stable release notes are missing: ${required}")
+            }
+        }
+        if (readmeText.contains(stableUrl) || readmeJaText.contains(stableUrl)
+                || readinessText.contains(stableUrl) || stableGateText.contains(stableUrl)) {
+            throw new GradleException('Future Stable URL must not be presented as a current public URL')
+        }
+        String stableCandidateText = stableCandidateRecord.asFile.getText('UTF-8')
+        [
+                'd3ff0e59d919b79a03a8ab23123539993ac77d63',
+                '0.1.0-rc.1 -> 0.1.0',
+                'internal_stable_candidate',
+                'Latest public release: `0.1.0-rc.1`',
+                'Stable release: not published',
+                'frontier_protocol-0.1.0-release-candidate',
+                'retained exact-main Build evidence is a later',
+                'English and Japanese graphical smoke',
+                'tag creation',
+                'Stable publication'
+        ].each { required ->
+            if (!stableCandidateText.contains(required)) {
+                throw new GradleException("Stable candidate preparation record is missing: ${required}")
+            }
+        }
+        if ("frontier_protocol-${pinned.mod_version}-release-candidate" != 'frontier_protocol-0.1.0-release-candidate') {
+            throw new GradleException('Build candidate artifact name does not match the Stable source version')
+        }
         Set<String> workflowEnforced = stableGates.findAll { id, status -> status == 'WORKFLOW_ENFORCED' }.keySet()
         if (workflowEnforced != ['published-checksum', 'published-byte-identity'] as Set) {
             throw new GradleException('Post-publication workflow-enforced stable gates changed')
@@ -1225,7 +1331,7 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         }
         if (!stableGateText.contains('Status: **NOT PERFORMED**')
                 || !stableGateText.contains('This is not a pre-publication gate')
-                || !stableGateText.contains('https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0/frontier_protocol-0.1.0.jar')) {
+                || !stableGateText.contains('[`0.1.0.md`](0.1.0.md)')) {
             throw new GradleException('Post-publication stable packwiz verification contract is missing')
         }
     }

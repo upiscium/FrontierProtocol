@@ -16,16 +16,17 @@ infinite ore extraction are intentionally delegated to other Create addons.
 
 ## RC Prerelease
 
-The latest public prerelease is **0.1.0-rc.1**. Tag `v0.1.0-rc.1` was
-published on 2026-07-31 from exact source commit
-`5fe7b0f9931560747af7c9c25df367c1e4db9014`. It is a prerelease, not Stable.
-Stable `0.1.0` is the current release objective, but it is not available yet.
+The latest public version is **0.1.0-rc.1**, published as a prerelease on
+2026-07-31 from exact source commit
+`5fe7b0f9931560747af7c9c25df367c1e4db9014`. Current main source is the
+unpublished **0.1.0 internal Stable candidate**. The Stable GitHub Release has
+not been published.
 The [stable-readiness contract](docs/stable-readiness-0.1.0.md) defines its
 support promises, blocker evidence, required gates, and recommended RC sequence.
 `0.1.0-alpha.1` remains available as the previous public prerelease, and its
 published assets remain immutable. Later source candidates and untagged workflow
 builds are not public releases. Back up worlds before testing a prerelease. The
-RC contains the following containment integration scope:
+current source retains the following containment integration scope:
 
 - Permanent infection suppression in the 5x5 chunk area centered on the
   initial Overworld spawn by default.
@@ -132,11 +133,14 @@ mutated.
 
 For internal testing, build the candidate from source, install the matching
 NeoForge release, Create, TFMG, and Spore, then place
-`frontier_protocol-0.1.0-rc.1.jar` in the instance's `mods` directory. Do not
-use a different Spore version with this RC build.
+`frontier_protocol-0.1.0.jar` in the instance's `mods` directory. This is an
+unpublished internal candidate, not the public installation artifact. Do not use
+a different Spore version with this Stable candidate.
 
 Release-specific compatibility notes and verification details are documented
-in the [0.1.0-rc.1 publication record](docs/releases/0.1.0-rc.1-publication.md).
+in the [0.1.0 Stable candidate notes](docs/releases/0.1.0.md). Public RC
+verification remains in the
+[0.1.0-rc.1 publication record](docs/releases/0.1.0-rc.1-publication.md).
 
 Stabilization Compound and Stabilization Cell use custom final 32x32 item icons.
 All three Stabilizers use final static Create-casing machine models with a
