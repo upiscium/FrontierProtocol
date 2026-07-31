@@ -135,15 +135,19 @@ class Alpha1WorldMigrationTest {
     }
 
     @Test
-    void stableLedgerAndSoakRemainIncomplete() throws Exception {
+    void stableLedgerReflectsAcceptedSoakWhileAlphaUpgradeRemainsIncomplete() throws Exception {
         Path project = Path.of(System.getProperty("frontierProtocol.projectDir"));
         String gates = Files.readString(project.resolve("docs/releases/0.1.0-stable-gates.md"));
         String readiness = Files.readString(project.resolve("docs/stable-readiness-0.1.0.md"));
+        String logVolumeRow = readiness.lines()
+                .filter(line -> line.contains("Normal-operation log volume"))
+                .findFirst()
+                .orElseThrow();
 
         assertTrue(gates.contains("| alpha1-world-upgrade | yes | INCOMPLETE |"));
-        assertTrue(readiness.lines()
-                .filter(line -> line.contains("Normal-operation log volume"))
-                .allMatch(line -> line.contains("NOT VERIFIED")));
+        assertTrue(gates.contains("| rc-log-volume-soak | yes | COMPLETE |"));
+        assertTrue(gates.contains("| packwiz-candidate-smoke | yes | COMPLETE |"));
+        assertTrue(logVolumeRow.contains("| PASS | No |"));
     }
 
     private static MigrationFixtureManifest readManifest(Path path) throws Exception {
