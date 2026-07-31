@@ -2,10 +2,9 @@
 
 ## Status and platform contract
 
-`0.1.0` is the current stable release objective. Source is prepared as the
-unpublished `0.1.0-rc.1` candidate; `0.1.0-alpha.1` remains the latest published
-prerelease. Stable publication is
-blocked until every required gate in
+`0.1.0` is the current stable release objective. `0.1.0-rc.1` is the latest
+published prerelease. Stable `0.1.0` remains unpublished and blocked until every
+required gate in
 [`0.1.0-stable-gates.md`](releases/0.1.0-stable-gates.md) is complete.
 
 The future target is version `0.1.0`, tag `v0.1.0`, title
@@ -57,7 +56,7 @@ a documented compatibility decision.
 | Commands | Frontier Protocol exposes no intentionally public command in 0.1.0. | production source inspection | No command registration exists; add a contract entry before adding one. |
 | Client config | Existing display and range-overlay key names retain their meanings. | `FrontierProtocolClientConfig` | tooltip, display, and range tests; [R8](r8-graphical-verification.md) |
 | Datapack surfaces | The consumable tag and five recipe IDs above are public. Cleanup block tags remain implementation allowlists, not a promise to clean arbitrary blocks. | generated tags and recipes | datagen cleanliness and recipe/GameTest coverage |
-| Packwiz distribution | Assets are `frontier_protocol-${version}.jar`, matching `.sha256`, `release-manifest.json`, and `LICENSE`; each version uses an immutable tag URL. | release workflow and Gradle candidate tasks | offline release safeguards; alpha packwiz smoke record |
+| Packwiz distribution | Assets are `frontier_protocol-${version}.jar`, matching `.sha256`, `release-manifest.json`, and `LICENSE`; each version uses an immutable tag URL. | release workflow and Gradle candidate tasks | offline release safeguards; accepted [RC public-URL Packwiz smoke](releases/0.1.0-rc.1-publication.md) |
 
 ## Classified alpha boundaries
 
@@ -110,10 +109,10 @@ the follow-up produces retained evidence.
 | Datagen cleanliness | Build workflow runs `runData` and requires a clean generated-resource status. | PASS | No | Repeat after final version bump. |
 | Production-JAR contents | `verifyReleaseJar` checks required metadata/classes/assets/licenses and forbidden nested/dependency content. | PASS | No | Run on final candidate. |
 | English and Japanese text | [R8 graphical verification](r8-graphical-verification.md), R10/R11 records, and language/resource tests. | PASS | No | Complete both final-candidate graphical gates. |
-| Packwiz install path | [Alpha publication record](releases/0.1.0-alpha.1-publication.md) records public URL add/refresh/JAR checks. | PASS | No | Repeat against RC and stable URLs. |
+| Packwiz install path | The [RC publication record](releases/0.1.0-rc.1-publication.md) and [Issue #28](https://github.com/upiscium/FrontierProtocol/issues/28) record accepted immutable public-URL add, refresh, metadata/JAR hash equality, sanitization, and JAR checks. | PASS | No | Repeat against the Stable URL after Stable publication. |
 | Licensing and notices | [Licensing audit](licensing.md) and `verifyReleaseJar` check BSD-3-Clause plus retained Create/NeoForge notices. | PASS | No | Run final candidate verification. |
 | Old systems absent | Production source inspection, `oldGameplayContentIsNotRegistered`, and JAR dependency-prefix/nested-JAR checks find no active sector, custom infection, mob scaling, breach, nutrition, resource-node, or oil system. | PASS | No | Inspect final JAR class/resource listing. |
-| Normal-operation log volume | `releaseCandidateSoak` and its read-only workflow enforce the measurement contract, but no retained 120-minute run exists on the merged exact RC/final candidate. | NOT VERIFIED | Yes | Run the `rc-log-volume-soak` workflow gate for at least 120 minutes after merge. |
+| Normal-operation log volume | [Issue #27](https://github.com/upiscium/FrontierProtocol/issues/27) and the [RC publication record](releases/0.1.0-rc.1-publication.md) retain the accepted exact-RC soak: `7200.001` steady-state seconds, zero Frontier Protocol lines, and `0.0` lines/minute. | PASS | No | Preserve this retained evidence; rerun only if a later final candidate requires new evidence. |
 | Duplication risks | Physical crafting and continuous Cell rollover assert consumption/output counts and no duplicate Cell consumption. | PASS | No | Exercise upgrade and RC soak. |
 | Item-loss risks | [R20](r20-alpha1-world-migration.md) retains exact pre/first/second counts for five chest item IDs and all three internal Cell inventories, including the Tier 1 over-capacity inventory and absence of duplicate dropped items. | PASS | No | Rerun on the RC/final candidate. |
 | World-corruption risks | [R20](r20-alpha1-world-migration.md) directly reads level, block/entity/POI region chunks, documented BlockStates/Block Entities, and both SavedData files after both migrated saves. | PASS | No | Rerun on the RC/final candidate. |
@@ -124,16 +123,14 @@ the follow-up produces retained evidence.
 
 ## Stable release sequence
 
-1. Fix demonstrated stable blockers.
-2. Complete compatibility and alpha.1-world upgrade verification.
-3. Bump to `0.1.0-rc.1` in a dedicated release change.
-4. Publish `v0.1.0-rc.1` as a prerelease.
-5. Perform an RC soak and modpack test.
-6. Fix RC blockers.
-7. Bump to `0.1.0`.
-8. Freeze stable release notes and documentation.
-9. Publish `v0.1.0` as a non-draft, non-prerelease release.
-10. Perform post-publication packwiz, checksum, and byte-identity verification.
+1. `0.1.0-rc.1` version preparation, prerelease publication, retained soak, and
+   public Packwiz candidate smoke are complete; see the
+   [RC publication record](releases/0.1.0-rc.1-publication.md).
+2. Fix demonstrated RC blockers and complete every remaining final-candidate gate.
+3. Bump to `0.1.0`.
+4. Freeze stable release notes and documentation.
+5. Publish `v0.1.0` as a non-draft, non-prerelease release.
+6. Perform post-publication packwiz, checksum, and byte-identity verification.
 
 The pre-publication packwiz gate must use either the `v0.1.0-rc.1` public URL or
 a disposable local HTTP server for the final candidate. It does not require the
@@ -147,6 +144,5 @@ Post-publication stable packwiz procedure:
 3. Run `packwiz refresh` and confirm that it preserves the stable URL.
 4. Record the result and JAR-structure checks in the stable publication record.
 
-`0.1.0-rc.1` is recommended. The project has one public alpha and relies on
-narrow Mixins into one exact third-party Spore build; the current audit does not
-provide strong evidence that an RC is unnecessary.
+`0.1.0-rc.1` is the latest published prerelease. Its accepted evidence does not
+complete unrelated final-candidate gates or publish Stable `0.1.0`.

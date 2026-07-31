@@ -1,5 +1,11 @@
 # R21 RC.1 Candidate Preparation
 
+> **Superseded status:** This historical preparation candidate was subsequently
+> published as `v0.1.0-rc.1`. Its retained 120-minute soak and public Packwiz
+> smoke were accepted. The authoritative current evidence is the
+> [0.1.0-rc.1 publication record](releases/0.1.0-rc.1-publication.md); statements
+> below preserve the state and boundaries at preparation time.
+
 ## Status
 
 Source version `0.1.0-rc.1` is prepared as an internal RC candidate. The latest

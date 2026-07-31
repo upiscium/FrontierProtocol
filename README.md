@@ -14,18 +14,18 @@ Containment does not prevent hostile mobs from entering protected areas.
 Physical defense remains the player's responsibility. Resource generation and
 infinite ore extraction are intentionally delegated to other Create addons.
 
-## Alpha Release
+## RC Prerelease
 
-The latest publicly available version is **0.1.0-alpha.1**.
-Tag `v0.1.0-alpha.1` was publicly released as a GitHub prerelease on
-2026-07-30 from source commit
-`fed467ec0cd52a936f06751cd922efcc259914a1`. It is not a stable release.
+The latest public prerelease is **0.1.0-rc.1**. Tag `v0.1.0-rc.1` was
+published on 2026-07-31 from exact source commit
+`5fe7b0f9931560747af7c9c25df367c1e4db9014`. It is a prerelease, not Stable.
 Stable `0.1.0` is the current release objective, but it is not available yet.
 The [stable-readiness contract](docs/stable-readiness-0.1.0.md) defines its
 support promises, blocker evidence, required gates, and recommended RC sequence.
-Later source candidates and untagged workflow builds are not public releases.
-Back up worlds before testing an alpha build. This candidate establishes the first
-containment integration preview:
+`0.1.0-alpha.1` remains available as the previous public prerelease, and its
+published assets remain immutable. Later source candidates and untagged workflow
+builds are not public releases. Back up worlds before testing a prerelease. The
+RC contains the following containment integration scope:
 
 - Permanent infection suppression in the 5x5 chunk area centered on the
   initial Overworld spawn by default.
@@ -101,22 +101,23 @@ Build workflow artifacts remain temporary, 14-day internal verification bundles.
 They are not packwiz endpoints. The tag-driven release published the four
 verified candidate files as permanent GitHub prerelease assets.
 
-The immutable JAR URL for `v0.1.0-alpha.1` is:
+The immutable JAR URL for `v0.1.0-rc.1` is:
 
 ```text
-https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar
+https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-rc.1/frontier_protocol-0.1.0-rc.1.jar
 ```
 
 Add it from a modpack root with:
 
 ```bash
 packwiz url add --meta-folder mods "Frontier Protocol" \
-  "https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar"
+  "https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-rc.1/frontier_protocol-0.1.0-rc.1.jar"
 ```
 
 packwiz stores this direct URL and its calculated file hash in the generated
 `.pw.toml` metadata. Future versions receive new immutable version tags and URLs.
-The `v0.1.0-alpha.1` assets must never be replaced or mutated.
+The `v0.1.0-rc.1` and previous `v0.1.0-alpha.1` assets must never be replaced or
+mutated.
 
 ## Requirements
 
@@ -131,11 +132,11 @@ The `v0.1.0-alpha.1` assets must never be replaced or mutated.
 
 For internal testing, build the candidate from source, install the matching
 NeoForge release, Create, TFMG, and Spore, then place
-`frontier_protocol-0.1.0-alpha.1.jar` in the instance's `mods` directory. Do not
-use a different Spore version with this alpha build.
+`frontier_protocol-0.1.0-rc.1.jar` in the instance's `mods` directory. Do not
+use a different Spore version with this RC build.
 
 Release-specific compatibility notes and verification details are documented
-in [`docs/alpha-release.md`](docs/alpha-release.md).
+in the [0.1.0-rc.1 publication record](docs/releases/0.1.0-rc.1-publication.md).
 
 Stabilization Compound and Stabilization Cell use custom final 32x32 item icons.
 All three Stabilizers use final static Create-casing machine models with a
