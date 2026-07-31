@@ -1064,22 +1064,30 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
             throw new GradleException('Release status contract has changed')
         }
 
-        String expectedUrl = 'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar'
-        [readme, alphaRelease, releaseNotes].each { documentation ->
+        String alphaUrl = 'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-alpha.1/frontier_protocol-0.1.0-alpha.1.jar'
+        [alphaRelease, releaseNotes].each { documentation ->
             String content = documentation.asFile.getText('UTF-8')
             if (!content.contains('v0.1.0-alpha.1')
                     || !content.contains('frontier_protocol-0.1.0-alpha.1.jar')
-                    || !content.contains(expectedUrl)) {
+                    || !content.contains(alphaUrl)) {
                 throw new GradleException("${documentation.asFile.name} lacks the immutable release URL contract")
             }
         }
 
         String readmeText = readme.asFile.getText('UTF-8')
         String readmeJaText = readmeJa.asFile.getText('UTF-8')
+        String readmeUrl = 'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0-rc.1/frontier_protocol-0.1.0-rc.1.jar'
+        [readmeText, readmeJaText].each { content ->
+            if (!content.contains('v0.1.0-rc.1')
+                    || !content.contains('frontier_protocol-0.1.0-rc.1.jar')
+                    || !content.contains(readmeUrl)) {
+                throw new GradleException('README lacks the current immutable release URL contract')
+            }
+        }
         def publicJarUrlPattern = ~/https:\/\/github\.com\/upiscium\/FrontierProtocol\/releases\/download\/[^\s"']+\/frontier_protocol-[^\s"']+\.jar/
         Set<String> readmeUrls = (readmeText =~ publicJarUrlPattern).collect { it.toString() }.toSet()
         Set<String> readmeJaUrls = (readmeJaText =~ publicJarUrlPattern).collect { it.toString() }.toSet()
-        if (readmeUrls != [expectedUrl] as Set || readmeJaUrls != readmeUrls) {
+        if (readmeUrls != [readmeUrl] as Set || readmeJaUrls != readmeUrls) {
             throw new GradleException('English and Japanese READMEs must retain the same immutable public JAR URL')
         }
 
@@ -1100,7 +1108,7 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 'Draft: false',
                 'Stable/latest-stable: false',
                 'Release manifest status: `public_alpha_prerelease`',
-                expectedUrl
+                alphaUrl
         ].each { required ->
             if (!publicationText.contains(required)) {
                 throw new GradleException("Publication record is missing required contract: ${required}")
@@ -1170,13 +1178,13 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         if (!stableGates.values().contains('INCOMPLETE')) {
             throw new GradleException('Unexecuted stable gates must not be marked complete')
         }
-        if (stableGates['rc-log-volume-soak'] != 'INCOMPLETE'
-                || !stableGateText.contains('| rc-log-volume-soak | yes | INCOMPLETE | At least 120 minutes')) {
-            throw new GradleException('RC log-volume soak must remain an exact incomplete Stable gate')
+        if (stableGates['rc-log-volume-soak'] != 'COMPLETE'
+                || !stableGateText.contains('| rc-log-volume-soak | yes | COMPLETE | Accepted exact-RC 120-minute soak')) {
+            throw new GradleException('RC log-volume soak must retain its accepted evidence')
         }
         if (!readinessText.contains('| Normal-operation log volume |')
-                || !readinessText.contains('| NOT VERIFIED | Yes |')) {
-            throw new GradleException('Normal-operation log volume must remain NOT VERIFIED')
+                || !readinessText.readLines().find { it.startsWith('| Normal-operation log volume |') }?.contains('| PASS | No |')) {
+            throw new GradleException('Normal-operation log volume must retain its accepted PASS result')
         }
         String rcRecordText = rcCandidateRecord.asFile.getText('UTF-8')
         if (!rcRecordText.contains('rc-log-volume-soak`')
@@ -1209,7 +1217,7 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         String packwizCandidateRow = stableGateText.readLines().find {
             it.startsWith('| packwiz-candidate-smoke |')
         }
-        String expectedPackwizCandidateRow = '| packwiz-candidate-smoke | yes | INCOMPLETE | RC public URL or disposable local HTTP candidate add, refresh, metadata hash, and JAR structure |'
+        String expectedPackwizCandidateRow = '| packwiz-candidate-smoke | yes | COMPLETE | Accepted immutable RC public-URL add, refresh, metadata/hash, and JAR checks in [the RC publication record](0.1.0-rc.1-publication.md) and [Issue #28](https://github.com/upiscium/FrontierProtocol/issues/28) |'
         if (packwizCandidateRow != expectedPackwizCandidateRow
                 || packwizCandidateRow.contains('/releases/download/v0.1.0/')
                 || packwizCandidateRow.toLowerCase(java.util.Locale.ROOT).contains('post-publication')) {

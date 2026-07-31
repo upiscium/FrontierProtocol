@@ -2,11 +2,11 @@
 
 All notable changes to Frontier Protocol are documented in this file.
 
-## [0.1.0-rc.1] - Unreleased
+## [0.1.0-rc.1] - 2026-07-31
 
-This is an unfrozen source candidate for a future public prerelease. No
-`v0.1.0-rc.1` tag or GitHub Release exists yet; `0.1.0-alpha.1` remains the
-latest publicly available version.
+Published as a public GitHub prerelease from source commit
+`5fe7b0f9931560747af7c9c25df367c1e4db9014`. It is the latest public
+prerelease, not a Stable release.
 
 ### Added
 
@@ -14,6 +14,9 @@ latest publicly available version.
 - Tagged RC/Stable reruns of the R19 startup and R20 Alpha-world migration matrices.
 - A retained minimum-120-minute RC log-volume and persistence soak path, plus an explicit short infrastructure-validation mode.
 - A read-only manual workflow for later evidence collection from an exact merged RC or Stable candidate.
+- Accepted retained 120-minute RC soak evidence for the exact published source.
+- Accepted the public RC Release and immutable four-asset set.
+- Accepted public-URL Packwiz add, refresh, metadata hash, and JAR hash verification.
 
 ### Compatibility
 
@@ -22,10 +25,10 @@ latest publicly available version.
 
 ## [0.1.0-alpha.1] - 2026-07-30
 
-Published as a public GitHub prerelease from source commit
+Previously published as a public GitHub prerelease from source commit
 `fed467ec0cd52a936f06751cd922efcc259914a1`. This is not a stable release.
-It remains the latest published prerelease while unavailable stable `0.1.0` is
-the current release objective.
+It remains available as the previous public prerelease while unavailable Stable
+`0.1.0` is the current release objective.
 
 ### Added
 

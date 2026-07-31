@@ -96,23 +96,39 @@ class StableStartupMatrixTest {
     }
 
     @Test
-    void migrationEvidencePassesWhileSoakAndFinalCandidateGatesRemainIncomplete() throws Exception {
+    void migrationEvidenceKeepsFinalGatesIncompleteAfterAcceptedRcEvidence() throws Exception {
         java.nio.file.Path project = java.nio.file.Path.of(System.getProperty("frontierProtocol.projectDir"));
         String readiness = Files.readString(project.resolve("docs/stable-readiness-0.1.0.md"));
         String gates = Files.readString(project.resolve("docs/releases/0.1.0-stable-gates.md"));
+        String logVolumeRow = readiness.lines()
+                .filter(line -> line.contains("Normal-operation log volume"))
+                .findFirst()
+                .orElseThrow();
 
         assertTrue(readiness.contains("| Upgrade from a 0.1.0-alpha.1 world |"));
         assertTrue(readiness.contains("| Upgraded-world restart recovery |"));
-        assertTrue(readiness.contains("| Normal-operation log volume |"));
         assertTrue(readiness.lines()
                 .filter(line -> line.contains("Upgrade from a 0.1.0-alpha.1 world")
                         || line.contains("Upgraded-world restart recovery"))
                 .allMatch(line -> line.contains("PASS")));
-        assertTrue(readiness.lines()
-                .filter(line -> line.contains("Normal-operation log volume"))
-                .allMatch(line -> line.contains("NOT VERIFIED")));
+        assertTrue(logVolumeRow.contains("| PASS | No |"));
+        assertTrue(gates.contains("| rc-log-volume-soak | yes | COMPLETE |"));
+        assertTrue(gates.contains("| packwiz-candidate-smoke | yes | COMPLETE |"));
         assertTrue(gates.contains("| fresh-world-smoke | yes | INCOMPLETE |"));
         assertTrue(gates.contains("| alpha1-world-upgrade | yes | INCOMPLETE |"));
-        assertTrue(gates.contains("| rc-log-volume-soak | yes | INCOMPLETE |"));
+        java.util.List.of(
+                "unit-tests",
+                "asset-tests",
+                "clean-datagen",
+                "clean-build",
+                "all-gametests",
+                "dedicated-server-smoke",
+                "stable-candidate",
+                "english-graphical-smoke",
+                "japanese-graphical-smoke",
+                "changelog",
+                "stable-release-notes",
+                "license-provenance")
+                .forEach(gate -> assertTrue(gates.contains("| " + gate + " | yes | INCOMPLETE |")));
     }
 }
