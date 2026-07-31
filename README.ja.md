@@ -15,16 +15,16 @@ Create動力で稼働する封じ込め設備を追加し、ディメンショ�
 
 ## RC prerelease
 
-公開されている最新prereleaseは **0.1.0-rc.1** です。tag `v0.1.0-rc.1`は、
-exact source commit `5fe7b0f9931560747af7c9c25df367c1e4db9014`から2026-07-31に
-公開されました。これはprereleaseであり、Stableではありません。
-stable `0.1.0`は現在のrelease目標ですが、まだ利用できません。
+公開されている最新versionは **0.1.0-rc.1** で、exact source commit
+`5fe7b0f9931560747af7c9c25df367c1e4db9014`から2026-07-31にprereleaseとして
+公開されました。現在のmain sourceは、未公開の **0.1.0 internal Stable candidate**
+です。Stable GitHub Releaseはまだ公開されていません。
 [stable-readiness contract](docs/stable-readiness-0.1.0.md)に、support保証、blocker
 evidence、必須gate、および推奨RC sequenceを定義しています。
 `0.1.0-alpha.1`は以前の公開prereleaseとして引き続き利用でき、その公開assetは
 変更不可能なまま維持されます。後続のsource候補およびtagなしのworkflowビルドは、
 公開releaseではありません。prereleaseをテストする前にワールドをバックアップして
-ください。このRCは次の封じ込め統合scopeを提供します。
+ください。現在のsourceは次の封じ込め統合scopeを維持します。
 
 - 初期Overworldスポーンを中心とする5x5チャンク範囲の永久感染抑制（デフォルト）。
 - 新規生成地形に対する初期スポーン周辺の鉱石生成抑制。
@@ -134,11 +134,14 @@ packwizは、このdirect URLと計算したfile hashを生成する`.pw.toml` m
 ## 内部テスト
 
 内部テストではsourceからcandidateをbuildし、対応するNeoForge release、Create、TFMG、
-Sporeを導入して、`frontier_protocol-0.1.0-rc.1.jar`をinstanceの`mods` directoryへ
-配置してください。このRC buildを別のSpore versionと組み合わせないでください。
+Sporeを導入して、`frontier_protocol-0.1.0.jar`をinstanceの`mods` directoryへ
+配置してください。これは公開installation artifactではなく、未公開の内部candidateです。
+このStable candidateを別のSpore versionと組み合わせないでください。
 
 release固有の互換性noteとverification詳細は
-[0.1.0-rc.1 publication record](docs/releases/0.1.0-rc.1-publication.md)に記載されています。
+[0.1.0 Stable candidate notes](docs/releases/0.1.0.md)に記載されています。公開RCの
+verificationは[0.1.0-rc.1 publication record](docs/releases/0.1.0-rc.1-publication.md)に
+引き続き記録されています。
 
 Stabilization CompoundとStabilization Cellは最終版のcustom 32x32 item iconを使用します。
 3つのStabilizerはすべて、上面status LED、前面control panel、背面decorative pipe、両側の
