@@ -2,6 +2,24 @@
 
 All notable changes to Frontier Protocol are documented in this file.
 
+## [0.1.0-rc.1] - Unreleased
+
+This is an unfrozen source candidate for a future public prerelease. No
+`v0.1.0-rc.1` tag or GitHub Release exists yet; `0.1.0-alpha.1` remains the
+latest publicly available version.
+
+### Added
+
+- Distinct Alpha, RC, and Stable internal/public release classifications.
+- Tagged RC/Stable reruns of the R19 startup and R20 Alpha-world migration matrices.
+- A retained minimum-120-minute RC log-volume and persistence soak path, plus an explicit short infrastructure-validation mode.
+- A read-only manual workflow for later evidence collection from an exact merged RC or Stable candidate.
+
+### Compatibility
+
+- Gameplay, balance defaults, registry IDs, persistence schemas, Minecraft, Java, NeoForge, Create, TFMG, and Spore versions are unchanged from `0.1.0-alpha.1`.
+- Stable compatibility guarantees begin only when final `0.1.0` is published.
+
 ## [0.1.0-alpha.1] - 2026-07-30
 
 Published as a public GitHub prerelease from source commit

@@ -2,8 +2,9 @@
 
 ## Status and platform contract
 
-`0.1.0` is the current stable release objective. It is not available yet;
-`0.1.0-alpha.1` remains the latest published prerelease. Stable publication is
+`0.1.0` is the current stable release objective. Source is prepared as the
+unpublished `0.1.0-rc.1` candidate; `0.1.0-alpha.1` remains the latest published
+prerelease. Stable publication is
 blocked until every required gate in
 [`0.1.0-stable-gates.md`](releases/0.1.0-stable-gates.md) is complete.
 
@@ -112,9 +113,9 @@ the follow-up produces retained evidence.
 | Packwiz install path | [Alpha publication record](releases/0.1.0-alpha.1-publication.md) records public URL add/refresh/JAR checks. | PASS | No | Repeat against RC and stable URLs. |
 | Licensing and notices | [Licensing audit](licensing.md) and `verifyReleaseJar` check BSD-3-Clause plus retained Create/NeoForge notices. | PASS | No | Run final candidate verification. |
 | Old systems absent | Production source inspection, `oldGameplayContentIsNotRegistered`, and JAR dependency-prefix/nested-JAR checks find no active sector, custom infection, mob scaling, breach, nutrition, resource-node, or oil system. | PASS | No | Inspect final JAR class/resource listing. |
-| Normal-operation log volume | Debug logging defaults false, but no retained bounded long-run log-volume measurement exists. | NOT VERIFIED | Yes | Run an RC soak and inspect Frontier Protocol log rate. |
+| Normal-operation log volume | `releaseCandidateSoak` and its read-only workflow enforce the measurement contract, but no retained 120-minute run exists on the merged exact RC/final candidate. | NOT VERIFIED | Yes | Run the `rc-log-volume-soak` workflow gate for at least 120 minutes after merge. |
 | Duplication risks | Physical crafting and continuous Cell rollover assert consumption/output counts and no duplicate Cell consumption. | PASS | No | Exercise upgrade and RC soak. |
-| Item-loss risks | [R20](r20-alpha1-world-migration.md) retains exact pre/first/second counts for five chest item IDs and all three internal Cell inventories, including the Tier 1 capacity boundary and absence of duplicate dropped items. | PASS | No | Rerun on the RC/final candidate. |
+| Item-loss risks | [R20](r20-alpha1-world-migration.md) retains exact pre/first/second counts for five chest item IDs and all three internal Cell inventories, including the Tier 1 over-capacity inventory and absence of duplicate dropped items. | PASS | No | Rerun on the RC/final candidate. |
 | World-corruption risks | [R20](r20-alpha1-world-migration.md) directly reads level, block/entity/POI region chunks, documented BlockStates/Block Entities, and both SavedData files after both migrated saves. | PASS | No | Rerun on the RC/final candidate. |
 | Malformed-config crash-loop recovery | [R19 startup matrix](r19-stable-startup-matrix.md) shows NeoForge recreates the invalid file and reaches `Done` in the same isolated directory. | PASS | No | Preserve the matrix in normal CI. |
 | Upgraded-world restart recovery | [R20](r20-alpha1-world-migration.md) records two clean current-candidate starts against the same migrated Alpha world with unchanged fixture state and readable persistence. | PASS | No | Rerun on the RC/final candidate. |

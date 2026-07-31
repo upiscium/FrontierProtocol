@@ -113,5 +113,6 @@ class StableStartupMatrixTest {
                 .allMatch(line -> line.contains("NOT VERIFIED")));
         assertTrue(gates.contains("| fresh-world-smoke | yes | INCOMPLETE |"));
         assertTrue(gates.contains("| alpha1-world-upgrade | yes | INCOMPLETE |"));
+        assertTrue(gates.contains("| rc-log-volume-soak | yes | INCOMPLETE |"));
     }
 }
