@@ -96,7 +96,7 @@ class StableStartupMatrixTest {
     }
 
     @Test
-    void migrationEvidenceKeepsFinalGatesIncompleteAfterAcceptedRcEvidence() throws Exception {
+    void acceptedFinalEvidenceCompletesEveryPrePublicationGate() throws Exception {
         java.nio.file.Path project = java.nio.file.Path.of(System.getProperty("frontierProtocol.projectDir"));
         String readiness = Files.readString(project.resolve("docs/stable-readiness-0.1.0.md"));
         String gates = Files.readString(project.resolve("docs/releases/0.1.0-stable-gates.md"));
@@ -114,8 +114,8 @@ class StableStartupMatrixTest {
         assertTrue(logVolumeRow.contains("| PASS | No |"));
         assertTrue(gates.contains("| rc-log-volume-soak | yes | COMPLETE |"));
         assertTrue(gates.contains("| packwiz-candidate-smoke | yes | COMPLETE |"));
-        assertTrue(gates.contains("| fresh-world-smoke | yes | INCOMPLETE |"));
-        assertTrue(gates.contains("| alpha1-world-upgrade | yes | INCOMPLETE |"));
+        assertTrue(gates.contains("| fresh-world-smoke | yes | COMPLETE |"));
+        assertTrue(gates.contains("| alpha1-world-upgrade | yes | COMPLETE |"));
         java.util.List.of(
                 "unit-tests",
                 "asset-tests",
@@ -129,6 +129,8 @@ class StableStartupMatrixTest {
                 "changelog",
                 "stable-release-notes",
                 "license-provenance")
-                .forEach(gate -> assertTrue(gates.contains("| " + gate + " | yes | INCOMPLETE |")));
+                .forEach(gate -> assertTrue(gates.contains("| " + gate + " | yes | COMPLETE |")));
+        assertFalse(gates.contains("| yes | INCOMPLETE |"));
+        assertEquals(2L, gates.lines().filter(line -> line.contains("| WORKFLOW_ENFORCED |")).count());
     }
 }

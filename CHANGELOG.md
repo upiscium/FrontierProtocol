@@ -2,16 +2,17 @@
 
 All notable changes to Frontier Protocol are documented in this file.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-08-01
 
-This is the first internal Stable candidate. Stable `0.1.0` is not published.
-Exact-main automated evidence and English/Japanese graphical smoke remain later
-work before publication.
+The exact-main automated verification, English and Japanese graphical smoke,
+candidate JAR inspection, and license/provenance inspection passed. Stable
+publication is performed separately and is not claimed by this entry.
 
 ### Compatibility
 
 - Gameplay scope is unchanged from the accepted `0.1.0-rc.1` prerelease.
-- Balance defaults, registry IDs, and persistence schemas are unchanged.
+- Balance defaults, registry IDs, persistence schemas, and production assets are
+  unchanged.
 - Minecraft, Java, NeoForge, Create, TFMG, and Spore dependency/platform
   versions are unchanged.
 

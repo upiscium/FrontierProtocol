@@ -754,11 +754,14 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
     def rcCandidateRecord = layout.projectDirectory.file('docs/r21-rc1-candidate-preparation.md')
     def rcReleaseNotes = layout.projectDirectory.file('docs/releases/0.1.0-rc.1.md')
     def stableCandidateRecord = layout.projectDirectory.file('docs/r23-stable-candidate-preparation.md')
+    def stableCloseoutRecord = layout.projectDirectory.file('docs/r24-stable-gate-closeout.md')
     def stableReleaseNotes = layout.projectDirectory.file('docs/releases/0.1.0.md')
+    def licensing = layout.projectDirectory.file('docs/licensing.md')
     def workflowDirectory = layout.projectDirectory.dir('.github/workflows')
     inputs.files(buildWorkflow, releaseWorkflow, rcSoakWorkflow, readme, readmeJa, changelog, alphaRelease, releaseNotes,
             publicationRecord, stableReadiness, stableKnownIssues, stableStartupMatrixRecord, alpha1MigrationRecord,
-            rcCandidateRecord, rcReleaseNotes, stableCandidateRecord, stableReleaseNotes, stableGateDocument)
+            rcCandidateRecord, rcReleaseNotes, stableCandidateRecord, stableCloseoutRecord, stableReleaseNotes,
+            licensing, stableGateDocument)
     inputs.dir(workflowDirectory)
     inputs.properties([
             mod_version       : mod_version,
@@ -1103,7 +1106,8 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
             if (!content.contains('v0.1.0-rc.1')
                     || !content.contains('frontier_protocol-0.1.0-rc.1.jar')
                     || !content.contains(readmeUrl)
-                    || !content.contains('0.1.0 internal Stable candidate')) {
+                    || !content.contains('release-ready')
+                    || !content.contains('0.1.0 Stable candidate')) {
                 throw new GradleException('README lacks the current immutable release URL contract')
             }
         }
@@ -1152,15 +1156,22 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
             throw new GradleException('Publication record must not call the alpha a stable release')
         }
         String changelogText = changelog.asFile.getText('UTF-8')
+        String stableChangelogHeading = '## [0.1.0] - 2026-08-01'
         if (!changelogText.contains('GitHub prerelease')
-                || !changelogText.contains('## [0.1.0] - Unreleased')
-                || changelogText.indexOf('## [0.1.0] - Unreleased') > changelogText.indexOf('## [0.1.0-rc.1]')) {
-            throw new GradleException('Changelog must document GitHub prerelease distribution')
+                || !changelogText.contains(stableChangelogHeading)
+                || changelogText.indexOf(stableChangelogHeading) > changelogText.indexOf('## [0.1.0-rc.1]')
+                || !changelogText.contains('exact-main automated verification')
+                || !changelogText.contains('English and Japanese graphical smoke')
+                || !changelogText.contains('license/provenance inspection passed')
+                || changelogText.contains('## [0.1.0] - Unreleased')) {
+            throw new GradleException('Changelog must retain the frozen Stable evidence and publication boundary')
         }
 
         String readinessText = stableReadiness.asFile.getText('UTF-8')
-        ['0.1.0-rc.1', 'unpublished', '0.1.0` internal Stable candidate', 'not published',
-         'public_stable_release', 'Blocker evidence audit', '0.1.0-alpha.1', 'Stable release sequence'].each { required ->
+        ['0.1.0-rc.1', 'release-ready', '0.1.0` Stable candidate', 'not published',
+          'public_stable_release', 'Final evidence audit', '0.1.0-alpha.1', 'Stable release sequence',
+          '5144235666', '5148923492', '5148981054', '30619876967',
+          'The only remaining', 'tag creation', 'Release workflow', 'post-publication verification'].each { required ->
         if (!readinessText.contains(required)) {
                 throw new GradleException("Stable readiness contract is missing: ${required}")
             }
@@ -1168,21 +1179,21 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         String knownIssuesText = stableKnownIssues.asFile.getText('UTF-8')
         [
                 'No issue is currently accepted',
-                'exact final-candidate automated reruns',
-                'English graphical smoke',
-                'Japanese graphical smoke',
-                'final changelog freeze',
-                'final release-notes freeze',
-                'final license and provenance verification',
-                'Stable candidate verification',
-                'Stable publication'
+                'zero accepted known limitations',
+                'zero pre-publication evidence',
+                'blockers',
+                'Issue #33',
+                'R24 closeout',
+                'have not yet',
+                'been created',
+                'not a known issue'
         ].each { required ->
             if (!knownIssuesText.contains(required)) {
-                throw new GradleException("Stable known-issues document is missing blocker: ${required}")
+                throw new GradleException("Stable known-issues document is missing final state: ${required}")
             }
         }
-        if (knownIssuesText.contains('long-running RC log-volume soak remains `NOT VERIFIED`')) {
-            throw new GradleException('Stable known-issues document must retain the blocker boundary')
+        if (knownIssuesText =~ /(?i)(remaining|incomplete).{0,40}(blocker|gate)/) {
+            throw new GradleException('Stable known-issues document must not retain a pre-publication blocker')
         }
         String startupMatrixText = stableStartupMatrixRecord.asFile.getText('UTF-8')
         [
@@ -1215,8 +1226,12 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         if (stableGates.keySet() != requiredStableGateIds) {
             throw new GradleException('Stable gate document does not contain the exact required gate IDs')
         }
-        if (!stableGates.values().contains('INCOMPLETE')) {
-            throw new GradleException('Unexecuted stable gates must not be marked complete')
+        if (stableGates.values().contains('INCOMPLETE')) {
+            throw new GradleException('No required Stable gate may remain incomplete after R24')
+        }
+        Set<String> completeGates = stableGates.findAll { id, status -> status == 'COMPLETE' }.keySet()
+        if (completeGates != requiredStableGateIds - (['published-checksum', 'published-byte-identity'] as Set)) {
+            throw new GradleException('Every pre-publication Stable gate must be complete after R24')
         }
         if (stableGates['rc-log-volume-soak'] != 'COMPLETE'
                 || !stableGateText.contains('| rc-log-volume-soak | yes | COMPLETE | Accepted exact-RC 120-minute soak')) {
@@ -1253,7 +1268,10 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         String stableNotesText = stableReleaseNotes.asFile.getText('UTF-8')
         String stableUrl = 'https://github.com/upiscium/FrontierProtocol/releases/download/v0.1.0/frontier_protocol-0.1.0.jar'
         [
-                'unpublished internal Stable candidate',
+                'frozen Stable release notes',
+                'generic tag-driven',
+                'workflow',
+                'All pre-publication gates',
                 'Minecraft `1.21.1`',
                 'Java `21`',
                 'NeoForge `21.1.235`',
@@ -1283,14 +1301,18 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 'R20 migration matrix',
                 'RC publication record',
                 'Issue #27',
+                'Issue #33',
+                'R24',
                 stableUrl,
-                'not a current installation endpoint',
-                'Stable compatibility guarantees',
-                'publication remains blocked'
+                'README installation remains pinned',
+                'Stable compatibility guarantees'
         ].each { required ->
             if (!stableNotesText.contains(required)) {
                 throw new GradleException("Stable release notes are missing: ${required}")
             }
+        }
+        if (stableNotesText =~ /(?i)(evidence is incomplete|publication remains blocked|incomplete final-candidate|testing this candidate)/) {
+            throw new GradleException('Stable release notes retain incomplete-evidence wording')
         }
         if (readmeText.contains(stableUrl) || readmeJaText.contains(stableUrl)
                 || readinessText.contains(stableUrl) || stableGateText.contains(stableUrl)) {
@@ -1303,6 +1325,8 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
                 'internal_stable_candidate',
                 'Latest public release: `0.1.0-rc.1`',
                 'Stable release: not published',
+                'Superseded status:',
+                'R24 Stable Gate Closeout',
                 'frontier_protocol-0.1.0-release-candidate',
                 'retained exact-main Build evidence is a later',
                 'English and Japanese graphical smoke',
@@ -1315,6 +1339,54 @@ def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
         }
         if ("frontier_protocol-${pinned.mod_version}-release-candidate" != 'frontier_protocol-0.1.0-release-candidate') {
             throw new GradleException('Build candidate artifact name does not match the Stable source version')
+        }
+        String closeoutText = stableCloseoutRecord.asFile.getText('UTF-8')
+        [
+                '4d81b237af7f1117caa00bc46c0a53512c9956a4',
+                '5144235666',
+                '5148923492',
+                '5148981054',
+                '30619876967',
+                '91121675163',
+                '8789117654',
+                'a6e8c841462dc466287cc97aa1a4aee935ceba26528dc7ddcaa772ee42752217',
+                '719e58ae01e45b290f5e948870a7993ba6ab8cdb4e04afc3b605be2d0d1d5902',
+                '042054f427e7a6f4a2bd77bb060b9b2368c5f6a37122547b55dae76e754033fb',
+                '73c5d3a284db3f0fb6a43ed7cf919b4f9adb0c5cdd00695c159ed2b6dd497d4c',
+                '71630910c16ca2e80b6f779253aeab8463983124ca1b6c65b64479744434c842',
+                '31c97a802e595235d2ac174984659d02ae45618f932e2af4ffbd077893ecce1c',
+                'automated exact-main evidence: PASS',
+                'English graphical smoke: PASS',
+                'Japanese graphical smoke: PASS',
+                'overall evidence package: PASS',
+                'public_stable_release',
+                'byte-identical',
+                'separate',
+                'operations'
+        ].each { required ->
+            if (!closeoutText.contains(required)) {
+                throw new GradleException("R24 closeout record is missing: ${required}")
+            }
+        }
+        String licensingText = licensing.asFile.getText('UTF-8')
+        [
+                '## Final candidate verification',
+                '4d81b237af7f1117caa00bc46c0a53512c9956a4',
+                'artifact ID: 8789117654',
+                'a6e8c841462dc466287cc97aa1a4aee935ceba26528dc7ddcaa772ee42752217',
+                '719e58ae01e45b290f5e948870a7993ba6ab8cdb4e04afc3b605be2d0d1d5902',
+                'root BSD-3-Clause LICENSE: present',
+                'Create notice: present',
+                'NeoForge notice: present',
+                'nested JAR: absent',
+                'dependency classes: absent',
+                'branch closeout candidate: byte-identical',
+                'Issue #33',
+                'R24 Stable Gate Closeout'
+        ].each { required ->
+            if (!licensingText.contains(required)) {
+                throw new GradleException("Final licensing record is missing: ${required}")
+            }
         }
         Set<String> workflowEnforced = stableGates.findAll { id, status -> status == 'WORKFLOW_ENFORCED' }.keySet()
         if (workflowEnforced != ['published-checksum', 'published-byte-identity'] as Set) {

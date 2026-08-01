@@ -2,10 +2,10 @@
 
 ## Status and platform contract
 
-The latest public prerelease is `0.1.0-rc.1`. Current source is the unpublished
-`0.1.0` internal Stable candidate. The Stable GitHub Release is not published
-and remains blocked until every required gate in
-[`0.1.0-stable-gates.md`](releases/0.1.0-stable-gates.md) is complete.
+The latest public version is `0.1.0-rc.1`. Current source is the release-ready
+`0.1.0` Stable candidate. Every pre-publication gate in
+[`0.1.0-stable-gates.md`](releases/0.1.0-stable-gates.md) is complete. The Stable
+tag and GitHub Release are not published.
 
 The future target is version `0.1.0`, tag `v0.1.0`, title
 `Frontier Protocol 0.1.0`, a non-draft/non-prerelease GitHub release, and
@@ -74,52 +74,31 @@ Every boundary from `docs/alpha-release.md` has one classification:
 | GUI, HUD, particles, custom tab, tier-specific/Empty/Spent Cells, new materials, multiblock, moving-contraption suppression, chunk loading, terrain restoration, nest handling, and mob handling are absent. | Future feature | None is a blocker unless implemented behavior is shown broken. |
 | No Minecraft-wide `Level#setBlock` hook is used. | Supported limitation | Narrow target Mixins are an intentional safety boundary. |
 
-No accepted known issue is currently documented for stable operation. Missing
-evidence below is not silently converted into a known issue; it remains a gate.
+No accepted known issue is currently documented for Stable operation, and no
+pre-publication evidence blocker remains.
 
-## Blocker evidence audit
+## Final evidence audit
 
-`PASS` means the cited retained evidence or code inspection covers the stated
-area. `NOT VERIFIED` is not a failure claim; it blocks stable publication until
-the follow-up produces retained evidence.
+[Issue #33](https://github.com/upiscium/FrontierProtocol/issues/33), original
+evidence `5144235666`, focused supplement `5148923492`, and independent
+acceptance `5148981054` provide the exact-main final-candidate evidence.
+[R24](r24-stable-gate-closeout.md) preserves the closeout and byte-identity
+bridge.
 
-| Area | Evidence | Result | Blocker | Follow-up |
-| --- | --- | --- | --- | --- |
-| Fresh-world startup | `dedicatedServerSmoke` deletes its server directory, reaches canonical `Done`, and stops cleanly. | PASS | No | Repeat on the final RC/stable candidate. |
-| Initial-spawn initialization | [R19 startup matrix](r19-stable-startup-matrix.md) directly inspects schema 2 SavedData after two clean starts and retains one initialized Overworld center. | PASS | No | Repeat the same automated procedure on the final candidate for the separate ledger gate. |
-| Upgrade from a 0.1.0-alpha.1 world | [R20 migration fixture](r20-alpha1-world-migration.md) was created and restarted twice with the exact published Alpha JAR, then loaded, saved, and restarted twice with the current packaged JAR. | PASS | No | Rerun the retained procedure on the RC/final candidate for the separate ledger gate. |
-| Dedicated-server restart persistence | [R9 manual verification](r9-balance-hardening.md) records status, Cell time, and Grace across normal restart. | PASS | No | Repeat with an alpha.1 world on the RC. |
-| Client reconnect synchronization | [R9](r9-balance-hardening.md) records reconnect restoration; display sync has unit/GameTest coverage. | PASS | No | Repeat focused RC smoke. |
-| Tier 1/2/3 normal operation | Tier lifecycle GameTests cover all tiers; all required tests pass in CI. | PASS | No | Run on final candidate. |
-| Insufficient RPM | Unit tests and [R9 manual lifecycle verification](r9-balance-hardening.md). | PASS | No | Repeat focused RC smoke. |
-| Overstressed operation | Unit tests plus [R8](r8-graphical-verification.md) and [R9](r9-balance-hardening.md). | PASS | No | Repeat focused RC smoke. |
-| Grace lifecycle | State-machine tests, lifecycle GameTests, and [R9](r9-balance-hardening.md). | PASS | No | Run final candidate suite. |
-| Exact Cell rollover | Continuous Tier 2/3 GameTests and [R9](r9-balance-hardening.md) record exactly one Cell consumed without interruption. | PASS | No | Run final candidate suite. |
-| Empty buffer | State-machine and Tier 1 GameTests; comparator instrumentation checks zero. | PASS | No | Run final candidate suite. |
-| Over-capacity inventory | NBT/unit and physical comparator GameTests plus [R8](r8-graphical-verification.md). | PASS | No | Include in upgrade smoke. |
-| Wrench rotation | Block tests, directional shaft GameTest, and [R11](r11-stabilizer-casing-redesign.md). | PASS | No | Run final candidate suite. |
-| Chunk unload/reload | Stabilizer cleanup coverage-expansion GameTests exercise unload/reload behavior. | PASS | No | Run final candidate suite. |
-| Suppression overlaps | Suppression index tests and Tier 1/Tier 3 overlap GameTests. | PASS | No | Run final candidate suite. |
-| Dimension isolation | Dimension index tests and Nether GameTests for Tier 2/Tier 3. | PASS | No | Run final candidate suite. |
-| Cleanup cursor persistence | `InfectionCleanupSavedDataTest`, cursor tests, and cleanup reload GameTests. | PASS | No | Include in alpha-world upgrade smoke. |
-| Global cleanup budgets | `CleanupBudgetTest`, round-robin/index tests, and cleanup service GameTests. | PASS | No | Run final candidate suite. |
-| Spore descriptors/call counts | Exact 2.2.0j audit, complete descriptors, `require` counts, and Spore integration GameTests. | PASS | No | Re-audit before any Spore expansion. |
-| Missing dependency failure messages | [R19 startup matrix](r19-stable-startup-matrix.md) launches the production JAR without Create, TFMG, and Spore in turn and retains clear requester/range diagnostics before world creation. | PASS | No | Preserve the required metadata and rerun on dependency changes. |
-| Malformed config handling | [R19 startup matrix](r19-stable-startup-matrix.md) records named malformed-TOML recreation and safe range correction for capacity, RPM, duration, radius, and cleanup budget values. | PASS | No | Preserve the matrix in normal CI. |
-| Datagen cleanliness | Build workflow runs `runData` and requires a clean generated-resource status. | PASS | No | Repeat after final version bump. |
-| Production-JAR contents | `verifyReleaseJar` checks required metadata/classes/assets/licenses and forbidden nested/dependency content. | PASS | No | Run on final candidate. |
-| English and Japanese text | [R8 graphical verification](r8-graphical-verification.md), R10/R11 records, and language/resource tests. | PASS | No | Complete both final-candidate graphical gates. |
-| Packwiz install path | The [RC publication record](releases/0.1.0-rc.1-publication.md) and [Issue #28](https://github.com/upiscium/FrontierProtocol/issues/28) record accepted immutable public-URL add, refresh, metadata/JAR hash equality, sanitization, and JAR checks. | PASS | No | Repeat against the Stable URL after Stable publication. |
-| Licensing and notices | [Licensing audit](licensing.md) and `verifyReleaseJar` check BSD-3-Clause plus retained Create/NeoForge notices. | PASS | No | Run final candidate verification. |
-| Old systems absent | Production source inspection, `oldGameplayContentIsNotRegistered`, and JAR dependency-prefix/nested-JAR checks find no active sector, custom infection, mob scaling, breach, nutrition, resource-node, or oil system. | PASS | No | Inspect final JAR class/resource listing. |
-| Normal-operation log volume | [Issue #27](https://github.com/upiscium/FrontierProtocol/issues/27) and the [RC publication record](releases/0.1.0-rc.1-publication.md) retain the accepted exact-RC soak: `7200.001` steady-state seconds, zero Frontier Protocol lines, and `0.0` lines/minute. | PASS | No | Preserve this retained evidence; rerun only if a later final candidate requires new evidence. |
-| Duplication risks | Physical crafting and continuous Cell rollover assert consumption/output counts and no duplicate Cell consumption. | PASS | No | Exercise upgrade and RC soak. |
-| Item-loss risks | [R20](r20-alpha1-world-migration.md) retains exact pre/first/second counts for five chest item IDs and all three internal Cell inventories, including the Tier 1 over-capacity inventory and absence of duplicate dropped items. | PASS | No | Rerun on the RC/final candidate. |
-| World-corruption risks | [R20](r20-alpha1-world-migration.md) directly reads level, block/entity/POI region chunks, documented BlockStates/Block Entities, and both SavedData files after both migrated saves. | PASS | No | Rerun on the RC/final candidate. |
-| Malformed-config crash-loop recovery | [R19 startup matrix](r19-stable-startup-matrix.md) shows NeoForge recreates the invalid file and reaches `Done` in the same isolated directory. | PASS | No | Preserve the matrix in normal CI. |
-| Upgraded-world restart recovery | [R20](r20-alpha1-world-migration.md) records two clean current-candidate starts against the same migrated Alpha world with unchanged fixture state and readable persistence. | PASS | No | Rerun on the RC/final candidate. |
-| Silent suppression-bypass risks | Required Mixin call counts fail startup on drift; target-path and lifecycle GameTests cover audited Spore 2.2.0j. | PASS | No | Preserve exact Spore pin and repeat RC suite. |
-| Cross-dimension contamination | Dimension-local indexes, unit tests, and Nether/Overworld GameTests. | PASS | No | Run final candidate suite. |
+| Area | Final evidence | Result | Blocker |
+| --- | --- | --- | --- |
+| Exact-main automated suite | Build run `30619876967`, job `91121675163`, accepted in Issue #33 | PASS | No |
+| Fresh-world startup and initialization | Final-candidate `dedicatedServerSmoke` and R19 matrix in accepted Build run | PASS | No |
+| Upgrade from a 0.1.0-alpha.1 world | Final-candidate R20 migration and second restart in accepted Build run | PASS | No |
+| Upgraded-world restart recovery | Exact item, Stabilizer, SavedData, and region checks in the final-candidate migration run | PASS | No |
+| Unit, asset, datagen, build, and GameTests | Accepted exact-main Build run | PASS | No |
+| English graphical smoke | Issue #33 original evidence plus focused supplement | PASS | No |
+| Japanese graphical smoke | Separate Japanese client process in Issue #33 plus focused supplement | PASS | No |
+| Insufficient RPM, lifecycle, Nixie, and comparator | Focused English/Japanese evidence accepted in comment `5148981054` | PASS | No |
+| Production-JAR contents | Accepted artifact `8789117654`, exact four-file set, no nested/dependency classes | PASS | No |
+| Licensing and notices | Root BSD-3-Clause license and retained Create/NeoForge notices; Issue #33 and R24 | PASS | No |
+| Packwiz install path | Accepted immutable RC public-URL smoke in the [RC publication record](releases/0.1.0-rc.1-publication.md) and [Issue #28](https://github.com/upiscium/FrontierProtocol/issues/28) | PASS | No |
+| Normal-operation log volume | [Issue #27](https://github.com/upiscium/FrontierProtocol/issues/27) and the RC publication record retain zero Frontier Protocol steady-state lines | PASS | No |
 
 ## Stable release sequence
 
@@ -128,10 +107,14 @@ the follow-up produces retained evidence.
    [RC publication record](releases/0.1.0-rc.1-publication.md).
 2. The source version is prepared as the unpublished `0.1.0` internal Stable
    candidate.
-3. Collect exact-main automated evidence and complete both graphical smoke gates.
-4. Complete every remaining final-candidate gate and freeze release notes and documentation.
-5. Publish `v0.1.0` as a non-draft, non-prerelease release.
-6. Perform post-publication packwiz, checksum, and byte-identity verification.
+3. Exact-main automated evidence and both graphical smoke gates are complete in
+   [Issue #33](https://github.com/upiscium/FrontierProtocol/issues/33).
+4. Final gate closeout, release notes, changelog, and license/provenance freeze
+   are complete in [R24](r24-stable-gate-closeout.md).
+5. Create tag `v0.1.0` and let the generic workflow publish a non-draft,
+   non-prerelease release.
+6. Record workflow checksum/byte identity and perform post-publication Packwiz
+   verification.
 
 The pre-publication packwiz gate must use either the `v0.1.0-rc.1` public URL or
 a disposable local HTTP server for the final candidate. It does not require the
@@ -145,5 +128,5 @@ Post-publication stable packwiz procedure:
 3. Run `packwiz refresh` and confirm that it preserves the stable URL.
 4. Record the result and JAR-structure checks in the stable publication record.
 
-`0.1.0-rc.1` is the latest published prerelease. Its accepted evidence does not
-complete unrelated final-candidate gates or publish Stable `0.1.0`.
+`0.1.0-rc.1` remains the latest public version until step 5. The only remaining
+work is tag creation, the Release workflow, and post-publication verification.
