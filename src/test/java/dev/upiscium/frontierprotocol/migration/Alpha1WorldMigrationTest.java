@@ -135,7 +135,7 @@ class Alpha1WorldMigrationTest {
     }
 
     @Test
-    void stableLedgerReflectsAcceptedSoakWhileAlphaUpgradeRemainsIncomplete() throws Exception {
+    void stableLedgerReflectsAcceptedFinalAlphaUpgradeEvidence() throws Exception {
         Path project = Path.of(System.getProperty("frontierProtocol.projectDir"));
         String gates = Files.readString(project.resolve("docs/releases/0.1.0-stable-gates.md"));
         String readiness = Files.readString(project.resolve("docs/stable-readiness-0.1.0.md"));
@@ -144,7 +144,7 @@ class Alpha1WorldMigrationTest {
                 .findFirst()
                 .orElseThrow();
 
-        assertTrue(gates.contains("| alpha1-world-upgrade | yes | INCOMPLETE |"));
+        assertTrue(gates.contains("| alpha1-world-upgrade | yes | COMPLETE |"));
         assertTrue(gates.contains("| rc-log-volume-soak | yes | COMPLETE |"));
         assertTrue(gates.contains("| packwiz-candidate-smoke | yes | COMPLETE |"));
         assertTrue(logVolumeRow.contains("| PASS | No |"));

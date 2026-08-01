@@ -101,3 +101,30 @@ The release candidate contains exactly the Frontier Protocol JAR, its SHA-256,
 the release manifest, and the standalone project `LICENSE`; dependency JARs and
 dependency assets are not bundled. Users must obtain dependencies separately
 under each dependency's own terms.
+
+## Final candidate verification
+
+The final pre-publication inspection is accepted in
+[Issue #33](https://github.com/upiscium/FrontierProtocol/issues/33) and preserved
+by [R24 Stable Gate Closeout](r24-stable-gate-closeout.md).
+
+```text
+source SHA: 4d81b237af7f1117caa00bc46c0a53512c9956a4
+artifact ID: 8789117654
+artifact ZIP SHA-256: a6e8c841462dc466287cc97aa1a4aee935ceba26528dc7ddcaa772ee42752217
+JAR SHA-256: 719e58ae01e45b290f5e948870a7993ba6ab8cdb4e04afc3b605be2d0d1d5902
+```
+
+Verification result:
+
+```text
+root BSD-3-Clause LICENSE: present
+Create notice: present
+NeoForge notice: present
+nested JAR: absent
+dependency classes: absent
+branch closeout candidate: byte-identical
+```
+
+The closeout changes documentation and verification contracts only. It does not
+change the verified production JAR contents or licensing boundary.

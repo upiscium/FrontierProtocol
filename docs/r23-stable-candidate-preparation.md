@@ -1,5 +1,9 @@
 # R23 Stable Candidate Preparation
 
+> **Superseded status:** [R24 Stable Gate Closeout](r24-stable-gate-closeout.md)
+> records the accepted exact-main evidence and completes all pre-publication
+> gates. This document remains the historical candidate-preparation record.
+
 ## Status
 
 - Base commit: `d3ff0e59d919b79a03a8ab23123539993ac77d63`

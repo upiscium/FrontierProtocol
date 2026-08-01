@@ -17,10 +17,10 @@ Create動力で稼働する封じ込め設備を追加し、ディメンショ�
 
 公開されている最新versionは **0.1.0-rc.1** で、exact source commit
 `5fe7b0f9931560747af7c9c25df367c1e4db9014`から2026-07-31にprereleaseとして
-公開されました。現在のmain sourceは、未公開の **0.1.0 internal Stable candidate**
-です。Stable GitHub Releaseはまだ公開されていません。
-[stable-readiness contract](docs/stable-readiness-0.1.0.md)に、support保証、blocker
-evidence、必須gate、および推奨RC sequenceを定義しています。
+公開されました。現在のmain sourceは、pre-publication gateをすべて完了した
+release-ready **0.1.0 Stable candidate**です。Stable tagとGitHub Releaseはまだ
+公開されていません。[stable-readiness contract](docs/stable-readiness-0.1.0.md)に、
+support保証、受理済みevidence、必須gate、およびpublication sequenceを定義しています。
 `0.1.0-alpha.1`は以前の公開prereleaseとして引き続き利用でき、その公開assetは
 変更不可能なまま維持されます。後続のsource候補およびtagなしのworkflowビルドは、
 公開releaseではありません。prereleaseをテストする前にワールドをバックアップして
@@ -133,13 +133,13 @@ packwizは、このdirect URLと計算したfile hashを生成する`.pw.toml` m
 
 ## 内部テスト
 
-内部テストではsourceからcandidateをbuildし、対応するNeoForge release、Create、TFMG、
+内部テストではsourceからrelease-ready candidateをbuildし、対応するNeoForge release、Create、TFMG、
 Sporeを導入して、`frontier_protocol-0.1.0.jar`をinstanceの`mods` directoryへ
-配置してください。これは公開installation artifactではなく、未公開の内部candidateです。
+配置してください。これは公開installation artifactではなく、未公開のStable candidateです。
 このStable candidateを別のSpore versionと組み合わせないでください。
 
 release固有の互換性noteとverification詳細は
-[0.1.0 Stable candidate notes](docs/releases/0.1.0.md)に記載されています。公開RCの
+[0.1.0 Stable release notes](docs/releases/0.1.0.md)に記載されています。公開RCの
 verificationは[0.1.0-rc.1 publication record](docs/releases/0.1.0-rc.1-publication.md)に
 引き続き記録されています。
 
