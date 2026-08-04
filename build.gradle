@@ -705,6 +705,7 @@ tasks.register('verifyReleaseCandidate') {
 
 def currentReleaseLine = mod_version.toString().replaceFirst(/-.+$/, "")
 def stableGateDocument = layout.projectDirectory.file("docs/releases/${currentReleaseLine}-stable-gates.md")
+def isCurrent011ReleaseLine = currentReleaseLine == "0.1.1"
 def requiredStableGateIds = [
         'unit-tests',
         'asset-tests',
@@ -760,7 +761,7 @@ tasks.register('verifyStableReleaseGates') {
 def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
     group = 'verification'
     description = 'Statically verifies release workflow, documentation, and pinned release inputs.'
-    onlyIf { !mod_version.toString().startsWith('0.1.1') }
+    onlyIf { !isCurrent011ReleaseLine }
 
     def buildWorkflow = layout.projectDirectory.file('.github/workflows/build.yml')
     def releaseWorkflow = layout.projectDirectory.file('.github/workflows/release.yml')
