@@ -25,9 +25,9 @@ import net.minecraft.nbt.NbtIo;
 public final class StableStartupMatrix {
     static final String FRONTIER_MOD_ID = "frontier_protocol";
     static final Map<String, String> REQUIRED_DEPENDENCIES = Map.of(
-            "create", "create-1.21.1-6.0.11-295.jar",
-            "tfmg", "create-tfmg-1.2.0.jar",
-            "spore", "fungal-infection-spore-678295-8342823.jar");
+        "create", "create-1.21.1-6.0.10-280-slim.jar",
+        "tfmg", "create-tfmg-1.2.0.jar",
+        "spore", "fungal-infection-spore-678295-8342823.jar");
     static final List<String> SCENARIO_DIRECTORIES = List.of(
             "fresh-world", "missing-create", "missing-tfmg", "missing-spore", "malformed-config", "out-of-range-config");
     private static final Duration STARTUP_TIMEOUT = Duration.ofSeconds(180);

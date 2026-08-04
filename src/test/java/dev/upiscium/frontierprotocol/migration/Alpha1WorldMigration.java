@@ -39,9 +39,9 @@ public final class Alpha1WorldMigration {
     private static final Duration STARTUP_TIMEOUT = Duration.ofSeconds(180);
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(60);
     private static final Set<String> REQUIRED_DEPENDENCY_JARS = Set.of(
-            "create-1.21.1-6.0.11-295.jar",
-            "create-tfmg-1.2.0.jar",
-            "fungal-infection-spore-678295-8342823.jar");
+        "create-1.21.1-6.0.10-280-slim.jar",
+        "create-tfmg-1.2.0.jar",
+        "fungal-infection-spore-678295-8342823.jar");
     private static final List<Position> STABILIZER_POSITIONS = List.of(
             new Position(20, 100, 84), new Position(22, 100, 84), new Position(24, 100, 84));
     private static final Position CONTAINER_POSITION = new Position(20, 100, 87);

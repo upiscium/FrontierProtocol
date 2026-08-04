@@ -2,6 +2,24 @@
 
 All notable changes to Frontier Protocol are documented in this file.
 
+## [0.1.1-rc.1] - 2026-08-04
+
+This prerelease validates Frontier Protocol against Create 6.0.10.
+
+### Changed
+
+- Lowered the required Create version from 6.0.11 to 6.0.10.
+- Switched the development dependency to Create artifact `6.0.10-280` slim.
+- Declared matching Ponder, Flywheel, Vanillin, and Registrate dependencies.
+- Preserved registry IDs, persistence schemas, gameplay behavior, recipes,
+  balance defaults, and configuration contracts.
+
+### Verified
+
+- Clean compilation, unit tests, GameTests, dedicated-server smoke,
+  fresh-world restart, Alpha.1 world migration, and development-client smoke
+  passed.
+
 ## [0.1.0] - 2026-08-01
 
 The exact-main automated verification, English and Japanese graphical smoke,

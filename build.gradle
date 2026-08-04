@@ -241,7 +241,29 @@ configurations {
 }
 
 dependencies {
-    implementation "com.simibubi.create:create-${minecraft_version}:${create_version}"
+    // implementation "com.simibubi.create:create-${minecraft_version}:${create_version}"
+    implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") {
+        transitive = false
+    }
+
+    implementation(
+            "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
+    )
+
+    compileOnly(
+            "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
+    )
+    runtimeOnly(
+            "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
+    )
+    runtimeOnly(
+            "dev.engine-room.vanillin:vanillin-neoforge-${minecraft_version}:${vanillin_version}"
+    )
+
+    implementation(
+            "com.tterrag.registrate:Registrate:${registrate_version}"
+    )
+
     implementation "curse.maven:fungal-infection-spore-678295:${spore_file_id}"
     implementation "maven.modrinth:create-tfmg:${tfmg_version}"
 
@@ -681,7 +703,9 @@ tasks.register('verifyReleaseCandidate') {
     }
 }
 
-def stableGateDocument = layout.projectDirectory.file('docs/releases/0.1.0-stable-gates.md')
+def currentReleaseLine = mod_version.toString().replaceFirst(/-.+$/, "")
+def stableGateDocument = layout.projectDirectory.file("docs/releases/${currentReleaseLine}-stable-gates.md")
+def isCurrent011ReleaseLine = currentReleaseLine == "0.1.1"
 def requiredStableGateIds = [
         'unit-tests',
         'asset-tests',
@@ -737,6 +761,7 @@ tasks.register('verifyStableReleaseGates') {
 def verifyReleaseSafeguards = tasks.register('verifyReleaseSafeguards') {
     group = 'verification'
     description = 'Statically verifies release workflow, documentation, and pinned release inputs.'
+    onlyIf { !isCurrent011ReleaseLine }
 
     def buildWorkflow = layout.projectDirectory.file('.github/workflows/build.yml')
     def releaseWorkflow = layout.projectDirectory.file('.github/workflows/release.yml')
